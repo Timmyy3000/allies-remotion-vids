@@ -1,0 +1,17 @@
+{
+  "name": "allies-interface",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "bun --filter web dev",
+    "dev:mobile": "bun --filter mobile start",
+    "build:web": "bun --filter web build",
+    "lint:web": "bun --filter web lint",
+    "lint:mobile": "bun --filter mobile lint",
+    "lint": "bun run lint:web && bun run lint:mobile"
+  },
+  "packageManager": "bun@1.2.20"
+}
