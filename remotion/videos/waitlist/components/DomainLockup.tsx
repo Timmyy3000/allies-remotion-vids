@@ -57,7 +57,7 @@ export function DomainPieceText({
 export function DomainLockup({ frame }: { frame: number }) {
   const alliesPositionProgress = interpolate(
     frame,
-    [TIMING.LOGO_COLLAPSE_END, TIMING.DOMAIN_SCENE_START],
+    [TIMING.LOGO_COLLAPSE_END, TIMING.DOMAIN_EDGE_START + 12],
     [0, 1],
     {
       easing: pieceSettleEase,

@@ -163,81 +163,49 @@ export const LOGO_COLLAPSE_DURATION = 30; // 0.50s
 export const LOGO_COLLAPSE_END = LOGO_COLLAPSE_START + LOGO_COLLAPSE_DURATION; // Frame 664 (~11.07s)
 
 // ============================================================================
-// PHASE 14: EMPTY CENTER MICRO-PAUSE
+// PHASE 14: DOMAIN ASSEMBLY (Four directional allies drag in yourallies.io)
+// Directly from gathered positions to screen edges to fetch letters
 // ============================================================================
-export const EMPTY_CENTER_HOLD_DURATION = 8; // 0.13s
-export const EMPTY_CENTER_HOLD_END =
-  LOGO_COLLAPSE_END + EMPTY_CENTER_HOLD_DURATION; // Frame 672 (~11.20s)
+export const DOMAIN_EDGE_START = LOGO_COLLAPSE_END + 6; // Frame 670 (~11.17s)
 
-// ============================================================================
-// PHASE 15: ALL 4 ALLIES SPREAD OUT TO WRITING STAGE (Broad Lateral Curves)
-// ============================================================================
-export const STAGE_SPREAD_START = EMPTY_CENTER_HOLD_END; // Frame 672 (~11.20s)
+// The edge arrivals use distinct offsets for organic pacing
+export const BLUE_DOMAIN_EDGE_START = DOMAIN_EDGE_START; // Frame 670
+export const PINK_DOMAIN_EDGE_START = DOMAIN_EDGE_START + 6; // Frame 676
+export const GREEN_DOMAIN_EDGE_START = DOMAIN_EDGE_START + 12; // Frame 682
+export const YELLOW_DOMAIN_EDGE_START = DOMAIN_EDGE_START + 18; // Frame 688
 
-export const BLUE_SPREAD_START = STAGE_SPREAD_START; // Frame 672 (~11.20s)
-export const GREEN_SPREAD_START = STAGE_SPREAD_START + 2; // Frame 674 (~11.23s)
-export const YELLOW_SPREAD_START = STAGE_SPREAD_START + 3; // Frame 675 (~11.25s)
-export const PINK_SPREAD_START = STAGE_SPREAD_START + 4; // Frame 676 (~11.27s, settles last for subtle emphasis)
-
-export const BLUE_SPREAD_DURATION = 58;
-export const GREEN_SPREAD_DURATION = 62;
-export const YELLOW_SPREAD_DURATION = 60;
-export const PINK_SPREAD_DURATION = 66;
-
-// All 4 allies fully settled into their perimeter writing stage positions
-export const ALL_ALLIES_SPREAD_SETTLED =
-  PINK_SPREAD_START + PINK_SPREAD_DURATION; // Frame 742 (~12.37s)
-
-// ============================================================================
-// PHASE 16: WRITING STAGE READY HOLD (Pink poised to initiate first line of text)
-// ============================================================================
-export const STAGE_READY_FRAME = ALL_ALLIES_SPREAD_SETTLED; // Frame 742 (~12.37s)
-
-// ============================================================================
-// PHASE 17: DOMAIN ASSEMBLY (Four directional allies drag in yourallies.io)
-// ============================================================================
-export const DOMAIN_SCENE_START = STAGE_READY_FRAME + 10; // Frame 752 (~12.53s)
-export const DOMAIN_EDGE_START = DOMAIN_SCENE_START + 20; // Frame 772 (~12.87s)
-
-// The edge arrivals intentionally use different start offsets and durations so
-// the four characters do not read as a synchronized formation.
-export const BLUE_DOMAIN_EDGE_START = DOMAIN_EDGE_START;
-export const PINK_DOMAIN_EDGE_START = DOMAIN_EDGE_START + 8;
-export const GREEN_DOMAIN_EDGE_START = DOMAIN_EDGE_START + 16;
-export const YELLOW_DOMAIN_EDGE_START = DOMAIN_EDGE_START + 24;
-
-export const BLUE_DOMAIN_EDGE_DURATION = 44;
-export const PINK_DOMAIN_EDGE_DURATION = 48;
+export const BLUE_DOMAIN_EDGE_DURATION = 46;
+export const PINK_DOMAIN_EDGE_DURATION = 50;
 export const GREEN_DOMAIN_EDGE_DURATION = 52;
 export const YELLOW_DOMAIN_EDGE_DURATION = 50;
 
 export const BLUE_DOMAIN_DRAG_START =
-  BLUE_DOMAIN_EDGE_START + BLUE_DOMAIN_EDGE_DURATION + 8;
+  BLUE_DOMAIN_EDGE_START + BLUE_DOMAIN_EDGE_DURATION + 6; // Frame 722
 export const PINK_DOMAIN_DRAG_START =
-  PINK_DOMAIN_EDGE_START + PINK_DOMAIN_EDGE_DURATION + 8;
+  PINK_DOMAIN_EDGE_START + PINK_DOMAIN_EDGE_DURATION + 6; // Frame 732
 export const GREEN_DOMAIN_DRAG_START =
-  GREEN_DOMAIN_EDGE_START + GREEN_DOMAIN_EDGE_DURATION + 8;
+  GREEN_DOMAIN_EDGE_START + GREEN_DOMAIN_EDGE_DURATION + 6; // Frame 740
 export const YELLOW_DOMAIN_DRAG_START =
-  YELLOW_DOMAIN_EDGE_START + YELLOW_DOMAIN_EDGE_DURATION + 8;
+  YELLOW_DOMAIN_EDGE_START + YELLOW_DOMAIN_EDGE_DURATION + 6; // Frame 744
 
 export const BLUE_DOMAIN_DRAG_DURATION = 76;
 export const PINK_DOMAIN_DRAG_DURATION = 82;
 export const GREEN_DOMAIN_DRAG_DURATION = 88;
-export const YELLOW_DOMAIN_DRAG_DURATION = 94;
+export const YELLOW_DOMAIN_DRAG_DURATION = 92;
 
 export const DOMAIN_PIECES_SETTLED = Math.max(
   BLUE_DOMAIN_DRAG_START + BLUE_DOMAIN_DRAG_DURATION,
   PINK_DOMAIN_DRAG_START + PINK_DOMAIN_DRAG_DURATION,
   GREEN_DOMAIN_DRAG_START + GREEN_DOMAIN_DRAG_DURATION,
   YELLOW_DOMAIN_DRAG_START + YELLOW_DOMAIN_DRAG_DURATION,
-); // Frame 948 (~15.80s)
+); // Frame 836 (~13.93s)
 export const DOMAIN_PIECE_SETTLE_DURATION = 12;
-export const DOMAIN_LOCKUP_HOLD_DURATION = 150; // 2.5s of readable lockup hover
+export const DOMAIN_LOCKUP_HOLD_DURATION = 160;
 export const DOMAIN_LOCKUP_HOLD_END =
-  DOMAIN_PIECES_SETTLED + DOMAIN_LOCKUP_HOLD_DURATION; // Frame 1098
+  DOMAIN_PIECES_SETTLED + DOMAIN_LOCKUP_HOLD_DURATION; // Frame 996
 
 // Leave the completed domain lockup, then let every ally resume its own orbit.
-export const DOMAIN_EXIT_START = DOMAIN_LOCKUP_HOLD_END + 8; // Frame 1106
+export const DOMAIN_EXIT_START = DOMAIN_LOCKUP_HOLD_END + 8; // Frame 1004
 export const BLUE_DOMAIN_EXIT_START = DOMAIN_EXIT_START;
 export const GREEN_DOMAIN_EXIT_START = DOMAIN_EXIT_START + 10;
 export const PINK_DOMAIN_EXIT_START = DOMAIN_EXIT_START + 20;
@@ -253,7 +221,7 @@ export const DOMAIN_EXIT_SETTLED = Math.max(
   GREEN_DOMAIN_EXIT_START + GREEN_DOMAIN_EXIT_DURATION,
   PINK_DOMAIN_EXIT_START + PINK_DOMAIN_EXIT_DURATION,
   YELLOW_DOMAIN_EXIT_START + YELLOW_DOMAIN_EXIT_DURATION,
-); // Frame 1220 (~20.33s)
+); // Frame 1118
 
 // Leave enough post-exit room for the allies to hover around the completed URL.
 export const TOTAL_DURATION_FRAMES = 1360;
@@ -346,27 +314,7 @@ export const TIMING = {
   LOGO_COLLAPSE_DURATION,
   LOGO_COLLAPSE_END,
 
-  // Phase 14
-  EMPTY_CENTER_HOLD_DURATION,
-  EMPTY_CENTER_HOLD_END,
-
-  // Phase 15
-  STAGE_SPREAD_START,
-  BLUE_SPREAD_START,
-  GREEN_SPREAD_START,
-  YELLOW_SPREAD_START,
-  PINK_SPREAD_START,
-  BLUE_SPREAD_DURATION,
-  GREEN_SPREAD_DURATION,
-  YELLOW_SPREAD_DURATION,
-  PINK_SPREAD_DURATION,
-  ALL_ALLIES_SPREAD_SETTLED,
-
-  // Phase 16
-  STAGE_READY_FRAME,
-
-  // Phase 17
-  DOMAIN_SCENE_START,
+  // Phase 14: Domain Assembly
   DOMAIN_EDGE_START,
   BLUE_DOMAIN_EDGE_START,
   PINK_DOMAIN_EDGE_START,
@@ -416,9 +364,7 @@ export function getTimelinePhase(frame: number): string {
   if (frame < ALL_ALLIES_GATHERED) return "BRAND_GATHER_MOTION";
   if (frame < ALLIES_WORD_COLLAPSE_START) return "BRAND_GATHERED_HOLD";
   if (frame < LOGO_COLLAPSE_END) return "BRAND_COLLAPSE";
-  if (frame < STAGE_SPREAD_START) return "EMPTY_CENTER_HOLD";
-  if (frame < ALL_ALLIES_SPREAD_SETTLED) return "STAGE_SPREAD_MOTION";
-  if (frame < DOMAIN_EDGE_START) return "WRITING_STAGE_READY";
+  if (frame < DOMAIN_EDGE_START) return "POST_BRAND_COLLAPSE_PAUSE";
   if (frame < DOMAIN_PIECES_SETTLED) return "DOMAIN_EDGE_AND_DRAG_MOTION";
   if (frame < DOMAIN_EXIT_START) return "DOMAIN_LOCKUP_HOLD";
   if (frame < DOMAIN_EXIT_SETTLED) return "DOMAIN_ALLIES_EXIT";

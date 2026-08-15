@@ -9,6 +9,7 @@ import {
   AllyState,
   getAllyVisualState,
 } from "../constants/allyStates";
+import { getAllyPlayfulOffset } from "../motion/allyBehavior";
 
 export interface AllyActorProps {
   config: AllyMotionConfig;
@@ -95,7 +96,9 @@ export function AllyActor({
     : 0;
   const characterTilt = entryTiltDeg * (1 - travel.progress) + bankingTilt;
 
-  // 5. Ambient Idle Floating (Rich multi-harmonic buoyant breathing & drift)
+  // 5. Ambient Idle Floating & Spontaneous Playful Actions
+  const playful = getAllyPlayfulOffset(identity, currentFrame, travel.x, travel.y);
+
   const idle = config.idle;
   const t = (currentFrame / idle.periodFrames) * 2 * Math.PI + idle.phase;
   const rawFloatY =
@@ -108,10 +111,12 @@ export function AllyActor({
     Math.sin(t * 0.95) * ((idle.rotRange[1] - idle.rotRange[0]) / 2) +
     Math.cos(t * 1.8 + 0.9) * 0.8;
 
-  // Smoothly blend idle floating into total translation as travel finishes
-  const floatX = rawFloatX * travel.idleWeight;
-  const floatY = rawFloatY * travel.idleWeight;
-  const floatRot = rawFloatRot * travel.idleWeight;
+  // Smoothly blend idle floating & playful offset into total translation
+  const floatX = rawFloatX * travel.idleWeight + playful.x;
+  const floatY = rawFloatY * travel.idleWeight + playful.y;
+  const floatRot = rawFloatRot * travel.idleWeight + playful.rotDeg;
+  const totalSquashX = travel.blobSquashX * playful.squashX;
+  const totalSquashY = travel.blobSquashY * playful.squashY;
   const cursorX = travel.cursorX;
   const cursorY = travel.cursorY;
   const cargoAngleRad = (travel.directionDeg * Math.PI) / 180;
@@ -209,7 +214,7 @@ export function AllyActor({
             style={{
               position: "relative",
               zIndex: 1,
-              transform: `scale(${travel.blobSquashX.toFixed(3)}, ${travel.blobSquashY.toFixed(3)})`,
+              transform: `scale(${totalSquashX.toFixed(3)}, ${totalSquashY.toFixed(3)})`,
               transformOrigin: "center center",
               willChange: "transform",
             }}
