@@ -9,9 +9,15 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@remotion/cli": "4.0.512",
+    "@remotion/player": "^4.0.512",
+    "framer-motion": "^13.1.0",
+    "generative-loaders": "^0.1.1",
+    "motion": "^13.1.0",
     "next": "16.2.12",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "remotion": "4.0.512"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

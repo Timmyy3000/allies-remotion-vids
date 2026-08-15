@@ -1,1883 +1,696 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import togetherIcon from "./_images/together.png";
+import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { TextLoader } from "generative-loaders";
+import "generative-loaders/styles.css";
 
-const DESKTOP_ART_W = 1512;
-const DESKTOP_ART_H = 982;
-const MOBILE_ART_W = 375;
-const MOBILE_ART_H = 812;
+/* =========================================================================
+   TYPES & CONFIGURATIONS
+   ========================================================================= */
 
-const IconSizeContext = createContext(24);
+type IntroStage =
+  | "loader"
+  | "settling"
+  | "brandTransform"
+  | "charactersEntering"
+  | "idle";
 
-function useArtboardScale(artW: number) {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-
-    const update = () => {
-      setScale(host.clientWidth / artW);
-    };
-
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(host);
-    return () => observer.disconnect();
-  }, [artW]);
-
-  return { hostRef, scale };
+interface IdleMotionConfig {
+  y: number[];
+  x: number[];
+  rotate: number[];
+  duration: number;
 }
+
+const BLUE_IDLE: IdleMotionConfig = {
+  y: [0, -6, 0],
+  x: [0, 2, 0],
+  rotate: [0, 2, 0],
+  duration: 3.7,
+};
+
+const GREEN_IDLE: IdleMotionConfig = {
+  y: [0, -5, 1, 0],
+  x: [0, -2, 0],
+  rotate: [0, -1.5, 0],
+  duration: 4.4,
+};
+
+const PINK_IDLE: IdleMotionConfig = {
+  y: [0, -4, 1, 0],
+  x: [0, 3, 0],
+  rotate: [0, -2, 0],
+  duration: 4.1,
+};
+
+const YELLOW_IDLE: IdleMotionConfig = {
+  y: [0, -7, 0],
+  x: [0, 1, -1, 0],
+  rotate: [0, 2, 0],
+  duration: 3.3,
+};
+
+/* =========================================================================
+   MAIN ONBOARDING COMPONENT
+   ========================================================================= */
 
 export default function Onboarding() {
+  const reducedMotion = useReducedMotion();
+  const [stage, setStage] = useState<IntroStage>("loader");
+
+  // Word-by-word staggered entrance flags
+  const [wordState, setWordState] = useState({
+    were: false,
+    your: false,
+    allies: false,
+  });
+
+  // Staggered ally entrance flags
+  const [revealedAllies, setRevealedAllies] = useState({
+    blue: false,
+    green: false,
+    pink: false,
+    yellow: false,
+  });
+
+  const effectiveStage: IntroStage = reducedMotion ? "idle" : stage;
+  const isWereVisible = Boolean(reducedMotion) || wordState.were;
+  const isYourVisible = Boolean(reducedMotion) || wordState.your;
+  const isAlliesVisible = Boolean(reducedMotion) || wordState.allies;
+
+  const isBlueRevealed = Boolean(reducedMotion) || revealedAllies.blue;
+  const isGreenRevealed = Boolean(reducedMotion) || revealedAllies.green;
+  const isPinkRevealed = Boolean(reducedMotion) || revealedAllies.pink;
+  const isYellowRevealed = Boolean(reducedMotion) || revealedAllies.yellow;
+
+  useEffect(() => {
+    if (reducedMotion) {
+      return;
+    }
+
+    // --- 1. WORD-BY-WORD STAGGERED INTRO ---
+    // "We're" starts immediately
+    const word1Timer = setTimeout(() => {
+      setWordState((prev) => ({ ...prev, were: true }));
+    }, 40);
+
+    // "your" starts ~240ms later
+    const word2Timer = setTimeout(() => {
+      setWordState((prev) => ({ ...prev, your: true }));
+    }, 280);
+
+    // "allies" starts ~240ms later
+    const word3Timer = setTimeout(() => {
+      setWordState((prev) => ({ ...prev, allies: true }));
+    }, 520);
+
+    // --- 2. SETTLING MOMENT ---
+    // All 3 words resolve, brief pause before transformation
+    const settleTimer = setTimeout(() => {
+      setStage("settling");
+    }, 1250);
+
+    // --- 3. BRAND TRANSFORMATION ---
+    // "allies" turns orange & translates right, Allies logo enters
+    const transformTimer = setTimeout(() => {
+      setStage("brandTransform");
+    }, 1550);
+
+    // --- 4. ALLY CHARACTERS ARRIVAL ---
+    const charsTimer = setTimeout(() => {
+      setStage("charactersEntering");
+    }, 2150);
+
+    const blueTimer = setTimeout(() => {
+      setRevealedAllies((prev) => ({ ...prev, blue: true }));
+    }, 2250);
+
+    const greenTimer = setTimeout(() => {
+      setRevealedAllies((prev) => ({ ...prev, green: true }));
+    }, 2450);
+
+    const pinkTimer = setTimeout(() => {
+      setRevealedAllies((prev) => ({ ...prev, pink: true }));
+    }, 2650);
+
+    const yellowTimer = setTimeout(() => {
+      setRevealedAllies((prev) => ({ ...prev, yellow: true }));
+    }, 2850);
+
+    // --- 5. IDLE FLOATING STATE ---
+    const idleTimer = setTimeout(() => {
+      setStage("idle");
+    }, 3200);
+
+    return () => {
+      clearTimeout(word1Timer);
+      clearTimeout(word2Timer);
+      clearTimeout(word3Timer);
+      clearTimeout(settleTimer);
+      clearTimeout(transformTimer);
+      clearTimeout(charsTimer);
+      clearTimeout(blueTimer);
+      clearTimeout(greenTimer);
+      clearTimeout(pinkTimer);
+      clearTimeout(yellowTimer);
+      clearTimeout(idleTimer);
+    };
+  }, [reducedMotion]);
+
   return (
-    <>
-      <div className="hidden min-[768px]:block">
-        <DesktopOnboarding />
+    <main className="min-h-screen w-full bg-[#FFFFFF] flex flex-col items-center justify-center relative overflow-hidden select-none px-4">
+      {/* Centered Hero Stage */}
+      <div className="relative flex items-center justify-center w-full max-w-[960px] py-28 sm:py-36">
+        {/* Headline with 3 Independent Word Entities in an 86px Alignment Row */}
+        <HeadlineLockup
+          stage={effectiveStage}
+          wordState={{
+            were: isWereVisible,
+            your: isYourVisible,
+            allies: isAlliesVisible,
+          }}
+          reducedMotion={Boolean(reducedMotion)}
+        />
+
+        {/* Decorative Ally Characters (Reusable AllyActor + AllyOrb) */}
+        {/* Blue Ally: Above headline, slightly left of center */}
+        <AllyActor
+          anchorClass="-top-14 sm:-top-16 left-[18%] sm:left-[28%]"
+          isRevealed={isBlueRevealed}
+          isFloating={effectiveStage === "idle"}
+          initialRotation={-4}
+          idleMotion={BLUE_IDLE}
+          reducedMotion={Boolean(reducedMotion)}
+        >
+          <AllyOrb color="#3446E9" size={38}>
+            <BlueEntity />
+          </AllyOrb>
+        </AllyActor>
+
+        {/* Green Ally: Below-left of headline */}
+        <AllyActor
+          anchorClass="-bottom-16 sm:-bottom-20 left-[2%] sm:left-[8%]"
+          isRevealed={isGreenRevealed}
+          isFloating={effectiveStage === "idle"}
+          initialRotation={3}
+          idleMotion={GREEN_IDLE}
+          reducedMotion={Boolean(reducedMotion)}
+        >
+          <AllyOrb color="#12C25B" size={38}>
+            <GreenEntity />
+          </AllyOrb>
+        </AllyActor>
+
+        {/* Pink/Red Ally: To the right of "allies" */}
+        <AllyActor
+          anchorClass="-top-4 sm:-top-6 right-[1%] sm:right-[6%]"
+          isRevealed={isPinkRevealed}
+          isFloating={effectiveStage === "idle"}
+          initialRotation={-3}
+          idleMotion={PINK_IDLE}
+          reducedMotion={Boolean(reducedMotion)}
+        >
+          <AllyOrb color="#FD304F" size={38}>
+            <PinkEntity />
+          </AllyOrb>
+        </AllyActor>
+
+        {/* Yellow Ally: Below headline, slightly right of center */}
+        <AllyActor
+          anchorClass="-bottom-16 sm:-bottom-20 right-[22%] sm:right-[32%]"
+          isRevealed={isYellowRevealed}
+          isFloating={effectiveStage === "idle"}
+          initialRotation={4}
+          idleMotion={YELLOW_IDLE}
+          reducedMotion={Boolean(reducedMotion)}
+        >
+          <AllyOrb color="#FBE65F" size={38}>
+            <YellowEntity />
+          </AllyOrb>
+        </AllyActor>
       </div>
-      <div className="min-[768px]:hidden">
-        <MobileOnboarding />
-      </div>
-    </>
+    </main>
   );
 }
 
-function DesktopOnboarding() {
-  const { hostRef, scale } = useArtboardScale(DESKTOP_ART_W);
+/* =========================================================================
+   HEADLINE LOCKUP (86PX ALIGNMENT ROW WITH 3 INDEPENDENT ANIMATED WORDS)
+   ========================================================================= */
+
+function HeadlineLockup({
+  stage,
+  wordState,
+  reducedMotion,
+}: {
+  stage: IntroStage;
+  wordState: { were: boolean; your: boolean; allies: boolean };
+  reducedMotion: boolean;
+}) {
+  const isTransformed =
+    stage === "brandTransform" ||
+    stage === "charactersEntering" ||
+    stage === "idle";
 
   return (
-    <div ref={hostRef} className="relative w-full overflow-hidden bg-[#fff]">
-      <div style={{ height: DESKTOP_ART_H * scale, width: "100%" }} aria-hidden />
-      <div
-        className="absolute left-0 top-0 origin-top-left"
-        style={{
-          width: DESKTOP_ART_W,
-          height: DESKTOP_ART_H,
-          transform: `scale(${scale})`,
-          borderRadius: "10px 10px 0px 0px",
-          backgroundColor: "#fff",
-          overflow: "hidden",
-        }}
-      >
-        <BlueAlly />
-        <p
-          className="text"
+    <div
+      className="headline-row relative inline-flex items-center justify-center whitespace-nowrap flex-nowrap h-[48px] sm:h-[68px] md:h-[86px] font-[700] text-[40px] sm:text-[56px] md:text-[72px] leading-[1] text-[#121212] select-none"
+      style={
+        {
+          fontFamily:
+            'var(--font-open-runde), "SF Pro Rounded", system-ui, -apple-system, sans-serif',
+          letterSpacing: "-0.5px",
+          "--tl-font":
+            'var(--font-open-runde), "SF Pro Rounded", system-ui, -apple-system, sans-serif',
+          "--tl-color": "#121212",
+        } as React.CSSProperties
+      }
+    >
+      {/* Normalize TextLoader internal wrappers to full-height flex centering */}
+      <style>{`
+        .headline-row .tl-loader,
+        .headline-row .tl-visual {
+          display: inline-flex !important;
+          align-items: center !important;
+          height: 100% !important;
+          line-height: 1 !important;
+        }
+        .headline-row .tl-copy,
+        .headline-row .tl-word {
+          display: inline-flex !important;
+          align-items: center !important;
+          height: 100% !important;
+          line-height: 1 !important;
+        }
+        .headline-row .tl-char {
+          display: inline-block !important;
+          line-height: 1 !important;
+        }
+      `}</style>
+
+      {/* WORD 1: "We're" (Stationary Anchor in 86px Center Box) */}
+      <div className="headline-word-wrapper h-full inline-flex items-center relative">
+        {wordState.were ? (
+          <TextLoader
+            text="We're"
+            variant="focus"
+            speed={1.15}
+            color="#121212"
+            className="inline-block text-[40px] sm:text-[56px] md:text-[72px] font-[700] leading-[1] tracking-[-0.5px]"
+          />
+        ) : (
+          <span className="invisible leading-[1]">We&apos;re</span>
+        )}
+      </div>
+
+      {/* Spacing between "We're" and "your" */}
+      <span className="inline-block select-none" style={{ width: "0.26em" }}>
+        &nbsp;
+      </span>
+
+      {/* WORD 2: "your" (Stationary Anchor in 86px Center Box) */}
+      <div className="headline-word-wrapper h-full inline-flex items-center relative">
+        {wordState.your ? (
+          <TextLoader
+            text="your"
+            variant="focus"
+            speed={1.15}
+            color="#121212"
+            className="inline-block text-[40px] sm:text-[56px] md:text-[72px] font-[700] leading-[1] tracking-[-0.5px]"
+          />
+        ) : (
+          <span className="invisible leading-[1]">your</span>
+        )}
+      </div>
+
+      {/* TRANSFORMING LOGO SLOT & WORD 3 ("allies") */}
+      <div className="relative inline-flex items-center h-full">
+        {/* Natural initial spacing between "your" and "allies" */}
+        <span className="inline-block select-none" style={{ width: "0.26em" }}>
+          &nbsp;
+        </span>
+
+        {/* LOGO ENTRANCE SLOT (Optically Centered in 86px Height Row) */}
+        <div
+          className="logo-alignment-wrapper absolute left-[0.26em] top-0 bottom-0 flex items-center justify-center pointer-events-none"
           style={{
-            display: "inline",
-            textAlign: "left",
-            lineHeight: "49px",
-            fontSize: 24,
-            fontWeight: 600,
-            fontStretch: "100%",
-            letterSpacing: -1.63,
-            color: "#121212",
-            left: 387,
-            top: 208,
-            width: "max-content",
-            position: "absolute",
-            whiteSpace: "pre-wrap",
-            overflowWrap: "break-word",
-            margin: 0,
+            width: "1.24em",
           }}
         >
-          We’re your allies
-          <br />
-          We’re personal helpers built around what matters to you.
-          <br />
-          Our job is to give you back{" "}
-          <IconWord icon={<TimeIcon />} word="time" color="#1B62F2" />.
-          <br />
-          We take responsibility for the{" "}
-          <IconWord icon={<FinanceIcon />} word="work" color="#FF2D55" /> you
-          want off your plate.
-          <br />
-          We remember what matters and keep you in{" "}
-          <IconWord
-            icon={<LanguageIcon />}
-            word="control"
-            color="#E9B43A"
-            iconAfter
-          />{" "}
-          .
-          <br />
-          We can track your finances, spot{" "}
-          <IconWord icon={<MoneyIcon />} word="overspending" color="#12C25B" />,
-          and keep you updated.
-          <br />
-          We can help you learn a{" "}
-          <IconWord icon={<TranslateIcon />} word="language" color="#1B62F2" />{" "}
-          before your next trip.
-          <br />
-          We can keep your solo{" "}
-          <IconWord icon={<ShopIcon />} word="business" color="#FF5800" />{" "}
-          organised and moving.
-          <br />
-          When a job needs more than one of us, we work{" "}
-          <IconWord icon={<AvatarCluster />} word="together" />.
-        </p>
-        <FollowUs />
-        <MeetAllyButton top={685} right={973} width={152} height={48} fontSize={18} />
-        <LogoMark />
-        <YellowAlly />
-        <GreenAlly />
-        <RedAlly />
+          {isTransformed && (
+            <motion.div
+              className="logo-animation-wrapper flex items-center justify-center"
+              initial={
+                reducedMotion
+                  ? { opacity: 1, scale: 1, y: 0 }
+                  : { opacity: 0, scale: 0.72, y: 8 }
+              }
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={
+                reducedMotion
+                  ? { duration: 0.01 }
+                  : {
+                      type: "spring",
+                      stiffness: 220,
+                      damping: 17,
+                      mass: 0.8,
+                      delay: 0.08,
+                    }
+              }
+            >
+              <AlliesLogo />
+            </motion.div>
+          )}
+        </div>
+
+        {/* WORD 3: "allies" (Centered in 86px Row, Transforms Color + Translates Right) */}
+        <div className="headline-word-wrapper h-full inline-flex items-center relative">
+          <motion.div
+            className="allies-motion-wrapper inline-flex items-center origin-left select-none"
+            initial={false}
+            animate={{
+              x: isTransformed ? "1.40em" : "0em",
+              color: isTransformed ? "#FF5800" : "#121212",
+            }}
+            transition={{
+              x: reducedMotion
+                ? { duration: 0.01 }
+                : { type: "spring", stiffness: 200, damping: 20, mass: 0.8 },
+              color: reducedMotion
+                ? { duration: 0.01 }
+                : { duration: 0.4, ease: "easeOut" },
+            }}
+          >
+            {wordState.allies ? (
+              <TextLoader
+                text="allies"
+                variant="focus"
+                speed={1.15}
+                color="currentColor"
+                className="inline-block text-[40px] sm:text-[56px] md:text-[72px] font-[700] leading-[1] tracking-[-0.5px]"
+              />
+            ) : (
+              <span className="invisible leading-[1]">allies</span>
+            )}
+          </motion.div>
+        </div>
       </div>
     </div>
   );
 }
 
-function MobileOnboarding() {
-  const { hostRef, scale } = useArtboardScale(MOBILE_ART_W);
+/* =========================================================================
+   OFFICIAL ALLIES LOGO COMPONENT (89 × 86)
+   ========================================================================= */
 
+function AlliesLogo() {
   return (
-    <IconSizeContext.Provider value={16}>
-      <div ref={hostRef} className="relative w-full overflow-hidden bg-[#fff]">
-        <div
-          style={{ height: MOBILE_ART_H * scale, width: "100%" }}
-          aria-hidden
-        />
-        <div
-          className="absolute left-0 top-0 origin-top-left"
-          style={{
-            width: MOBILE_ART_W,
-            height: MOBILE_ART_H,
-            transform: `scale(${scale})`,
-            backgroundColor: "#fff",
-            overflow: "hidden",
-          }}
-        >
-          {/* device chrome stripped — status bar + home indicator */}
-          <GreenAlly left="calc(100.5px + 50%)" top={365} />
-          <RedAlly left={198} top={644} />
-          <div
-            style={{
-              left: 20,
-              top: 128,
-              width: 335,
-              position: "absolute",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-            }}
-          >
-            <p
-              className="text"
-              style={{
-                display: "block",
-                textAlign: "left",
-                lineHeight: "22px",
-                fontSize: 16,
-                fontWeight: 600,
-                fontStretch: "100%",
-                letterSpacing: -0.47,
-                color: "#121212",
-                width: "100%",
-                whiteSpace: "normal",
-                overflowWrap: "break-word",
-                margin: 0,
-              }}
-            >
-              Hi, we’re your allies
-              <br />
-              <br />
-              We’re personal helpers built around what matters to you.
-              <br />
-              <br />
-              Our job is to give you back{" "}
-              <IconWord icon={<TimeIcon />} word="time" color="#1B62F2" />.
-              <br />
-              <br />
-              We take responsibility for the{" "}
-              <IconWord icon={<FinanceIcon />} word="work" color="#FF2D55" /> you
-              want off your plate.
-              <br />
-              <br />
-              We remember what matters and keep you in{" "}
-              <IconWord
-                icon={<LanguageIcon />}
-                word="control"
-                color="#E9B43A"
-                iconAfter
-              />{" "}
-              .
-              <br />
-              <br />
-              We can track your finances, spot{" "}
-              <IconWord icon={<MoneyIcon />} word="overspending" color="#12C25B" />
-              , and keep you updated.
-              <br />
-              <br />
-              We can help you learn a{" "}
-              <IconWord icon={<TranslateIcon />} word="language" color="#1B62F2" />{" "}
-              before your next trip.
-              <br />
-              <br />
-              We can keep your solo{" "}
-              <IconWord icon={<ShopIcon />} word="business" color="#FF5800" />{" "}
-              organised and moving.
-              <br />
-              <br />
-              When a job needs more than one of us, we work{" "}
-              <IconWord icon={<AvatarCluster />} word="together" />.
-            </p>
-            <MeetAllyButton fontSize={16} marginTop={18} />
-          </div>
-          <FollowUs
-            top={71}
-            right={20.4}
-            left="auto"
-            columnGap={6}
-            fontSize={16}
-            letterSpacing={-1.15}
-            iconWidth={14.7}
-            iconHeight={15}
-          />
-          <LogoMark left={20} top={68} />
-          <BlueAlly left={188} top={114} width={62} faceLeft={26} />
-          <YellowAlly left={128} top={16} width={60} faceLeft={0} flipCursor />
-        </div>
-      </div>
-    </IconSizeContext.Provider>
-  );
-}
-
-function MeetAllyButton({
-  top,
-  right,
-  width,
-  height,
-  fontSize,
-  marginTop,
-}: {
-  top?: number;
-  right?: number;
-  width?: number;
-  height?: number;
-  fontSize: number;
-  marginTop?: number;
-}) {
-  return (
-    <button
-      type="button"
+    <svg
+      viewBox="0 0 89 86"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-[49px] h-[48px] sm:w-[70px] sm:h-[68px] md:w-[89px] md:h-[86px] shrink-0 select-none block"
       style={{
-        borderRadius: 60,
-        backgroundColor: "#ff5800",
-        display: "flex",
-        flexDirection: "row",
-        columnGap: 10,
-        alignItems: "center",
-        justifyContent: "center",
-        top,
-        right,
-        width: width ?? "min-content",
-        height,
-        position: top != null ? "absolute" : "relative",
-        marginTop,
-        padding: 10,
-        border: "none",
-        cursor: "pointer",
+        filter: "drop-shadow(0 2px 8px rgba(255, 88, 0, 0.22))",
       }}
     >
-      <span
-        className="text"
-        style={{
-          display: "inline",
-          textAlign: "left",
-          fontSize,
-          fontWeight: 600,
-          fontStretch: "100%",
-          letterSpacing: -0.65,
-          color: "#fff",
-          width: "max-content",
-          position: "relative",
-          flexShrink: 0,
-          whiteSpace: "pre-wrap",
-          overflowWrap: "break-word",
-        }}
+      <rect width="88.2783" height="86" rx="21.5" fill="#FF5800" />
+      <path
+        d="M69.8432 38.4509C69.0729 48.3073 65.3218 51.7372 61.764 55.4198C58.2062 59.1024 61.0803 65.8854 56.872 66.7565C52.6638 67.6276 50.8682 60.5466 49.8965 60.5466C48.9248 60.5466 49.534 71.6667 44.0491 71.6667C38.5641 71.6667 38.7386 60.5466 37.8229 60.5466C36.9071 60.5466 34.191 68.1917 30.3367 66.9009C26.4824 65.6102 29.2989 58.7414 25.2964 55.492C20.9066 51.9282 17.842 48.7045 17.3655 38.9563C16.889 29.2082 25.7411 14.3333 44.0491 14.3333C62.357 14.3333 70.6136 28.5945 69.8432 38.4509Z"
+        fill="white"
+      />
+      <path
+        d="M61.764 55.4198L63.0768 56.6881V56.6881L61.764 55.4198ZM69.8432 38.4509L71.663 38.5931V38.5931L69.8432 38.4509ZM17.3655 38.9563L19.1886 38.8672L17.3655 38.9563ZM25.2964 55.492L26.4469 54.0749H26.4469L25.2964 55.492ZM30.3367 66.9009L29.7571 68.6317V68.6317L30.3367 66.9009ZM56.872 66.7565L57.242 68.5439V68.5439L56.872 66.7565ZM61.764 55.4198L63.0768 56.6881C64.8077 54.8964 66.8142 52.9488 68.4279 50.1662C70.065 47.3433 71.26 43.7485 71.663 38.5931L69.8432 38.4509L68.0235 38.3087C67.6561 43.0097 66.5904 46.058 65.27 48.3348C63.9261 50.652 62.2782 52.2606 60.4513 54.1516L61.764 55.4198ZM44.0491 14.3333V12.5081C24.5994 12.5081 15.0199 28.3567 15.5424 39.0455L17.3655 38.9563L19.1886 38.8672C18.7581 30.0597 26.8828 16.1586 44.0491 16.1586V14.3333ZM17.3655 38.9563L15.5424 39.0455C15.7892 44.0959 16.7148 47.6389 18.2685 50.4309C19.8201 53.2191 21.9133 55.0965 24.146 56.9091L25.2964 55.492L26.4469 54.0749C24.2898 52.3238 22.6557 50.8074 21.4584 48.6558C20.2632 46.5079 19.4182 43.5649 19.1886 38.8672L17.3655 38.9563ZM25.2964 55.492L24.146 56.9091C25.4807 57.9927 25.7631 59.709 26.0602 62.1514C26.1916 63.2315 26.3447 64.5599 26.7846 65.6918C27.2671 66.9335 28.152 68.0942 29.7571 68.6317L30.3367 66.9009L30.9163 65.1701C30.5942 65.0623 30.3858 64.8803 30.1873 64.3696C29.9462 63.7491 29.8306 62.9152 29.6841 61.7105C29.4253 59.5836 29.1146 56.2407 26.4469 54.0749L25.2964 55.492ZM30.3367 66.9009L29.7571 68.6317C31.3967 69.1808 32.873 68.7258 34.0091 67.976C35.0938 67.2601 35.9771 66.2155 36.6569 65.2828C37.3394 64.3463 37.9424 63.3389 38.3484 62.7015C38.5716 62.351 38.7155 62.1425 38.8075 62.0303C38.8551 61.9723 38.8356 62.0066 38.7553 62.0695C38.7116 62.1037 38.3749 62.3719 37.8229 62.3719V60.5466V58.7213C37.1564 58.7213 36.6911 59.0493 36.5052 59.1948C36.2826 59.3691 36.1071 59.5664 35.9852 59.7148C35.7384 60.0158 35.4897 60.3944 35.2693 60.7404C34.788 61.4961 34.2994 62.3194 33.7066 63.1328C33.111 63.95 32.5354 64.5747 31.9982 64.9292C31.5124 65.2498 31.2038 65.2664 30.9163 65.1701L30.3367 66.9009ZM37.8229 60.5466V62.3719C36.8696 62.3719 36.4481 61.659 36.431 61.6315C36.357 61.5117 36.3504 61.4528 36.3838 61.5613C36.443 61.7534 36.5158 62.0896 36.6175 62.6249C36.8068 63.6209 37.0591 65.1077 37.4613 66.5859C37.8595 68.0492 38.4521 69.6981 39.4223 71.0129C40.4329 72.3825 41.9446 73.492 44.0491 73.492V71.6667V69.8414C43.411 69.8414 42.8877 69.5608 42.3597 68.8454C41.7914 68.0752 41.342 66.9441 40.9838 65.6274C40.6295 64.3256 40.4109 63.0323 40.2039 61.9433C40.1075 61.4361 40.0009 60.9035 39.8729 60.4875C39.8127 60.292 39.7107 59.9941 39.5359 59.7115C39.4181 59.521 38.8907 58.7213 37.8229 58.7213V60.5466ZM44.0491 71.6667V73.492C46.1646 73.492 47.6598 72.3703 48.6356 70.9755C49.5652 69.647 50.0976 67.9869 50.4419 66.5251C50.7896 65.049 50.9906 63.5567 51.147 62.5699C51.2316 62.0358 51.2941 61.7081 51.346 61.5268C51.3757 61.4231 51.3671 61.4959 51.2843 61.63C51.2391 61.7032 50.8169 62.3719 49.8965 62.3719V60.5466V58.7213C48.8546 58.7213 48.3233 59.4769 48.1776 59.713C47.9943 60.01 47.8938 60.3216 47.8364 60.522C47.7142 60.9489 47.622 61.4899 47.5414 61.9984C47.3674 63.0966 47.1957 64.3843 46.8886 65.6882C46.5781 67.0064 46.1737 68.1264 45.6445 68.8828C45.1615 69.5731 44.676 69.8414 44.0491 69.8414V71.6667ZM49.8965 60.5466V62.3719C49.3971 62.3719 49.0754 62.1488 48.9801 62.076C48.874 61.9948 48.8359 61.9366 48.8656 61.9746C48.9249 62.0504 49.0335 62.2183 49.2189 62.5435C49.5448 63.1151 50.0554 64.0869 50.6471 64.9836C51.7486 66.6526 53.8842 69.2389 57.242 68.5439L56.872 66.7565L56.5021 64.9691C55.6516 65.1452 54.7854 64.6265 53.694 62.9728C53.1894 62.2082 52.8058 61.4642 52.3902 60.7353C52.2049 60.4103 51.9809 60.0318 51.7396 59.7237C51.619 59.5698 51.4386 59.3603 51.1973 59.1759C50.9669 58.9997 50.5174 58.7213 49.8965 58.7213V60.5466ZM56.872 66.7565L57.242 68.5439C58.9236 68.1958 59.9753 67.1815 60.5677 65.9027C61.0895 64.7762 61.2542 63.4379 61.376 62.3445C61.6527 59.8604 61.8219 57.9869 63.0768 56.6881L61.764 55.4198L60.4513 54.1516C58.1484 56.5353 57.9757 59.8947 57.7479 61.9405C57.6174 63.1121 57.4893 63.863 57.2552 64.3684C57.0917 64.7214 56.9245 64.8817 56.5021 64.9691L56.872 66.7565ZM69.8432 38.4509L71.663 38.5931C72.5104 27.7504 63.4945 12.5081 44.0491 12.5081V14.3333V16.1586C61.2194 16.1586 68.7168 29.4385 68.0235 38.3087L69.8432 38.4509Z"
+        fill="black"
+      />
+      <path
+        d="M28.5931 27.6198C30.8708 27.6198 32.717 31.0867 32.717 35.3623C32.717 39.638 30.8708 43.1049 28.5931 43.1049C26.3154 43.1049 24.4692 39.638 24.4692 35.3623C24.4692 31.0867 26.3154 27.6198 28.5931 27.6198Z"
+        fill="black"
+      />
+      <mask
+        id="mask0_36_2291"
+        style={{ maskType: "luminance" }}
+        maskUnits="userSpaceOnUse"
+        x="24"
+        y="27"
+        width="9"
+        height="17"
       >
-        Meet your ally
-      </span>
-    </button>
+        <path
+          d="M28.5961 27.6285C30.8622 27.6285 32.7117 31.0795 32.7117 35.3622C32.7117 39.6449 30.8622 43.0959 28.5961 43.0959C26.3134 43.0959 24.4639 39.6449 24.4639 35.3622C24.4639 31.0795 26.3134 27.6285 28.5961 27.6285Z"
+          fill="white"
+        />
+      </mask>
+      <g mask="url(#mask0_36_2291)">
+        <path
+          d="M27.8888 35.1518C28.0875 35.2634 28.0875 35.5495 27.8888 35.6611L22.9456 38.4368C22.7509 38.5461 22.5105 38.4054 22.5105 38.1821L22.5105 32.6307C22.5105 32.4074 22.7509 32.2667 22.9456 32.3761L27.8888 35.1518Z"
+          fill="white"
+        />
+      </g>
+      <path
+        d="M42.3302 27.6198C44.6079 27.6198 46.4541 31.0866 46.4541 35.3623C46.4541 39.6379 44.6079 43.1048 42.3302 43.1048C40.0525 43.1048 38.2063 39.6379 38.2063 35.3623C38.2063 31.0866 40.0525 27.6198 42.3302 27.6198Z"
+        fill="black"
+      />
+      <mask
+        id="mask1_36_2291"
+        style={{ maskType: "luminance" }}
+        maskUnits="userSpaceOnUse"
+        x="38"
+        y="27"
+        width="9"
+        height="17"
+      >
+        <path
+          d="M42.3335 27.6285C44.5996 27.6285 46.4491 31.0795 46.4491 35.3622C46.4491 39.6449 44.5996 43.0959 42.3335 43.0959C40.0508 43.0959 38.2013 39.6449 38.2013 35.3622C38.2013 31.0795 40.0508 27.6285 42.3335 27.6285Z"
+          fill="white"
+        />
+      </mask>
+      <g mask="url(#mask1_36_2291)">
+        <path
+          d="M41.6257 35.1517C41.8245 35.2633 41.8245 35.5494 41.6257 35.661L36.6825 38.4367C36.4878 38.546 36.2475 38.4053 36.2475 38.1821L36.2475 32.6307C36.2475 32.4074 36.4878 32.2667 36.6825 32.376L41.6257 35.1517Z"
+          fill="white"
+        />
+      </g>
+    </svg>
   );
 }
 
-function IconWord({
-  icon,
-  word,
+/* =========================================================================
+   REUSABLE ALLY ORB COMPONENT
+   ========================================================================= */
+
+interface AllyOrbProps {
+  color: string;
+  size?: number;
+  children?: React.ReactNode;
+  className?: string;
+}
+
+export function AllyOrb({
   color,
-  iconAfter,
-}: {
-  icon: ReactNode;
-  word: string;
-  color?: string;
-  iconAfter?: boolean;
-}) {
-  return (
-    <span style={{ whiteSpace: "nowrap" }}>
-      {!iconAfter && icon}
-      <span style={color ? { color } : undefined}>{word}</span>
-      {iconAfter && icon}
-    </span>
-  );
-}
-
-function useIconBox() {
-  const size = useContext(IconSizeContext);
-  const isMobile = size < 24;
-
-  return {
-    overflow: "hidden",
-    width: size,
-    height: size,
-    position: "relative",
-    display: "inline-block",
-    verticalAlign: isMobile ? -2 : -4,
-    marginLeft: isMobile ? 4 : 8,
-    marginRight: isMobile ? 3 : 6,
-  } as const;
-}
-
-function CursorMark({ fill }: { fill: string }) {
+  size = 38,
+  children,
+  className = "",
+}: AllyOrbProps) {
   return (
     <div
+      className={`rounded-full flex items-center justify-center relative overflow-hidden shrink-0 select-none shadow-[0_2px_10px_rgba(0,0,0,0.06)] ${className}`}
       style={{
-        overflow: "hidden",
-        left: "12%",
-        top: "12%",
-        right: "10.1%",
-        bottom: "10.1%",
-        width: "77.9%",
-        height: "77.9%",
-        position: "absolute",
-      }}
-    >
-      <svg
-        width="28.0348114601603"
-        height="28.03479203818092"
-        viewBox="0 0 28.0348114601603 28.03479203818092"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{
-          left: 0,
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: "100%",
-          height: "100%",
-          position: "absolute",
-        }}
-      >
-        <path
-          d="M25.8723 8.1633C28.7683 9.2356 28.7523 13.3397 25.8445 14.3857L17.6873 17.3219C17.5143 17.3847 17.3813 17.5195 17.3221 17.6847L14.3844 25.8445C13.3383 28.7519 9.2337 28.7685 8.1614 25.8727L0.2632 4.6066C0.225 4.5034 0.1859 4.4006 0.1532 4.2955-0.639 1.755 1.7753-0.6558 4.3218 0.1625 4.4342 0.1986 4.5445 0.2414 4.6553 0.2824L25.8723 8.1633Z"
-          transform=" translate(0 3.2018006024259194e-9)"
-          style={{ fillRule: "nonzero", fill }}
-        />
-      </svg>
-    </div>
-  );
-}
-
-const BLUE_EYE_MASK =
-  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNCIgaGVpZ2h0PSI2LjI5MjgwMDQyNjQ4MzE1NCIgdmlld0JveD0iMCAwIDQgNi4yOTI4MDA0MjY0ODMxNTQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJsZWZ0OiAwcHg7dG9wOiAwcHg7cmlnaHQ6IDBweDtib3R0b206IDBweDt0cmFuc2Zvcm06IG1hdHJpeCgxLDAsMCwxLDAsMCk7dHJhbnNmb3JtLW9yaWdpbjogMCAwOyI+PGRlZnM+PGNsaXBQYXRoIGlkPSJkZWZfMCI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjMuNjU4NDE1NTU1OTUzOTc5NSIgaGVpZ2h0PSI2LjI5MjgwMDQyNjQ4MzE1NCI+PC9yZWN0PjwvY2xpcFBhdGg+PC9kZWZzPjxnIGlkPSJtYXNrX3VuZGVmaW5lZCIgbWFza1VuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeD0iMCIgeT0iMCIgd2lkdGg9IjMuNjU4NDE1NTU1OTUzOTc5NSIgaGVpZ2h0PSI2LjI5MjgwMDQyNjQ4MzE1NCIgc3R5bGU9Im1hc2stdHlwZTogbHVtaW5hbmNlOyI+PGcgc3R5bGU9ImNsaXAtcGF0aDogdXJsKCNkZWZfMCk7Ij48cGF0aCBkPSJNMS44MzI5IDBDMi44MzggMCAzLjY1ODQgMS40MDQgMy42NTg0IDMuMTQ2NCAzLjY1ODQgNC44ODg4IDIuODM4IDYuMjkyOCAxLjgzMjkgNi4yOTI4IDAuODIwNCA2LjI5MjggMCA0Ljg4ODggMCAzLjE0NjQgMCAxLjQwNCAwLjgyMDQgMCAxLjgzMjkgMFoiIHN0eWxlPSJmaWxsLXJ1bGU6IG5vbnplcm87ZmlsbDogIzAwMDsiIC8+PC9nPjwvZz48L3N2Zz4=";
-
-function BlueAlly({
-  left = 109,
-  top = 475,
-  width = 60,
-  faceLeft = 0,
-}: {
-  left?: number | string;
-  top?: number;
-  width?: number;
-  faceLeft?: number;
-}) {
-  return (
-    <div
-      style={{
-        overflow: "hidden",
-        left,
-        top,
-        width,
-        height: 60,
-        position: "absolute",
-      }}
-    >
-      <div
-        style={{
-          borderRadius: 100,
-          backgroundColor: "#3446e9",
-          overflow: "hidden",
-          left: faceLeft,
-          top: 24,
-          width: 36,
-          height: 36,
-          position: "absolute",
-        }}
-      >
-        <div
-          style={{
-            overflow: "hidden",
-            left: "calc(-12px + 50%)",
-            top: "calc(-12px + 50%)",
-            width: 24.6,
-            height: 24,
-            position: "absolute",
-          }}
-        >
-          <svg
-            width="26.406714916229244"
-            height="25.771497249603275"
-            viewBox="0 0 26.406714916229244 25.771497249603275"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            preserveAspectRatio="none"
-            style={{
-              left: "calc(-13.3px + 50%)",
-              top: "calc(-13px + 50%)",
-              width: 26.4,
-              height: 25.8,
-              position: "absolute",
-            }}
-          >
-            <path
-              d="M12.3067 0C19.1038 0 24.6135 5.3674 24.6135 11.9891 24.6135 18.6108 19.1038 23.9782 12.3067 23.9782 5.5096 23.9782 0 18.6108 0 11.9891 0 5.3674 5.5096 0 12.3067 0Z"
-              transform=" translate(0.9619579329063142 0.9636885113844187)"
-              style={{ fillRule: "nonzero", fill: "#fff" }}
-            />
-            <path
-              d="M12.3067 0C19.1038 0 24.6135 5.3674 24.6135 11.9891 24.6135 18.6108 19.1038 23.9782 12.3067 23.9782 5.5096 23.9782 0 18.6108 0 11.9891 0 5.3674 5.5096 0 12.3067 0Z"
-              transform=" translate(0.9619579329063142 0.9636885113844187)"
-              style={{ stroke: "#000", strokeWidth: 1.7932639122009277 }}
-            />
-          </svg>
-          <div
-            style={{
-              overflow: "hidden",
-              left: 9.5,
-              top: 5.7,
-              width: 11.1,
-              height: 6.3,
-              position: "absolute",
-            }}
-          >
-            <div
-              style={{
-                overflow: "hidden",
-                left: 0,
-                top: 0,
-                width: 3.7,
-                height: 6.3,
-                position: "absolute",
-              }}
-            >
-              <svg
-                width="3.65841555595398"
-                height="6.300000190734863"
-                viewBox="0 0 3.65841555595398 6.300000190734863"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                preserveAspectRatio="none"
-                style={{
-                  left: "0.1%",
-                  top: 0,
-                  right: 0,
-                  bottom: 0,
-                  width: "99.9%",
-                  height: "100%",
-                  position: "absolute",
-                }}
-              >
-                <path
-                  d="M1.8292 0C2.8395 0 3.6584 1.4105 3.6584 3.15 3.6584 4.8895 2.8395 6.3 1.8292 6.3 0.8189 6.3 0 4.8895 0 3.15 0 1.4105 0.8189 0 1.8292 0Z"
-                  style={{ fillRule: "nonzero", fill: "#000" }}
-                />
-              </svg>
-              <div
-                style={{
-                  overflow: "hidden",
-                  left: 0,
-                  top: "0.1%",
-                  right: 0,
-                  bottom: "0.1%",
-                  width: "99.9%",
-                  height: "99.9%",
-                  position: "absolute",
-                }}
-              >
-                <div
-                  style={{
-                    overflow: "hidden",
-                    left: "-23.7%",
-                    top: "29.1%",
-                    right: "53%",
-                    bottom: "28.5%",
-                    width: "70.7%",
-                    height: "42.3%",
-                    position: "absolute",
-                    maskImage: `url("${BLUE_EYE_MASK}")`,
-                    WebkitMaskImage: `url("${BLUE_EYE_MASK}")`,
-                    maskRepeat: "no-repeat",
-                    WebkitMaskRepeat: "no-repeat",
-                    maskType: "luminance",
-                    maskPosition: "0.9px -1.8px",
-                    WebkitMaskPosition: "0.9px -1.8px",
-                  }}
-                >
-                  <svg
-                    width="2.6645238399505615"
-                    height="2.5867583751678467"
-                    viewBox="0 0 2.6645238399505615 2.5867583751678467"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    preserveAspectRatio="none"
-                    style={{
-                      transformOrigin: "0 0",
-                      transform: "rotate(90deg)",
-                      left: "100%",
-                      top: 0,
-                      right: "-103%",
-                      bottom: "2.9%",
-                      width: "103%",
-                      height: "97.1%",
-                      position: "absolute",
-                    }}
-                  >
-                    <path
-                      d="M1.3323 0L2.6645 2.5868H0L1.3323 0Z"
-                      style={{ fillRule: "nonzero", fill: "#fff" }}
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            <div
-              style={{
-                overflow: "hidden",
-                left: 7.4,
-                top: 0,
-                width: 3.7,
-                height: 6.3,
-                position: "absolute",
-              }}
-            >
-              <svg
-                width="3.65841555595398"
-                height="6.300000190734863"
-                viewBox="0 0 3.65841555595398 6.300000190734863"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                preserveAspectRatio="none"
-                style={{
-                  left: 0,
-                  top: 0,
-                  right: 0,
-                  bottom: 0,
-                  width: "99.9%",
-                  height: "100%",
-                  position: "absolute",
-                }}
-              >
-                <path
-                  d="M1.8292 0C2.8395 0 3.6584 1.4105 3.6584 3.15 3.6584 4.8895 2.8395 6.3 1.8292 6.3 0.8189 6.3 0 4.8895 0 3.15 0 1.4105 0.8189 0 1.8292 0Z"
-                  style={{ fillRule: "nonzero", fill: "#000" }}
-                />
-              </svg>
-              <div
-                style={{
-                  overflow: "hidden",
-                  left: 0,
-                  top: "0.1%",
-                  right: "0.1%",
-                  bottom: "0.1%",
-                  width: "99.9%",
-                  height: "99.9%",
-                  position: "absolute",
-                }}
-              >
-                <div
-                  style={{
-                    overflow: "hidden",
-                    left: "-23.7%",
-                    top: "29.1%",
-                    right: "53%",
-                    bottom: "28.5%",
-                    width: "70.7%",
-                    height: "42.3%",
-                    position: "absolute",
-                    maskImage: `url("${BLUE_EYE_MASK}")`,
-                    WebkitMaskImage: `url("${BLUE_EYE_MASK}")`,
-                    maskRepeat: "no-repeat",
-                    WebkitMaskRepeat: "no-repeat",
-                    maskType: "luminance",
-                    maskPosition: "0.9px -1.8px",
-                    WebkitMaskPosition: "0.9px -1.8px",
-                  }}
-                >
-                  <svg
-                    width="2.6645238399505615"
-                    height="2.5867583751678467"
-                    viewBox="0 0 2.6645238399505615 2.5867583751678467"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    preserveAspectRatio="none"
-                    style={{
-                      transformOrigin: "0 0",
-                      transform: "rotate(90deg)",
-                      left: "100%",
-                      top: 0,
-                      right: "-103%",
-                      bottom: "2.9%",
-                      width: "103%",
-                      height: "97.1%",
-                      position: "absolute",
-                    }}
-                  >
-                    <path
-                      d="M1.3323 0L2.6645 2.5868H0L1.3323 0Z"
-                      style={{ fillRule: "nonzero", fill: "#fff" }}
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div
-        style={{
-          overflow: "hidden",
-          left: 0,
-          top: 0,
-          width: 36,
-          height: 36,
-          position: "absolute",
-        }}
-      >
-        <CursorMark fill="#3446e9" />
-      </div>
-    </div>
-  );
-}
-
-function TimeIcon() {
-  const clipId = useId();
-  const box = useIconBox();
-
-  return (
-    <div style={box}>
-      <svg
-        width="14.666666984558105"
-        height="21.33333396911621"
-        viewBox="0 0 14.666666984558105 21.33333396911621"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{
-          left: "19.4%",
-          top: "5.6%",
-          right: "19.4%",
-          bottom: "5.6%",
-          width: "61.1%",
-          height: "88.9%",
-          position: "absolute",
-        }}
-      >
-        <defs>
-          <clipPath id={clipId}>
-            <rect x="0" y="0" width="14.666666984558105" height="21.33333396911621" />
-          </clipPath>
-        </defs>
-        <g style={{ clipPath: `url(#${clipId})` }}>
-          <path
-            d="M0.0002 7.6667C0.0002 5.641 1.6412 4 3.6668 4H11.0002C13.0258 4 14.6668 5.641 14.6668 7.6667V13.6667C14.6668 15.6923 13.0258 17.3333 11.0002 17.3333H3.6668C1.6412 17.3333 0.0002 15.6923 0.0002 13.6667V7.6667Z"
-            style={{ fillRule: "evenodd", fill: "rgba(27,98,242,0.4)" }}
-          />
-          <path
-            d="M7.3335 7C7.8858 7 8.3335 7.4477 8.3335 8V10.1124L10.5302 11.4853C10.9986 11.778 11.1408 12.3949 10.8482 12.8633 10.5555 13.3317 9.9386 13.474 9.4702 13.1813L6.8035 11.5147C6.5111 11.3319 6.3335 11.0114 6.3335 10.6667V8C6.3335 7.4477 6.7812 7 7.3335 7Z"
-            style={{ fillRule: "evenodd", fill: "#1b62f2" }}
-          />
-          <path
-            d="M5.463 0C4.3236 0 3.349 0.8252 3.1619 1.9501L2.8029 4.1023C3.08 4.0354 3.3693 4 3.667 4H11.0003C11.2979 4 11.5873 4.0354 11.8643 4.1023L11.5054 1.9501C11.3182 0.8235 10.3446 0 9.2043 0H5.463Z"
-            style={{ fillRule: "nonzero", fill: "#1b62f2" }}
-          />
-          <path
-            d="M2.8029 17.2311L3.1619 19.3832C3.349 20.5081 4.3236 21.3333 5.463 21.3333H9.2043C10.3446 21.3333 11.3183 20.5087 11.5055 19.3821L11.8643 17.2311C11.5873 17.2979 11.2979 17.3333 11.0003 17.3333H3.667C3.3693 17.3333 3.08 17.2979 2.8029 17.2311Z"
-            style={{ fillRule: "nonzero", fill: "#1b62f2" }}
-          />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function AvatarCluster() {
-  const size = useContext(IconSizeContext);
-  const isMobile = size < 24;
-  const src = typeof togetherIcon === "string" ? togetherIcon : togetherIcon.src;
-
-  return (
-    <img
-      src={src}
-      alt=""
-      style={{
-        display: "inline-block",
+        width: size,
         height: size,
-        width: "auto",
-        aspectRatio: "32 / 24",
-        verticalAlign: isMobile ? -2 : -4,
-        marginLeft: isMobile ? 4 : 8,
-        marginRight: isMobile ? 3 : 6,
-        objectFit: "contain",
+        backgroundColor: color,
       }}
-    />
-  );
-}
-
-function FinanceIcon() {
-  const clipId = useId();
-  const box = useIconBox();
-
-  return (
-    <div style={box}>
-      <svg
-        width="18.12533187866211"
-        height="20.33333396911621"
-        viewBox="0 0 18.12533187866211 20.33333396911621"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{
-          left: "12.2%",
-          top: "8.3%",
-          right: "12.2%",
-          bottom: "6.9%",
-          width: "75.5%",
-          height: "84.7%",
-          position: "absolute",
-        }}
-      >
-        <defs>
-          <clipPath id={clipId}>
-            <rect x="0" y="0" width="18.12533187866211" height="20.33333396911621" />
-          </clipPath>
-        </defs>
-        <g style={{ clipPath: `url(#${clipId})` }}>
-          <path
-            d="M9.0625 0C9.6148 0 10.0625 0.4477 10.0625 1H8.0625C8.0625 0.4477 8.5102 0 9.0625 0Z"
-            style={{ fillRule: "nonzero", fill: "#ff2d55" }}
-          />
-          <path
-            d="M14.0625 5.6667C14.6148 5.6667 15.0625 6.1144 15.0625 6.6667 15.0625 9.9803 12.3761 12.6667 9.0625 12.6667 5.7489 12.6667 3.0625 9.9803 3.0625 6.6667 3.0625 6.1144 3.5102 5.6667 4.0625 5.6667H14.0625Z"
-            style={{ fillRule: "nonzero", fill: "rgba(255,45,85,0.4)" }}
-          />
-          <path
-            d="M9.0627 14C5.3465 14 2.0744 15.9028 0.1665 18.7808-0.037 19.0877-0.0553 19.4819 0.1189 19.8064 0.2932 20.1308 0.6317 20.3333 1 20.3333H17.1253C17.4936 20.3333 17.8321 20.1309 18.0064 19.8064 18.1805 19.482 18.1624 19.088 17.9589 18.7809 16.0509 15.9012 12.7787 14 9.0627 14Z"
-            style={{ fillRule: "nonzero", fill: "rgba(255,45,85,0.4)" }}
-          />
-          <path
-            d="M9.0626 0.6667C6.207 0.6667 3.818 2.6606 3.2112 5.3333H2.3958C1.8436 5.3333 1.3958 5.7811 1.3958 6.3333 1.3958 6.8856 1.8436 7.3333 2.3958 7.3333H15.7292C16.2814 7.3333 16.7292 6.8856 16.7292 6.3333 16.7292 5.7811 16.2814 5.3333 15.7292 5.3333H14.914C14.3072 2.6606 11.9181 0.6667 9.0626 0.6667ZM9.0626 2.6667C9.4078 2.6667 9.7429 2.7104 10.0625 2.7927V3.3333C10.0625 3.8856 9.6148 4.3333 9.0625 4.3333 8.5102 4.3333 8.0625 3.8856 8.0625 3.3333V2.7927C8.3822 2.7104 8.7173 2.6667 9.0626 2.6667Z"
-            style={{ fillRule: "evenodd", fill: "#ff2d55" }}
-          />
-        </g>
-      </svg>
+    >
+      {/* Optical centering container for inside entities */}
+      <div className="w-[72%] h-[72%] flex items-center justify-center relative">
+        {children}
+      </div>
     </div>
   );
 }
 
-function LanguageIcon() {
-  const clipId = useId();
-  const box = useIconBox();
+/* =========================================================================
+   REUSABLE ALLY ACTOR (MOTION & LIFECYCLE WRAPPER)
+   ========================================================================= */
 
+interface AllyActorProps {
+  children: React.ReactNode;
+  anchorClass: string;
+  isRevealed: boolean;
+  isFloating: boolean;
+  initialRotation?: number;
+  idleMotion: IdleMotionConfig;
+  reducedMotion?: boolean;
+}
+
+export function AllyActor({
+  children,
+  anchorClass,
+  isRevealed,
+  isFloating,
+  initialRotation = 0,
+  idleMotion,
+  reducedMotion = false,
+}: AllyActorProps) {
   return (
-    <div style={box}>
-      <svg
-        width="19.333660125732422"
-        height="21.333324432373047"
-        viewBox="0 0 19.333660125732422 21.333324432373047"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{
-          left: "2.8%",
-          top: "5.6%",
-          right: "16.7%",
-          bottom: "5.6%",
-          width: "80.6%",
-          height: "88.9%",
-          position: "absolute",
-        }}
+    // Layer 1: Base Page Anchor
+    <div
+      className={`ally-position-anchor absolute pointer-events-none z-10 ${anchorClass}`}
+    >
+      {/* Layer 2: Future Cursor Interaction Offset Layer (currently 0) */}
+      <motion.div
+        className="future-interaction-layer"
+        style={{ x: 0, y: 0 }}
       >
-        <defs>
-          <clipPath id={clipId}>
-            <rect x="0" y="0" width="19.333660125732422" height="21.333324432373047" />
-          </clipPath>
-        </defs>
-        <g style={{ clipPath: `url(#${clipId})` }}>
-          <path
-            d="M4.6668 14C4.6668 9.9498 7.9506 6.6667 12.0002 6.6667 16.0498 6.6667 19.3335 9.9498 19.3335 14 19.3335 18.0503 16.0498 21.3333 12.0002 21.3333 7.9506 21.3333 4.6668 18.0503 4.6668 14Z"
-            style={{ fillRule: "evenodd", fill: "rgba(233,180,58,0.4)" }}
-          />
-          <path
-            d="M12.0002 12.3333C12.5524 12.3333 13.0002 12.7811 13.0002 13.3333V14.6667C13.0002 15.2189 12.5524 15.6667 12.0002 15.6667 11.4479 15.6667 11.0002 15.2189 11.0002 14.6667V13.3333C11.0002 12.7811 11.4479 12.3333 12.0002 12.3333Z"
-            style={{ fillRule: "evenodd", fill: "#e9b43a" }}
-          />
-          <path
-            d="M4.6667 0C2.0891 0 0 2.0891 0 4.6667V7C0 7.5523 0.4477 8 1 8 1.5523 8 2 7.5523 2 7V4.6667C2 3.1936 3.1936 2 4.6667 2 6.1397 2 7.3333 3.1936 7.3333 4.6667V8.343C7.9284 7.8515 8.6024 7.4521 9.3333 7.1667V4.6667C9.3333 2.0891 7.2443 0 4.6667 0Z"
-            style={{ fillRule: "nonzero", fill: "#e9b43a" }}
-          />
-        </g>
-      </svg>
+        {/* Layer 3: Entrance Pop + Idle Float Motion Layer */}
+        <motion.div
+          className="entrance-and-float-layer scale-75 sm:scale-90 md:scale-100 origin-center"
+          initial={{
+            opacity: 0,
+            scale: 0,
+            y: 8,
+            rotate: initialRotation,
+          }}
+          animate={
+            isRevealed
+              ? isFloating && !reducedMotion
+                ? {
+                    opacity: 1,
+                    scale: 1,
+                    y: idleMotion.y,
+                    x: idleMotion.x,
+                    rotate: idleMotion.rotate,
+                  }
+                : {
+                    opacity: 1,
+                    scale: 1,
+                    y: 0,
+                    x: 0,
+                    rotate: 0,
+                  }
+              : {
+                  opacity: 0,
+                  scale: 0,
+                  y: 8,
+                  rotate: initialRotation,
+                }
+          }
+          transition={
+            isFloating && !reducedMotion
+              ? {
+                  y: {
+                    duration: idleMotion.duration,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  },
+                  x: {
+                    duration: idleMotion.duration * 1.15,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  },
+                  rotate: {
+                    duration: idleMotion.duration * 0.95,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  },
+                }
+              : {
+                  opacity: { duration: reducedMotion ? 0.01 : 0.35, ease: "easeOut" },
+                  scale: reducedMotion
+                    ? { duration: 0.01 }
+                    : { type: "spring", stiffness: 280, damping: 18, mass: 0.7 },
+                  y: { duration: reducedMotion ? 0.01 : 0.35, ease: "easeOut" },
+                }
+          }
+        >
+          {children}
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
 
-function MoneyIcon() {
-  const box = useIconBox();
+/* =========================================================================
+   ALLY CHARACTER ENTITIES (FACE ARTWORK)
+   ========================================================================= */
 
+function PupilWithReflection({
+  pupilW,
+  pupilH,
+}: {
+  pupilW: number;
+  pupilH: number;
+}) {
   return (
-    <div style={box}>
+    <div
+      style={{
+        width: pupilW,
+        height: pupilH,
+        backgroundColor: "#000000",
+        borderRadius: "99px",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
       <div
         style={{
-          overflow: "hidden",
-          left: 0,
-          top: "10.8%",
-          right: 0,
-          bottom: "10.9%",
-          width: "100%",
-          height: "78.3%",
           position: "absolute",
+          top: "15%",
+          right: "15%",
+          width: pupilW * 0.65,
+          height: pupilH * 0.45,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        <svg
-          width="24"
-          height="18.784261804339035"
-          viewBox="0 0 24 18.784261804339035"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="none"
-          style={{
-            left: 0,
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: "100%",
-            height: "100%",
-            position: "absolute",
-          }}
-        >
-          <path
-            d="M17.4492 0.0034C19.3923 0.0519 21.216 0.6145 23.1562 1.56 23.672 1.8114 24 2.336 24 2.9097V15.9097C23.9998 16.4266 23.7334 16.9071 23.295 17.1811 22.8566 17.4551 22.3084 17.4835 21.8438 17.2573 20.21 16.4611 18.8497 16.1722 17.4805 16.2339 16.0782 16.297 14.553 16.7321 12.5879 17.5679 10.3815 18.5063 8.4342 18.8763 6.502 18.7651 4.5925 18.6551 2.801 18.0801 0.9199 17.2925 0.3628 17.0589 0.0002 16.5138 0 15.9097V2.9097C0 2.4077 0.252 1.9377 0.6699 1.6597 1.0877 1.3821 1.6174 1.3311 2.0801 1.5249 3.769 2.2321 5.1688 2.5539 6.5684 2.5366 7.9745 2.5192 9.4923 2.1578 11.4121 1.3413 13.5737 0.4219 15.5085-0.0449 17.4492 0.0034ZM12 6.4097C10.3431 6.4097 9 7.7528 9 9.4097 9.0003 11.0663 10.3433 12.4097 12 12.4097 13.6567 12.4097 14.9997 11.0663 15 9.4097 15 7.7528 13.6569 6.4097 12 6.4097Z"
-            style={{ fillRule: "nonzero", fill: "#12c25b" }}
-          />
+        <svg viewBox="0 0 3 3" fill="none" className="w-full h-full">
+          <polygon points="1.5,0 3,3 0,3" fill="#FFFFFF" />
         </svg>
       </div>
     </div>
   );
 }
 
-function TranslateIcon() {
-  const clipId = useId();
-  const box = useIconBox();
-
+export function BlueEntity() {
   return (
-    <div style={box}>
-      <svg
-        width="20.000701904296875"
-        height="20.000228881835938"
-        viewBox="0 0 20.000701904296875 20.000228881835938"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{
-          left: "8.3%",
-          top: "8.3%",
-          right: "8.3%",
-          bottom: "8.3%",
-          width: "83.3%",
-          height: "83.3%",
-          position: "absolute",
-        }}
-      >
-        <defs>
-          <clipPath id={clipId}>
-            <rect x="0" y="0" width="20.000701904296875" height="20.000228881835938" />
-          </clipPath>
-        </defs>
-        <g style={{ clipPath: `url(#${clipId})` }}>
-          <path
-            d="M7.3334 1C7.3334 0.4477 6.8857 0 6.3334 0 5.7811 0 5.3334 0.4477 5.3334 1V2.6667H1C0.4478 2.6667 0 3.1144 0 3.6667 0 4.2189 0.4478 4.6667 1 4.6667H2.7513C2.9957 6.4044 3.731 8.0023 4.8283 9.2978 4.6588 9.408 4.4884 9.5094 4.3184 9.6028 3.453 10.0784 2.5949 10.3476 1.9494 10.4971 1.6283 10.5715 1.3646 10.6152 1.1852 10.6399 1.0593 10.6573 0.9925 10.6641 0.9316 10.669 0.3813 10.7067-0.0346 11.183 0.0023 11.7335 0.0392 12.2845 0.5158 12.7013 1.0669 12.6644L1.0691 12.6643C1.174 12.6569 1.2765 12.6463 1.4586 12.6212 1.6897 12.5892 2.0134 12.5352 2.4007 12.4456 3.1718 12.2669 4.2137 11.9424 5.2817 11.3555 5.6271 11.1657 5.9745 10.9485 6.3158 10.7007 7.0296 11.2369 7.8281 11.6728 8.6929 11.9853 9.2123 12.1732 9.7855 11.9043 9.9733 11.3849 10.1611 10.8655 9.8922 10.2923 9.3728 10.1045 8.8192 9.9044 8.3004 9.6396 7.8243 9.3199 8.808 8.1817 9.5922 6.6675 9.895 4.6667H11.6667C12.219 4.6667 12.6667 4.2189 12.6667 3.6667 12.6667 3.1144 12.219 2.6667 11.6667 2.6667H7.3334V1ZM7.8668 4.6667H6.3334 4.7768C5.0016 5.9064 5.548 7.0456 6.3364 7.9838 7.0357 7.1633 7.6016 6.087 7.8668 4.6667Z"
-            style={{ fillRule: "evenodd", fill: "rgba(27,98,242,0.4)" }}
-          />
-          <path
-            d="M14.3336 7.3333C13.9168 7.3333 13.5436 7.5919 13.3972 7.9822L9.3973 18.6489C9.2034 19.166 9.4654 19.7424 9.9825 19.9363 10.4996 20.1303 11.076 19.8683 11.2699 19.3511L12.2766 16.6667H17.0572L18.0639 19.3511C18.2579 19.8683 18.8343 20.1303 19.3514 19.9363 19.8686 19.7424 20.1306 19.166 19.9366 18.6489L15.9366 7.9822C15.7903 7.5919 15.4171 7.3333 15.0003 7.3333H14.3336ZM16.3072 14.6667L14.667 10.2924 13.0266 14.6667H16.3072Z"
-            style={{ fillRule: "evenodd", fill: "#1b62f2" }}
-          />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function ShopIcon() {
-  const clipId = useId();
-  const box = useIconBox();
-
-  return (
-    <div style={box}>
-      <svg
-        width="21.33333396911621"
-        height="21.33333396911621"
-        viewBox="0 0 21.33333396911621 21.33333396911621"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{
-          left: "5.6%",
-          top: "5.6%",
-          right: "5.6%",
-          bottom: "5.6%",
-          width: "88.9%",
-          height: "88.9%",
-          position: "absolute",
-        }}
-      >
-        <defs>
-          <clipPath id={clipId}>
-            <rect x="0" y="0" width="21.33333396911621" height="21.33333396911621" />
-          </clipPath>
-        </defs>
-        <g style={{ clipPath: `url(#${clipId})` }}>
-          <path
-            d="M3.6665 5.6068L17.6665 5.6064C17.9317 5.6064 18.1861 5.7117 18.3736 5.8993 18.5612 6.0868 18.6665 6.3412 18.6665 6.6064V20.3333C18.6665 20.8856 18.2188 21.3333 17.6665 21.3333H3.6665C3.1142 21.3333 2.6665 20.8856 2.6665 20.3333V6.6068C2.6665 6.0545 3.1142 5.6068 3.6665 5.6068Z"
-            style={{ fillRule: "evenodd", fill: "rgba(255,88,0,0.4)" }}
-          />
-          <path
-            d="M2.4137 1.1778C2.8288 0.4503 3.6027 0 4.441 0H16.8903C17.7274 0 18.5033 0.4493 18.9189 1.1778L21.1915 5.1722C21.3509 5.4524 21.3654 5.7923 21.2306 6.0851 20.4419 7.7969 18.7167 9 16.6957 9 15.5537 9 14.5133 8.6106 13.6811 7.9714 12.8493 8.6105 11.8094 9 10.6663 9 9.523 9 8.4824 8.6096 7.6503 7.9702 6.8183 8.6096 5.7777 9 4.6343 9 2.6117 9 0.888 7.7967 0.0994 6.0851-0.0356 5.7921-0.0209 5.452 0.1387 5.1717L2.4137 1.1778Z"
-            style={{ fillRule: "evenodd", fill: "#ff5800" }}
-          />
-          <path
-            d="M7.9998 20V15.3334C7.9998 13.8611 9.1942 12.6667 10.6665 12.6667 12.1388 12.6667 13.3332 13.8611 13.3332 15.3334V20H7.9998Z"
-            style={{ fillRule: "nonzero", fill: "#ff5800" }}
-          />
-          <path
-            d="M-0.0002 20.3334C-0.0002 19.7811 0.4476 19.3334 0.9998 19.3334H20.3332C20.8854 19.3334 21.3332 19.7811 21.3332 20.3334 21.3332 20.8856 20.8854 21.3334 20.3332 21.3334H0.9998C0.4476 21.3334-0.0002 20.8856-0.0002 20.3334Z"
-            style={{ fillRule: "evenodd", fill: "#ff5800" }}
-          />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function FollowUs({
-  left = 387,
-  top = 875,
-  right,
-  columnGap = 12,
-  fontSize = 18,
-  letterSpacing = -1.24,
-  iconWidth = 17.6,
-  iconHeight = 18,
-}: {
-  left?: number | "auto";
-  top?: number;
-  right?: number;
-  columnGap?: number;
-  fontSize?: number;
-  letterSpacing?: number;
-  iconWidth?: number;
-  iconHeight?: number;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        columnGap,
-        alignItems: "center",
-        justifyContent: "flex-start",
-        left,
-        right,
-        top,
-        width: "min-content",
-        position: "absolute",
-      }}
-    >
-      <span
-        className="text"
-        style={{
-          display: "inline",
-          textAlign: "left",
-          fontSize,
-          fontWeight: 600,
-          fontStretch: "100%",
-          letterSpacing,
-          color: "#757575",
-          width: "max-content",
-          position: "relative",
-          flexShrink: 0,
-          whiteSpace: "pre-wrap",
-          overflowWrap: "break-word",
-        }}
-      >
-        Follow us
-      </span>
-      <div
-        style={{
-          overflow: "hidden",
-          width: iconWidth,
-          height: iconHeight,
-          position: "relative",
-          flexShrink: 0,
-        }}
-      >
-        <svg
-          width="17.603912353515625"
-          height="17.99075698852539"
-          viewBox="0 0 17.603912353515625 17.99075698852539"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="none"
-          style={{
-            left: 0,
-            top: 0,
-            right: 0,
-            bottom: "0.1%",
-            width: "100%",
-            height: "99.9%",
-            position: "absolute",
-          }}
-        >
-          <path
-            d="M10.4767 7.6179L17.0302 0H15.4772L9.7869 6.6145 5.242 0H0L6.8727 10.0023 0 17.9908H1.553L7.5622 11.0056 12.3619 17.9908H17.6039L10.4763 7.6179H10.4767ZM8.3496 10.0904L7.6533 9.0944 2.1126 1.1691H4.498L8.9694 7.5651 9.6657 8.5611 15.4779 16.8748H13.0926L8.3496 10.0908V10.0904Z"
-            style={{ fillRule: "nonzero", fill: "#757575" }}
-          />
-        </svg>
+    <div className="w-[26px] h-[26px] rounded-full bg-white border-[1.8px] border-black flex items-center justify-center relative shadow-sm">
+      <div className="flex gap-[4px] items-center">
+        <PupilWithReflection pupilW={3.6} pupilH={6.2} />
+        <PupilWithReflection pupilW={3.6} pupilH={6.2} />
       </div>
     </div>
   );
 }
 
-function LogoMark({
-  left = "calc(-369px + 50%)",
-  top = 88,
-}: {
-  left?: number | string;
-  top?: number;
-}) {
-  const clipId = useId();
-
+export function GreenEntity() {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        columnGap: 8.6,
-        alignItems: "center",
-        justifyContent: "flex-start",
-        left,
-        top,
-        width: "min-content",
-        position: "absolute",
-      }}
-    >
-      <div
-        style={{
-          borderRadius: 6,
-          backgroundColor: "#ff5800",
-          overflow: "hidden",
-          width: 24.6,
-          height: 24,
-          position: "relative",
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            overflow: "hidden",
-            left: "calc(-7.5px + 50%)",
-            top: "calc(-8px + 50%)",
-            width: 14.7,
-            height: 16,
-            position: "absolute",
-          }}
-        >
-          <svg
-            width="15.682546823223662"
-            height="17.018763184547424"
-            viewBox="0 0 15.682546823223662 17.018763184547424"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            preserveAspectRatio="none"
-            style={{
-              left: "-3.7%",
-              top: "-3.4%",
-              right: "-3.2%",
-              bottom: "-3%",
-              width: "106.9%",
-              height: "106.4%",
-              position: "absolute",
-            }}
-          >
-            <path
-              d="M12.3954 11.466C13.3883 10.4383 14.4351 9.4811 14.65 6.7305 14.865 3.9798 12.5609 0 7.4517 0 2.3425 0-0.1279 4.1511 0.0051 6.8715 0.1381 9.5919 0.9933 10.4916 2.2184 11.4861 3.3354 12.3929 2.5493 14.3098 3.625 14.67 4.7006 15.0302 5.4586 12.8967 5.7141 12.8967 5.9697 12.8967 5.921 16 7.4517 16 8.9824 16 8.8123 12.8967 9.0835 12.8967 9.3547 12.8967 9.8558 14.8728 11.0302 14.6297 12.2046 14.3866 11.4025 12.4937 12.3954 11.466Z"
-              transform=" translate(0.5447706334116094 0.541815293092125)"
-              style={{ fillRule: "nonzero", fill: "#fff" }}
-            />
-            <path
-              d="M12.3954 11.466C13.3883 10.4383 14.4351 9.4811 14.65 6.7305 14.865 3.9798 12.5609 0 7.4517 0 2.3425 0-0.1279 4.1511 0.0051 6.8715 0.1381 9.5919 0.9933 10.4916 2.2184 11.4861 3.3354 12.3929 2.5493 14.3098 3.625 14.67 4.7006 15.0302 5.4586 12.8967 5.7141 12.8967 5.9697 12.8967 5.921 16 7.4517 16 8.9824 16 8.8123 12.8967 9.0835 12.8967 9.3547 12.8967 9.8558 14.8728 11.0302 14.6297 12.2046 14.3866 11.4025 12.4937 12.3954 11.466Z"
-              transform=" translate(0.5447706334116094 0.541815293092125)"
-              style={{ stroke: "#000", strokeWidth: 1.0187631845474243 }}
-            />
-          </svg>
-          <LogoEyes />
-        </div>
-      </div>
-      <svg
-        width="50.446250915527344"
-        height="18"
-        viewBox="0 0 50.446250915527344 18"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{ width: 50.4, height: 18, position: "relative", flexShrink: 0 }}
-      >
-        <defs>
-          <clipPath id={clipId}>
-            <rect x="0" y="0" width="50.446250915527344" height="18" />
-          </clipPath>
-        </defs>
-        <g style={{ clipPath: `url(#${clipId})` }}>
-          <path
-            d="M48.2232 8.6198C47.7025 8.6777 47.4215 8.4463 47.1157 8.0083 46.7356 7.4959 46.0827 7.1157 45.1075 7.1157 43.8595 7.1157 42.9091 7.7107 42.9174 8.5702 42.9091 9.3058 43.4215 9.7521 44.7108 10.0413L46.8761 10.5041C49.2728 11.0248 50.438 12.1322 50.4463 13.9421 50.438 16.3471 48.1984 17.9917 45.0248 17.9917 42.3637 17.9917 40.5455 16.9835 39.843 15.2314 39.6033 14.6446 39.9504 14.2397 40.5703 14.1818L41.7025 14.0744C42.2314 14.0248 42.5042 14.2645 42.7934 14.7273 43.2149 15.3967 43.9752 15.7355 45.0166 15.7355 46.438 15.7355 47.3802 15.0826 47.3802 14.2149 47.3802 13.4959 46.8347 13.0248 45.6694 12.7686L43.5042 12.314C41.0661 11.8099 39.9256 10.5868 39.9339 8.7355 39.9256 6.3884 42.0083 4.8843 45.0661 4.8843 47.5703 4.8843 49.1901 5.8595 49.8843 7.4463 50.1323 8.0331 49.8017 8.4463 49.1736 8.5124L48.2232 8.6198Z"
-            style={{ fillRule: "nonzero", fill: "#ff5800" }}
-          />
-          <path
-            d="M33.1285 17.9917C29.302 17.9917 26.9632 15.4545 26.9632 11.4711 26.9632 7.5537 29.3351 4.8843 32.9715 4.8843 36.0954 4.8843 38.7731 6.843 38.7731 11.2975V11.3058C38.7731 11.8926 38.4508 12.2149 37.864 12.2149H29.9301C29.9549 14.3884 31.2359 15.6612 33.1698 15.6612 34.1615 15.6612 34.9797 15.3306 35.4839 14.6859 35.8062 14.2645 36.1037 14.0496 36.6161 14.1074L37.6243 14.2231C38.2607 14.2975 38.5913 14.6446 38.3847 15.1157 37.6078 16.876 35.7235 17.9917 33.1285 17.9917ZM29.9384 10.1983H35.9053C35.8888 8.4711 34.7318 7.2149 33.0128 7.2149 31.2277 7.2149 30.0293 8.5785 29.9384 10.1983Z"
-            style={{ fillRule: "nonzero", fill: "#ff5800" }}
-          />
-          <path
-            d="M24.1083 3.2479C23.1496 3.2479 22.3727 2.5207 22.3727 1.6281 22.3727 0.7273 23.1496 0 24.1083 0 25.0587 0 25.8355 0.7273 25.8355 1.6281 25.8355 2.5207 25.0587 3.2479 24.1083 3.2479ZM22.6041 16.8347V5.9587C22.6041 5.3719 22.9265 5.0496 23.5132 5.0496H24.6868C25.2736 5.0496 25.5959 5.3719 25.5959 5.9587V16.8347C25.5959 17.4215 25.2736 17.7438 24.6868 17.7438H23.5132C22.9265 17.7438 22.6041 17.4215 22.6041 16.8347Z"
-            style={{ fillRule: "nonzero", fill: "#ff5800" }}
-          />
-          <path
-            d="M20.6913 16.8347C20.6913 17.4215 20.3689 17.7438 19.7822 17.7438H18.6086C18.0218 17.7438 17.6995 17.4215 17.6995 16.8347V1.7273C17.6995 1.1405 18.0218 0.8182 18.6086 0.8182H19.7822C20.3689 0.8182 20.6913 1.1405 20.6913 1.7273V16.8347Z"
-            style={{ fillRule: "nonzero", fill: "#ff5800" }}
-          />
-          <path
-            d="M15.7868 16.8347C15.7868 17.4215 15.4645 17.7438 14.8777 17.7438H13.7041C13.1174 17.7438 12.795 17.4215 12.795 16.8347V1.7273C12.795 1.1405 13.1174 0.8182 13.7041 0.8182H14.8777C15.4645 0.8182 15.7868 1.1405 15.7868 1.7273V16.8347Z"
-            style={{ fillRule: "nonzero", fill: "#ff5800" }}
-          />
-          <path
-            d="M4.2479 18C1.8264 18 0 16.6777 0 14.1818 0 11.3223 2.3554 10.5868 4.8182 10.3223 7.0578 10.0826 7.9587 10.0413 7.9587 9.1818V9.1322C7.9587 7.8843 7.1983 7.1735 5.8099 7.1735 4.7438 7.1735 4.0083 7.5702 3.5702 8.1157 3.2479 8.5372 2.9587 8.7521 2.438 8.6777L1.438 8.5372C0.8016 8.4463 0.4959 8.0083 0.8016 7.4297 1.7025 5.7438 3.5207 4.8843 5.7934 4.8843 8.2149 4.8843 10.9504 5.8926 10.9504 9.2479V16.8347C10.9504 17.4215 10.6281 17.7438 10.0413 17.7438H8.9835C8.3967 17.7438 8.0744 17.4298 8.0744 16.8678V16H7.9752C7.4297 17.0661 6.2397 18 4.2479 18ZM2.8843 14.1322C2.8843 15.2314 3.7769 15.8016 5.0248 15.8016 6.8264 15.8016 7.9669 14.6033 7.9669 13.1901V11.6942C7.5785 12.0083 6.0083 12.2066 5.2231 12.314 3.8843 12.5041 2.8843 12.9835 2.8843 14.1322Z"
-            style={{ fillRule: "nonzero", fill: "#ff5800" }}
-          />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-const LOGO_EYE_MASK =
-  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMi4zMDE3MDIwMjI1NTI0OTAyIiBoZWlnaHQ9IjQuMzE2NDc3Nzc1NTczNzMwNSIgdmlld0JveD0iMCAwIDIuMzAxNzAyMDIyNTUyNDkwMiA0LjMxNjQ3Nzc3NTU3MzczMDUiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHByZXNlcnZlQXNwZWN0UmF0aW89Im5vbmUiIHN0eWxlPSJsZWZ0OiAwcHg7dG9wOiAwcHg7cmlnaHQ6IDBweDtib3R0b206IDBweDt0cmFuc2Zvcm06IG1hdHJpeCgxLDAsMCwxLDAsMCk7dHJhbnNmb3JtLW9yaWdpbjogMCAwOyI+PGRlZnM+PGNsaXBQYXRoIGlkPSJkZWZfMCI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjIuMzAxNzAyMDIyNTUyNDkwMiIgaGVpZ2h0PSI0LjMxNjQ3Nzc3NTU3MzczMDUiPjwvcmVjdD48L2NsaXBQYXRoPjwvZGVmcz48ZyBpZD0ibWFza191bmRlZmluZWQiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9IjAiIHk9IjAiIHdpZHRoPSIyLjMwMTcwMjAyMjU1MjQ5MDIiIGhlaWdodD0iNC4zMTY0Nzc3NTU3MzczMDUiIHN0eWxlPSJtYXNrLXR5cGU6IGx1bWluYW5jZTsiPjxnIHN0eWxlPSJjbGlwLXBhdGg6IHVybCgjZGVmXzApOyI+PHBhdGggZD0iTTEuMTUzMiAwQzEuNzg1NiAwIDIuMzAxNyAwLjk2MzEgMi4zMDE3IDIuMTU4MiAyLjMwMTcgMy4zNTM0IDEuNzg1NiA0LjMxNjUgMS4xNTMyIDQuMzE2NSAwLjUxNjEgNC4zMTY1IDAgMy4zNTM0IDAgMi4xNTgyIDAgMC45NjMxIDAuNTE2MSAwIDEuMTUzMiAwWiIgc3R5bGU9ImZpbGwtcnVsZTogbm9uemVybztmaWxsOiAjMDAwOyIgLz48L2c+PC9nPjwvc3ZnPg==";
-
-function LogoEyes() {
-  return (
-    <div
-      style={{
-        overflow: "hidden",
-        left: "calc(-5.3px + 50%)",
-        top: 3.7,
-        width: 6.1,
-        height: 4.3,
-        position: "absolute",
-      }}
-    >
-      <LogoEye left={0} />
-      <LogoEye left={3.8} />
-    </div>
-  );
-}
-
-function LogoEye({ left }: { left: number }) {
-  return (
-    <div
-      style={{
-        overflow: "hidden",
-        left,
-        top: 0,
-        width: 2.3,
-        height: 4.3,
-        position: "absolute",
-      }}
-    >
-      <svg
-        width="2.3017020225524907"
-        height="4.32141637802124"
-        viewBox="0 0 2.3017020225524907 4.32141637802124"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{
-          left: "0.1%",
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: "99.9%",
-          height: "100%",
-          position: "absolute",
-        }}
-      >
-        <path
-          d="M1.1509 0C1.7865 0 2.3017 0.9675 2.3017 2.1607 2.3017 3.3539 1.7865 4.3214 1.1509 4.3214 0.5152 4.3214 0 3.3539 0 2.1607 0 0.9675 0.5152 0 1.1509 0Z"
-          style={{ fillRule: "nonzero", fill: "#000" }}
-        />
-      </svg>
-      <div
-        style={{
-          overflow: "hidden",
-          left: 0,
-          top: "0.1%",
-          right: "0.1%",
-          bottom: "0.1%",
-          width: "99.9%",
-          height: "99.9%",
-          position: "absolute",
-        }}
-      >
-        <div
-          style={{
-            overflow: "hidden",
-            left: "-23.7%",
-            top: "29.1%",
-            right: "53%",
-            bottom: "28.5%",
-            width: "70.7%",
-            height: "42.3%",
-            position: "absolute",
-            maskImage: `url("${LOGO_EYE_MASK}")`,
-            WebkitMaskImage: `url("${LOGO_EYE_MASK}")`,
-            maskRepeat: "no-repeat",
-            WebkitMaskRepeat: "no-repeat",
-            maskType: "luminance",
-            maskPosition: "0.5px -1.3px",
-            WebkitMaskPosition: "0.5px -1.3px",
-          }}
-        >
-          <svg
-            width="1.827701210975647"
-            height="1.6274662017822266"
-            viewBox="0 0 1.827701210975647 1.6274662017822266"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            preserveAspectRatio="none"
-            style={{
-              transformOrigin: "0 0",
-              transform: "rotate(90deg)",
-              left: "100%",
-              top: 0,
-              right: "-112.3%",
-              bottom: "11%",
-              width: "112.3%",
-              height: "89%",
-              position: "absolute",
-            }}
-          >
-            <path
-              d="M0.9849 0.1266l0.7746 1.3795c0.0305 0.0543-0.0088 0.1214-0.071 0.1214h-1.5493c-0.0623 0-0.1016-0.0671-0.071-0.1214l0.7746-1.3795c0.0311-0.0555 0.111-0.0555 0.1421 0z"
-              style={{ fillRule: "nonzero", fill: "#fff" }}
-            />
-          </svg>
-        </div>
+    <div className="w-[26px] h-[23px] rounded-full bg-white border-[1.6px] border-black flex items-center justify-center relative shadow-sm">
+      <div className="flex gap-[4px] items-center">
+        <PupilWithReflection pupilW={3.4} pupilH={6.2} />
+        <PupilWithReflection pupilW={3.4} pupilH={6.2} />
       </div>
     </div>
   );
 }
 
-const YELLOW_EYE_MASK =
-  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB2aWV3Qm94PSIwIDAgNCA3IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBzdHlsZT0ibGVmdDogMHB4O3RvcDogMHB4O3JpZ2h0OiAwcHg7Ym90dG9tOiAwcHg7dHJhbnNmb3JtOiBtYXRyaXgoMSwwLDAsMSwwLDApO3RyYW5zZm9ybS1vcmlnaW46IDAgMDsiPjxkZWZzPjxjbGlwUGF0aCBpZD0iZGVmXzAiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIzLjY2Mzc0NjU5NTM4MjY5MDQiIGhlaWdodD0iNi44NzA3NzY2NTMyODk3OTUiPjwvcmVjdD48L2NsaXBQYXRoPjwvZGVmcz48ZyBpZD0ibWFza191bmRlZmluZWQiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9IjAiIHk9IjAiIHdpZHRoPSIzLjY2Mzc0NjU5NTM4MjY5MDQiIGhlaWdodD0iNi44NzA3NzY2NTMyODk3OTUiIHN0eWxlPSJtYXNrLXR5cGU6IGx1bWluYW5jZTsiPjxnIHN0eWxlPSJjbGlwLXBhdGg6IHVybCgjZGVmXzApOyI+PHBhdGggZD0iTTEuODM1NiAwQzIuODQyMiAwIDMuNjYzNyAxLjUzMyAzLjY2MzcgMy40MzU0IDMuNjYzNyA1LjMzNzggMi44NDIyIDYuODcwOCAxLjgzNTYgNi44NzA4IDAuODIxNiA2Ljg3MDggMCA1LjMzNzggMCAzLjQzNTQgMCAxLjUzMyAwLjgyMTYgMCAxLjgzNTYgMFoiIHN0eWxlPSJmaWxsLXJ1bGU6IG5vbnplcm87ZmlsbDogIzAwMDsiIC8+PC9nPjwvZz48L3N2Zz4=";
-
-function YellowAlly({
-  left = 1023,
-  top = 584,
-  width = 62,
-  faceLeft = 26,
-  flipCursor = false,
-}: {
-  left?: number | string;
-  top?: number;
-  width?: number;
-  faceLeft?: number;
-  flipCursor?: boolean;
-}) {
+export function PinkEntity() {
   return (
-    <div
-      style={{
-        overflow: "hidden",
-        left,
-        top,
-        width,
-        height: 60,
-        position: "absolute",
-      }}
-    >
-      <div
-        style={{
-          borderRadius: 100,
-          backgroundColor: "#fbe65f",
-          overflow: "hidden",
-          left: faceLeft,
-          top: 24,
-          width: 36,
-          height: 36,
-          position: "absolute",
-        }}
-      >
-        <div
-          style={{
-            overflow: "hidden",
-            left: "calc(-12px + 50%)",
-            top: "calc(-12px + 50%)",
-            width: 24,
-            height: 24,
-            position: "absolute",
-          }}
-        >
-          <div
-            style={{
-              borderWidth: 1.6,
-              borderStyle: "solid",
-              borderColor: "#000",
-              borderRadius: 6.5,
-              backgroundColor: "#fff",
-              left: "calc(-12px + 50%)",
-              top: "calc(-12px + 50%)",
-              width: 24,
-              height: 24,
-              position: "absolute",
-            }}
-          />
-          <div
-            style={{
-              overflow: "hidden",
-              left: "calc(-0.9px + 50%)",
-              top: 10.1,
-              width: 9.8,
-              height: 6.9,
-              position: "absolute",
-            }}
-          >
-            <YellowEye left={0} />
-            <YellowEye left={6.1} />
-          </div>
-        </div>
-      </div>
-      <div
-        style={{
-          overflow: "hidden",
-          transformOrigin: flipCursor ? "0 0" : undefined,
-          transform: flipCursor ? "scale(-1,1)" : undefined,
-          left: flipCursor ? 60 : 0,
-          top: 0,
-          width: 36,
-          height: 36,
-          position: "absolute",
-        }}
-      >
-        <CursorMark fill="#fbe65f" />
+    <div className="w-[26px] h-[27px] rounded-full bg-white border-[1.7px] border-black flex items-center justify-center relative shadow-sm">
+      <div className="flex gap-[4.5px] items-center">
+        <PupilWithReflection pupilW={3.8} pupilH={6.8} />
+        <PupilWithReflection pupilW={3.8} pupilH={6.8} />
       </div>
     </div>
   );
 }
 
-function YellowEye({ left }: { left: number }) {
+export function YellowEntity() {
   return (
-    <div
-      style={{
-        overflow: "hidden",
-        left,
-        top: 0,
-        width: 3.7,
-        height: 6.9,
-        position: "absolute",
-      }}
-    >
-      <svg
-        width="3.6637465953826904"
-        height="6.878637313842773"
-        viewBox="0 0 3.6637465953826904 6.878637313842773"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{
-          top: 0,
-          right: 0,
-          width: 3.7,
-          height: 6.9,
-          position: "absolute",
-        }}
-      >
-        <path
-          d="M1.8319 0C2.8437 0 3.6637 1.54 3.6637 3.4393 3.6637 5.3386 2.8437 6.8786 1.8319 6.8786 0.8201 6.8786 0 5.3386 0 3.4393 0 1.54 0.8201 0 1.8319 0Z"
-          style={{ fillRule: "nonzero", fill: "#000" }}
-        />
-      </svg>
-      <div
-        style={{
-          overflow: "hidden",
-          left: 0,
-          top: "0.1%",
-          right: "0.1%",
-          bottom: "0.1%",
-          width: "99.9%",
-          height: "99.9%",
-          position: "absolute",
-        }}
-      >
-        <div
-          style={{
-            overflow: "hidden",
-            left: "-23.7%",
-            top: "29.1%",
-            right: "53%",
-            bottom: "28.5%",
-            width: "70.7%",
-            height: "42.3%",
-            position: "absolute",
-            maskImage: `url("${YELLOW_EYE_MASK}")`,
-            WebkitMaskImage: `url("${YELLOW_EYE_MASK}")`,
-            maskRepeat: "no-repeat",
-            WebkitMaskRepeat: "no-repeat",
-            maskType: "luminance",
-            maskPosition: "0.9px -2px",
-            WebkitMaskPosition: "0.9px -2px",
-          }}
-        >
-          <svg
-            width="2.9092531204223633"
-            height="2.59053"
-            viewBox="0 0 2.9092531204223633 2.59053"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            preserveAspectRatio="none"
-            style={{
-              transformOrigin: "0 0",
-              transform: "rotate(90deg)",
-              top: 0,
-              right: -2.9,
-              width: 2.9,
-              height: 2.6,
-              position: "absolute",
-            }}
-          >
-            <path
-              d="M1.5677 0.2014l1.233 2.1959c0.0486 0.0865-0.0139 0.1933-0.1131 0.1932h-2.466c-0.0992 0-0.1617-0.1068-0.1131-0.1932l1.233-2.1959c0.0496-0.0883 0.1767-0.0883 0.2262 0z"
-              style={{ fillRule: "nonzero", fill: "#fff" }}
-            />
-          </svg>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const GREEN_EYE_MASK =
-  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMy40Mjc5MDM2NTIxOTExNjIiIGhlaWdodD0iNi40Mjg0OTAxNjE4OTU3NTIiIHZpZXdCb3g9IjAgMCAzLjQyNzkwMzY1MjE5MTE2MiA2LjQyODQ5MDE2MTg5NTc1MiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSIgc3R5bGU9ImxlZnQ6IDBweDt0b3A6IDBweDtyaWdodDogMHB4O2JvdHRvbTogMHB4O3RyYW5zZm9ybTogbWF0cml4KDEsMCwwLDEsMCwwKTt0cmFuc2Zvcm0tb3JpZ2luOiAwIDA7Ij48ZGVmcz48Y2xpcFBhdGggaWQ9ImRlZl8wIj48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMy40Mjc5MDM2NTIxOTExNjIiIGhlaWdodD0iNi40Mjg0OTAxNjE4OTU3NTIiPjwvcmVjdD48L2NsaXBQYXRoPjwvZGVmcz48ZyBpZD0ibWFza191bmRlZmluZWQiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9IjAiIHk9IjAiIHdpZHRoPSIzLjQyNzkwMzY1MjE5MTE2MiIgaGVpZ2h0PSI2LjQyODQ5MDE2MTg5NTc1MiIgc3R5bGU9Im1hc2stdHlwZTogbHVtaW5hbmNlOyI+PGcgc3R5bGU9ImNsaXAtcGF0aDogdXJsKCNkZWZfMCk7Ij48cGF0aCBkPSJNMS43MTc0IDBDMi42NTkyIDAgMy40Mjc5IDEuNDM0MyAzLjQyNzkgMy4yMTQyIDMuNDI3OSA0Ljk5NDIgMi42NTkyIDYuNDI4NSAxLjcxNzQgNi40Mjg1IDAuNzY4NyA2LjQyODUgMCA0Ljk5NDIgMCAzLjIxNDIgMCAxLjQzNDMgMC43Njg3IDAgMS43MTc0IDBaIiBzdHlsZT0iZmlsbC1ydWxlOiBub256ZXJvO2ZpbGw6ICMwMDA7IiAvPjwvZz48L2c+PC9zdmc+";
-
-function GreenAlly({
-  left = "calc(-274px + 50%)",
-  top = 784,
-}: {
-  left?: number | string;
-  top?: number;
-}) {
-  return (
-    <div
-      style={{
-        overflow: "hidden",
-        left,
-        top,
-        width: 62,
-        height: 60,
-        position: "absolute",
-      }}
-    >
-      <div
-        style={{
-          borderRadius: 100,
-          backgroundColor: "#12c25b",
-          overflow: "hidden",
-          left: 26,
-          top: 24,
-          width: 36,
-          height: 36,
-          position: "absolute",
-        }}
-      >
-        <div
-          style={{
-            overflow: "hidden",
-            left: "calc(-12px + 50%)",
-            top: "calc(-11px + 50%)",
-            width: 24.7,
-            height: 22,
-            position: "absolute",
-          }}
-        >
-          <svg
-            width="26.222559618744608"
-            height="23.517239575217122"
-            viewBox="0 0 26.222559618744608 23.517239575217122"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            preserveAspectRatio="none"
-            style={{
-              left: "calc(-13.2px + 50%)",
-              top: "calc(-11.8px + 50%)",
-              width: 26.2,
-              height: 23.5,
-              position: "absolute",
-            }}
-          >
-            <path
-              d="M14.6001 0.0001c6.0059-0.0368 12.124 14.87 9.4667 19.5942-1.6861 2.9976-7.4379 2.4446-12.4457 2.2032-5.0077-0.2414-10.9855 0.0545-11.5583-4.4393-0.9228-7.2404 8.5314-17.3213 14.5373-17.3581z"
-              transform=" translate(0.8052124278313405 0.8109333064961849)"
-              style={{ fillRule: "nonzero", fill: "#fff" }}
-            />
-            <path
-              d="M14.6001 0.0001c6.0059-0.0368 12.124 14.87 9.4667 19.5942-1.6861 2.9976-7.4379 2.4446-12.4457 2.2032-5.0077-0.2414-10.9855 0.0545-11.5583-4.4393-0.9228-7.2404 8.5314-17.3213 14.5373-17.3581z"
-              transform=" translate(0.8052124278313405 0.8109333064961849)"
-              style={{ stroke: "#000", strokeWidth: 1.5172345638275146 }}
-            />
-          </svg>
-          <div
-            style={{
-              overflow: "hidden",
-              left: "calc(-7.6px + 50%)",
-              top: 8.4,
-              width: 9.1,
-              height: 6.4,
-              position: "absolute",
-            }}
-          >
-            <GreenEye left={0} />
-            <GreenEye left={5.7} />
-          </div>
-        </div>
-      </div>
-      <div
-        style={{
-          overflow: "hidden",
-          left: 0,
-          top: 0,
-          width: 36,
-          height: 36,
-          position: "absolute",
-        }}
-      >
-        <CursorMark fill="#12c25b" />
-      </div>
-    </div>
-  );
-}
-
-function GreenEye({ left }: { left: number }) {
-  return (
-    <div
-      style={{
-        overflow: "hidden",
-        left,
-        top: 0,
-        width: 3.4,
-        height: 6.4,
-        position: "absolute",
-      }}
-    >
-      <svg
-        width="3.427903652191162"
-        height="6.435845851898193"
-        viewBox="0 0 3.427903652191162 6.435845851898193"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{
-          left: left === 0 ? "0.1%" : 0,
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: left === 0 ? "99.9%" : "100%",
-          height: "100%",
-          position: "absolute",
-        }}
-      >
-        <path
-          d="M1.714 0C2.6606 0 3.4279 1.4409 3.4279 3.2179 3.4279 4.995 2.6606 6.4358 1.714 6.4358 0.7673 6.4358 0 4.995 0 3.2179 0 1.4409 0.7673 0 1.714 0Z"
-          style={{ fillRule: "nonzero", fill: "#000" }}
-        />
-      </svg>
-      <div
-        style={{
-          overflow: "hidden",
-          left: 0,
-          top: "0.1%",
-          right: left === 0 ? "0.1%" : 0,
-          bottom: "0.1%",
-          width: left === 0 ? "99.9%" : "100%",
-          height: "99.9%",
-          position: "absolute",
-        }}
-      >
-        <div
-          style={{
-            overflow: "hidden",
-            left: "-23.7%",
-            top: "29.1%",
-            right: "53%",
-            bottom: "28.5%",
-            width: "70.7%",
-            height: "42.3%",
-            position: "absolute",
-            maskImage: `url("${GREEN_EYE_MASK}")`,
-            WebkitMaskImage: `url("${GREEN_EYE_MASK}")`,
-            maskRepeat: "no-repeat",
-            WebkitMaskRepeat: "no-repeat",
-            maskType: "luminance",
-            maskPosition: "0.8px -1.9px",
-            WebkitMaskPosition: "0.8px -1.9px",
-          }}
-        >
-          <svg
-            width="2.7219784259796143"
-            height="2.4237704277038574"
-            viewBox="0 0 2.7219784259796143 2.4237704277038574"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            preserveAspectRatio="none"
-            style={{
-              transformOrigin: "0 0",
-              transform: "rotate(90deg)",
-              left: "100%",
-              top: 0,
-              right: "-112.3%",
-              bottom: "11%",
-              width: "112.3%",
-              height: "89%",
-              position: "absolute",
-            }}
-          >
-            <path
-              d="M1.4668 0.1885l1.1536 2.0545c0.0454 0.0809-0.013 0.1808-0.1058 0.1808h-2.3072c-0.0928 0-0.1513-0.0999-0.1059-0.1808l1.1536-2.0545c0.0464-0.0826 0.1653-0.0826 0.2117 0z"
-              style={{ fillRule: "nonzero", fill: "#fff" }}
-            />
-          </svg>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const RED_EYE_MASK =
-  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNCIgaGVpZ2h0PSI3LjE4NzYwNDQyNzMzNzY0NjUiIHZpZXdCb3g9IjAgMCA0IDcuMTg3NjA0NDI3MzM3NjQ2NSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSIgc3R5bGU9ImxlZnQ6IDBweDt0b3A6IDBweDtyaWdodDogMHB4O2JvdHRvbTogMHB4O3RyYW5zZm9ybTogbWF0cml4KDEsMCwwLDEsMCwwKTt0cmFuc2Zvcm0tb3JpZ2luOiAwIDA7Ij48ZGVmcz48Y2xpcFBhdGggaWQ9ImRlZl8wIj48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMy44MzI2OTA5NTQyMDgzNzQiIGhlaWdodD0iNy4xODc2MDQ0MjczMzc2NDY1Ij48L3JlY3Q+PC9jbGlwUGF0aD48L2RlZnM+PGcgaWQ9Im1hc2tfdW5kZWZpbmVkIiBtYXNrVW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4PSIwIiB5PSIwIiB3aWR0aD0iMy44MzI2OTA5NTQyMDgzNzQiIGhlaWdodD0iNy4xODc2MDQ0MjczMzc2NDY1IiBzdHlsZT0ibWFzay10eXBlOiBsdW1pbmFuY2U7Ij48ZyBzdHlsZT0iY2xpcC1wYXRoOiB1cmwoI2RlZl8wKTsiPjxwYXRoIGQ9Ik0xLjkyMDIgMEMyLjk3MzIgMCAzLjgzMjcgMS42MDM2IDMuODMyNyAzLjU5MzggMy44MzI3IDUuNTg0IDIuOTczMiA3LjE4NzYgMS45MjAyIDcuMTg3NiAwLjg1OTUgNy4xODc2IDAgNS41ODQgMCAzLjU5MzggMCAxLjYwMzYgMC44NTk1IDAgMS45MjAyIDBaIiBzdHlsZT0iZmlsbC1ydWxlOiBub256ZXJvO2ZpbGw6ICMwMDA7IiAvPjwvZz48L2c+PC9zdmc+";
-
-function RedAlly({
-  left = 568,
-  top = 211,
-}: {
-  left?: number | string;
-  top?: number;
-}) {
-  return (
-    <div
-      style={{
-        overflow: "hidden",
-        left,
-        top,
-        width: 63,
-        height: 60,
-        position: "absolute",
-      }}
-    >
-      <div
-        style={{
-          borderRadius: 100,
-          backgroundColor: "#fd304f",
-          left: 26,
-          top: 24,
-          width: 37,
-          height: 36,
-          position: "absolute",
-        }}
-      >
-        <div
-          style={{
-            overflow: "hidden",
-            left: "calc(-12.2px + 50%)",
-            top: "calc(-13.3px + 50%)",
-            width: 24.4,
-            height: 26.6,
-            position: "absolute",
-          }}
-        >
-          <svg
-            width="26.11387430377176"
-            height="28.338881373405457"
-            viewBox="0 0 26.11387430377176 28.338881373405457"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            preserveAspectRatio="none"
-            style={{
-              left: "-3.7%",
-              top: "-3.4%",
-              right: "-3.2%",
-              bottom: "-3%",
-              width: "106.9%",
-              height: "106.4%",
-              position: "absolute",
-            }}
-          >
-            <path
-              d="M20.6402 19.0927C22.2935 17.3814 24.0366 15.7875 24.3946 11.2073 24.7526 6.6271 20.9158 0 12.4082 0 3.9006 0-0.2129 6.9123 0.0085 11.4422 0.2299 15.9721 1.654 17.4701 3.6939 19.1262 5.5539 20.6362 4.245 23.8281 6.0361 24.4279 7.8272 25.0277 9.0894 21.475 9.5149 21.475 9.9405 21.475 9.8594 26.6425 12.4082 26.6425 14.957 26.6425 14.6739 21.475 15.1255 21.475 15.577 21.475 16.4114 24.7655 18.367 24.3608 20.3225 23.956 18.987 20.804 20.6402 19.0927Z"
-              transform=" translate(0.9071275397366982 0.9022064417506335)"
-              style={{ fillRule: "nonzero", fill: "#fff" }}
-            />
-            <path
-              d="M20.6402 19.0927C22.2935 17.3814 24.0366 15.7875 24.3946 11.2073 24.7526 6.6271 20.9158 0 12.4082 0 3.9006 0-0.2129 6.9123 0.0085 11.4422 0.2299 15.9721 1.654 17.4701 3.6939 19.1262 5.5539 20.6362 4.245 23.8281 6.0361 24.4279 7.8272 25.0277 9.0894 21.475 9.5149 21.475 9.9405 21.475 9.8594 26.6425 12.4082 26.6425 14.957 26.6425 14.6739 21.475 15.1255 21.475 15.577 21.475 16.4114 24.7655 18.367 24.3608 20.3225 23.956 18.987 20.804 20.6402 19.0927Z"
-              transform=" translate(0.9071275397366982 0.9022064417506335)"
-              style={{ stroke: "#000", strokeWidth: 1.6963986158370972 }}
-            />
-          </svg>
-          <div
-            style={{
-              overflow: "hidden",
-              left: "calc(-8.9px + 50%)",
-              top: 6.2,
-              width: 10.2,
-              height: 7.2,
-              position: "absolute",
-            }}
-          >
-            <RedEye left={0} />
-            <RedEye left={6.4} />
-          </div>
-        </div>
-      </div>
-      <div
-        style={{
-          overflow: "hidden",
-          left: 0,
-          top: 0,
-          width: 36,
-          height: 36,
-          position: "absolute",
-        }}
-      >
-        <CursorMark fill="#fd304f" />
-      </div>
-    </div>
-  );
-}
-
-function RedEye({ left }: { left: number }) {
-  return (
-    <div
-      style={{
-        overflow: "hidden",
-        left,
-        top: 0,
-        width: 3.8,
-        height: 7.2,
-        position: "absolute",
-      }}
-    >
-      <svg
-        width="3.8326909542083745"
-        height="7.195828914642334"
-        viewBox="0 0 3.8326909542083745 7.195828914642334"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-        style={{
-          left: "0.1%",
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: "99.9%",
-          height: "100%",
-          position: "absolute",
-        }}
-      >
-        <path
-          d="M1.9163 0C2.9748 0 3.8327 1.611 3.8327 3.5979 3.8327 5.5848 2.9748 7.1958 1.9163 7.1958 0.8579 7.1958 0 5.5848 0 3.5979 0 1.611 0.8579 0 1.9163 0Z"
-          style={{ fillRule: "nonzero", fill: "#000" }}
-        />
-      </svg>
-      <div
-        style={{
-          overflow: "hidden",
-          left: 0,
-          top: "0.1%",
-          right: 0,
-          bottom: "0.1%",
-          width: "99.9%",
-          height: "99.9%",
-          position: "absolute",
-        }}
-      >
-        <div
-          style={{
-            overflow: "hidden",
-            left: "-23.7%",
-            top: "29.1%",
-            right: "53%",
-            bottom: "28.5%",
-            width: "70.7%",
-            height: "42.3%",
-            position: "absolute",
-            maskImage: `url("${RED_EYE_MASK}")`,
-            WebkitMaskImage: `url("${RED_EYE_MASK}")`,
-            maskRepeat: "no-repeat",
-            WebkitMaskRepeat: "no-repeat",
-            maskType: "luminance",
-            maskPosition: "0.9px -2.1px",
-            WebkitMaskPosition: "0.9px -2.1px",
-          }}
-        >
-          <svg
-            width="3.0434062480926514"
-            height="2.70999"
-            viewBox="0 0 3.0434062480926514 2.70999"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            preserveAspectRatio="none"
-            style={{
-              transformOrigin: "0 0",
-              transform: "rotate(90deg)",
-              left: "100%",
-              top: 0,
-              right: "-112.3%",
-              bottom: "11%",
-              width: "112.3%",
-              height: "89%",
-              position: "absolute",
-            }}
-          >
-            <path
-              d="M1.64 0.2107l1.2899 2.2971c0.0508 0.0905-0.0146 0.2022-0.1183 0.2022h-2.5797c-0.1037 0-0.1691-0.1117-0.1184-0.2022l1.2899-2.2971c0.0519-0.0924 0.1848-0.0924 0.2367 0z"
-              style={{ fillRule: "nonzero", fill: "#fff" }}
-            />
-          </svg>
-        </div>
+    <div className="w-[24px] h-[24px] rounded-[6.5px] bg-white border-[1.6px] border-black flex items-center justify-center relative shadow-sm">
+      <div className="flex gap-[4px] items-center">
+        <PupilWithReflection pupilW={3.6} pupilH={6.8} />
+        <PupilWithReflection pupilW={3.6} pupilH={6.8} />
       </div>
     </div>
   );

@@ -11,7 +11,16 @@
     "build:web": "bun --filter web build",
     "lint:web": "bun --filter web lint",
     "lint:mobile": "bun --filter mobile lint",
-    "lint": "bun run lint:web && bun run lint:mobile"
+    "lint": "bun run lint:web && bun run lint:mobile",
+    "remotion": "remotion studio remotion/index.ts",
+    "remotion:render": "remotion render remotion/index.ts AlliesIntro out/allies-intro.mp4"
   },
-  "packageManager": "bun@1.2.20"
+  "packageManager": "bun@1.2.20",
+  "dependencies": {
+    "@remotion/cli": "4.0.512",
+    "@remotion/gif": "4.0.512",
+    "@remotion/paths": "4.0.512",
+    "gifenc": "^1.0.3",
+    "remotion": "4.0.512"
+  }
 }
