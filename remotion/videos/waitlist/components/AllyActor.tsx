@@ -3,9 +3,12 @@ import { PointerAccessory } from "./PointerAccessory";
 import { useBezierTravel } from "../motion/useBezierTravel";
 import { AllyMotionConfig, SHOW_CURSOR_GEOMETRY } from "../constants/allyPaths";
 import { CursorGeometryDebug } from "./CursorGeometryDebug";
-import { AllyOrb } from "./AllyOrb";
-import { AllyVisual } from "./AllyVisual";
-import { AllyIdentity, AllyState, getAllyVisualState } from "../constants/allyStates";
+import { AllyAvatar } from "./AllyAvatar";
+import {
+  AllyIdentity,
+  AllyState,
+  getAllyVisualState,
+} from "../constants/allyStates";
 
 export interface AllyActorProps {
   config: AllyMotionConfig;
@@ -17,7 +20,11 @@ export interface AllyActorProps {
   clearance?: number;
   entryTiltDeg?: number; // Subtle character personality body tilt (settles to 0 upon arrival)
   state?: AllyState; // Visual state override; defaults to deterministic schedule
-  children?: React.ReactNode; // Optional child override; defaults to AllyOrb + AllyVisual
+  children?: React.ReactNode; // Optional child override; defaults to AllyAvatar
+  cargo?: React.ReactNode;
+  cargoSegmentId?: string;
+  cargoWidth?: number;
+  cargoTipPadding?: number;
 }
 
 /**
@@ -43,6 +50,10 @@ export function AllyActor({
   entryTiltDeg = 0,
   state: stateProp,
   children,
+  cargo,
+  cargoSegmentId = "domain-drag",
+  cargoWidth,
+  cargoTipPadding = 18,
 }: AllyActorProps) {
   // 1. Permanent Character Identity & Color Resolution
   const identity: AllyIdentity = identityProp ?? config.identity;
@@ -55,7 +66,8 @@ export function AllyActor({
   }
 
   // 2. Deterministic Visual State Resolution ("idle" | "thinking") for this specific identity
-  const activeState: AllyState = stateProp ?? getAllyVisualState(identity, currentFrame);
+  const activeState: AllyState =
+    stateProp ?? getAllyVisualState(identity, currentFrame);
 
   // 3. Frame-driven Bézier travel with Target+Follower lag & dynamic cursor orbit calculations
   const travel = useBezierTravel({
@@ -81,7 +93,8 @@ export function AllyActor({
   const idle = config.idle;
   const t = (currentFrame / idle.periodFrames) * 2 * Math.PI + idle.phase;
   const rawFloatY = Math.sin(t) * ((idle.yRange[1] - idle.yRange[0]) / 2);
-  const rawFloatX = Math.cos(t * 1.15) * ((idle.xRange[1] - idle.xRange[0]) / 2);
+  const rawFloatX =
+    Math.cos(t * 1.15) * ((idle.xRange[1] - idle.xRange[0]) / 2);
   const rawFloatRot =
     Math.sin(t * 0.95) * ((idle.rotRange[1] - idle.rotRange[0]) / 2);
 
@@ -89,6 +102,14 @@ export function AllyActor({
   const floatX = rawFloatX * travel.idleWeight;
   const floatY = rawFloatY * travel.idleWeight;
   const floatRot = rawFloatRot * travel.idleWeight;
+  const cursorDistanceScale = 1 - travel.cursorSuctionProgress;
+  const cursorX = travel.cursorX * cursorDistanceScale;
+  const cursorY = travel.cursorY * cursorDistanceScale;
+  const cargoAngleRad = (travel.directionDeg * Math.PI) / 180;
+  const cargoLeadDistance =
+    cargoWidth == null ? 0 : pointerSize / 2 + cargoTipPadding + cargoWidth / 2;
+  const cargoX = cursorX + Math.cos(cargoAngleRad) * cargoLeadDistance;
+  const cargoY = cursorY + Math.sin(cargoAngleRad) * cargoLeadDistance;
 
   return (
     // Layer 1: Hardware-Accelerated Travel Transform (Subpixel Precision)
@@ -98,7 +119,7 @@ export function AllyActor({
         left: 0,
         top: 0,
         transform: `translate3d(${travel.x.toFixed(3)}px, ${travel.y.toFixed(
-          3
+          3,
         )}px, 0px) translate(-50%, -50%)`,
         pointerEvents: "none",
         zIndex: 10,
@@ -116,7 +137,7 @@ export function AllyActor({
         <div
           style={{
             transform: `translate3d(${floatX.toFixed(3)}px, ${floatY.toFixed(
-              3
+              3,
             )}px, 0px) rotate(${floatRot.toFixed(3)}deg)`,
             transformOrigin: "center center",
             position: "relative",
@@ -125,36 +146,64 @@ export function AllyActor({
             justifyContent: "center",
           }}
         >
-          {/* Layer 4: Dynamic Direction-of-Travel Cursor Accessory (Active ONLY during intentional motion) */}
+          {/* Layer 4: Dynamic Direction-of-Travel Cursor Accessory (pop-in + inward suction) */}
           {travel.cursorOpacity > 0 && (
             <div
               style={{
                 position: "absolute",
                 left: "50%",
                 top: "50%",
-                transform: `translate3d(${travel.cursorX.toFixed(
-                  3
-                )}px, ${travel.cursorY.toFixed(3)}px, 0px) translate(-50%, -50%)`,
+                transform: `translate3d(${cursorX.toFixed(
+                  3,
+                )}px, ${cursorY.toFixed(3)}px, 0px) translate(-50%, -50%)`,
                 zIndex: 2,
                 pointerEvents: "none",
                 opacity: travel.cursorOpacity,
                 willChange: "transform, opacity",
               }}
             >
-              <PointerAccessory
-                color={activeColor}
-                size={pointerSize}
-                rotation={travel.directionDeg}
-              />
+              <div
+                style={{
+                  transform: `scale(${travel.cursorScale.toFixed(4)})`,
+                  transformOrigin: "center center",
+                }}
+              >
+                <PointerAccessory
+                  color={activeColor}
+                  size={pointerSize}
+                  rotation={travel.directionDeg}
+                />
+              </div>
+            </div>
+          )}
+
+          {cargo && travel.activeSegmentId === cargoSegmentId && (
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: `translate3d(${cargoX.toFixed(
+                  3,
+                )}px, ${cargoY.toFixed(3)}px, 0px) translate(-50%, -50%)`,
+                zIndex: 3,
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {cargo}
             </div>
           )}
 
           {/* Layer 5: Ally Orb & Permanent Character Identity (State Switcher) */}
           <div style={{ position: "relative", zIndex: 1 }}>
             {children ?? (
-              <AllyOrb color={activeColor} size={size}>
-                <AllyVisual identity={identity} state={activeState} />
-              </AllyOrb>
+              <AllyAvatar
+                shape={identity}
+                state={activeState}
+                color={activeColor}
+                size={size}
+              />
             )}
           </div>
 
@@ -178,5 +227,3 @@ export function AllyActor({
     </div>
   );
 }
-
-

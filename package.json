@@ -13,7 +13,9 @@
     "lint:mobile": "bun --filter mobile lint",
     "lint": "bun run lint:web && bun run lint:mobile",
     "remotion": "remotion studio remotion/index.ts",
-    "remotion:render": "remotion render remotion/index.ts AlliesIntro out/allies-intro.mp4"
+    "remotion:waitlist": "remotion studio remotion/videos/waitlist/entrypoint.ts",
+    "remotion:render": "bun run remotion:render:waitlist",
+    "remotion:render:waitlist": "remotion render remotion/videos/waitlist/entrypoint.ts Waitlist-AlliesIntro out/waitlist/allies-intro.mp4 --gl=angle --chrome-mode=chrome-for-testing --hardware-acceleration=required"
   },
   "packageManager": "bun@1.2.20",
   "dependencies": {

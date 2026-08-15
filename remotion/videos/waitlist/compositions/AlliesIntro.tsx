@@ -10,11 +10,24 @@ import {
 } from "remotion";
 import { COLORS } from "../constants/colors";
 import { TIMING } from "../constants/timing";
-import { ALLY_ACTORS, HEADLINE_LAYOUT, TYPOGRAPHY } from "../constants/layout";
-import { ALLIES, ALLY_PATHS, SHOW_MOTION_PATHS, SHOW_TIMELINE_DEBUG } from "../constants/allyPaths";
+import {
+  ALLY_ACTORS,
+  DOMAIN_CARGO_TIP_PADDING,
+  DOMAIN_DRAG_TARGETS,
+  DOMAIN_LAYOUT,
+  HEADLINE_LAYOUT,
+  TYPOGRAPHY,
+} from "../constants/layout";
+import {
+  ALLIES,
+  ALLY_PATHS,
+  SHOW_MOTION_PATHS,
+  SHOW_TIMELINE_DEBUG,
+} from "../constants/allyPaths";
 import { FocusWord } from "../components/FocusWord";
 import { AlliesLogo } from "../components/AlliesLogo";
 import { AllyActor } from "../components/AllyActor";
+import { DomainLockup, DomainPieceText } from "../components/DomainLockup";
 import { MotionPathDebug } from "../components/MotionPathDebug";
 import { TimelineDebugOverlay } from "../components/TimelineDebugOverlay";
 import { FONT_STYLE } from "../styles/font";
@@ -42,7 +55,7 @@ export function AlliesIntro() {
       easing: zoomEase,
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-    }
+    },
   );
 
   // --- 2. BRAND TRANSFORMATION CALCULATIONS ---
@@ -64,7 +77,7 @@ export function AlliesIntro() {
   const alliesX = interpolate(
     alliesShiftSpring,
     [0, 1],
-    [-HEADLINE_LAYOUT.logoShiftDistance, 0]
+    [-HEADLINE_LAYOUT.logoShiftDistance, 0],
   );
 
   // "allies" Color Transition (#121212 -> #FF5800)
@@ -72,7 +85,7 @@ export function AlliesIntro() {
     ? interpolateColors(
         frame,
         [TIMING.BRAND_TRANSFORM_START, TIMING.BRAND_TRANSFORM_START + 18],
-        [COLORS.headlineText, COLORS.brandOrange]
+        [COLORS.headlineText, COLORS.brandOrange],
       )
     : COLORS.headlineText;
 
@@ -117,13 +130,13 @@ export function AlliesIntro() {
       easing: meetYourExitEase,
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-    }
+    },
   );
 
   const meetYourExitX = interpolate(
     meetYourExitProgress,
     [0, 1],
-    [0, HEADLINE_LAYOUT.meetYourPullDistance]
+    [0, HEADLINE_LAYOUT.meetYourPullDistance],
   );
 
   const meetYourOverallOpacity = interpolate(
@@ -133,7 +146,7 @@ export function AlliesIntro() {
     {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-    }
+    },
   );
 
   // B. Brand Group ("[LOGO] allies") Recenter Glide
@@ -145,47 +158,23 @@ export function AlliesIntro() {
       easing: brandRecenterEase,
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-    }
+    },
   );
 
   const brandRecenterX = interpolate(
     brandRecenterProgress,
     [0, 1],
-    [0, HEADLINE_LAYOUT.brandShiftDistance]
+    [0, HEADLINE_LAYOUT.brandShiftDistance],
   );
 
-  // --- 5. BRAND DISINTEGRATION & LOGO INWARD COLLAPSE ---
+  // --- 5. BRAND LOCKUP CONTINUITY & LOGO INWARD COLLAPSE ---
 
-  // A. "allies" Word Exit (Reverse Focus & Leftward Pull into Logo)
-  const isAlliesExitStarted = frame >= TIMING.ALLIES_WORD_COLLAPSE_START;
-  const alliesExitProgress = isAlliesExitStarted
-    ? interpolate(
-        frame,
-        [TIMING.ALLIES_WORD_COLLAPSE_START, TIMING.ALLIES_WORD_COLLAPSE_END],
-        [0, 1],
-        {
-          easing: meetYourExitEase,
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        }
-      )
-    : 0;
-
-  const alliesPullX = interpolate(
-    alliesExitProgress,
-    [0, 1],
-    [0, HEADLINE_LAYOUT.alliesPullDistance]
-  );
-
-  const alliesOverallOpacity = interpolate(
-    alliesExitProgress,
-    [0, 0.72, 0.94, 1.0],
-    [1, 0.88, 0.05, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }
-  );
+  // The orange "allies" word is the persistent anchor for the rest of the
+  // scene. Only the introductory logo collapses; the word stays crisp and
+  // visible while the domain pieces arrive around it.
+  const alliesExitProgress = 0;
+  const alliesPullX = 0;
+  const alliesOverallOpacity = 1;
 
   // B. Official Logo Inward Collapse (Sharp Graphic Mark Shrinkage)
   const isLogoCollapseStarted = frame >= TIMING.LOGO_COLLAPSE_START;
@@ -198,14 +187,14 @@ export function AlliesIntro() {
           easing: Easing.bezier(0.32, 0, 0.67, 0),
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
-        }
+        },
       )
     : 0;
 
   const logoCollapseScale = interpolate(
     logoCollapseProgress,
     [0, 0.4, 0.75, 1.0],
-    [1.0, 0.92, 0.75, 0.0]
+    [1.0, 0.92, 0.75, 0.0],
   );
 
   const logoCollapseOpacity = interpolate(
@@ -215,14 +204,13 @@ export function AlliesIntro() {
     {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-    }
+    },
   );
 
   const finalLogoScale = logoScale * logoCollapseScale;
   const finalLogoOpacity = logoOpacity * logoCollapseOpacity;
   const isLogoVisible = isLogoStarted && frame < TIMING.LOGO_COLLAPSE_END;
-  const isBrandGroupVisible =
-    frame < TIMING.LOGO_COLLAPSE_END || frame < TIMING.ALLIES_WORD_COLLAPSE_END;
+  const isBrandGroupVisible = frame < TIMING.LOGO_COLLAPSE_END;
 
   return (
     <AbsoluteFill
@@ -387,7 +375,7 @@ export function AlliesIntro() {
                       style={{
                         opacity: finalLogoOpacity,
                         transform: `translate(0px, ${logoY.toFixed(
-                          3
+                          3,
                         )}px) scale(${finalLogoScale.toFixed(4)})`,
                         transformOrigin: "center center",
                         display: "flex",
@@ -430,6 +418,8 @@ export function AlliesIntro() {
           </div>
         )}
 
+        {frame >= TIMING.LOGO_COLLAPSE_END && <DomainLockup frame={frame} />}
+
         {/* REUSABLE ALLY ACTORS (PERMANENT IDENTITIES: ROLLY, ROCKY, GHOSTY, BOXY) */}
 
         {/* 1. Blue Ally (Rolly): Descends smoothly along upper arc */}
@@ -441,6 +431,9 @@ export function AlliesIntro() {
           pointerSize={110.5}
           clearance={ALLY_ACTORS.clearance}
           entryTiltDeg={-8}
+          cargo={<DomainPieceText piece={DOMAIN_DRAG_TARGETS.blue.piece} />}
+          cargoWidth={DOMAIN_LAYOUT.pieces.your.width}
+          cargoTipPadding={DOMAIN_CARGO_TIP_PADDING}
         />
 
         {/* 2. Green Ally (Rocky): Rises gracefully along lower-left arc */}
@@ -452,6 +445,9 @@ export function AlliesIntro() {
           pointerSize={110.5}
           clearance={ALLY_ACTORS.clearance}
           entryTiltDeg={8}
+          cargo={<DomainPieceText piece={DOMAIN_DRAG_TARGETS.green.piece} />}
+          cargoWidth={DOMAIN_LAYOUT.pieces.i.width}
+          cargoTipPadding={DOMAIN_CARGO_TIP_PADDING}
         />
 
         {/* 3. Pink Ally (Ghosty): Sweeps inward along right arc */}
@@ -463,6 +459,9 @@ export function AlliesIntro() {
           pointerSize={110.5}
           clearance={ALLY_ACTORS.clearance}
           entryTiltDeg={-10}
+          cargo={<DomainPieceText piece={DOMAIN_DRAG_TARGETS.pink.piece} />}
+          cargoWidth={DOMAIN_LAYOUT.pieces.dot.width}
+          cargoTipPadding={DOMAIN_CARGO_TIP_PADDING}
         />
 
         {/* 4. Yellow Ally (Boxy): Glides upward along lower-right arc */}
@@ -474,6 +473,9 @@ export function AlliesIntro() {
           pointerSize={110.5}
           clearance={ALLY_ACTORS.clearance}
           entryTiltDeg={8}
+          cargo={<DomainPieceText piece={DOMAIN_DRAG_TARGETS.yellow.piece} />}
+          cargoWidth={DOMAIN_LAYOUT.pieces.o.width}
+          cargoTipPadding={DOMAIN_CARGO_TIP_PADDING}
         />
 
         {/* Optional Visual Motion Path Debugger */}

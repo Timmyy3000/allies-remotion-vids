@@ -9,7 +9,13 @@ import {
   createCubicBezierSvgPath,
 } from "../motion/motionGenerator";
 import { MotionSegment } from "../motion/useBezierTravel";
-import { BRAND_GATHER_POSITIONS, WRITING_STAGE_POSITIONS } from "./layout";
+import {
+  BRAND_GATHER_POSITIONS,
+  DOMAIN_DRAG_TARGETS,
+  DOMAIN_EDGE_POSITIONS,
+  DOMAIN_EXIT_POSITIONS,
+  WRITING_STAGE_POSITIONS,
+} from "./layout";
 import { TIMING } from "./timing";
 
 export {
@@ -35,6 +41,9 @@ export interface AllyMotionConfig {
     entrance: CubicBezierPathData;
     gather: CubicBezierPathData;
     spread: CubicBezierPathData;
+    domainEdge: CubicBezierPathData;
+    domainDrag: CubicBezierPathData;
+    domainExit: CubicBezierPathData;
   };
   responsiveness: number; // Follower physical inertia response (alpha: 0.20 - 0.34)
   organicDeviation: number; // Subtle micro-course variation (pixels: 1.5 - 2.0)
@@ -56,21 +65,21 @@ const blueEntrance = generateCurvedMotionPath(
   { x: 780, y: -300 },
   { x: 1720, y: 620 },
   0,
-  "entrance"
+  "entrance",
 );
 const blueGather = generateCurvedMotionPath(
   "rolly",
   { x: 1720, y: 620 },
   BRAND_GATHER_POSITIONS.blue,
   1,
-  "brandGather"
+  "brandGather",
 );
 const blueSpread = generateCurvedMotionPath(
   "rolly",
   BRAND_GATHER_POSITIONS.blue,
   WRITING_STAGE_POSITIONS.blue,
   2,
-  "writingStageSpread"
+  "writingStageSpread",
 );
 
 // -----------------------------------------------------------------------------
@@ -81,21 +90,21 @@ const greenEntrance = generateCurvedMotionPath(
   { x: -320, y: 2280 },
   { x: 600, y: 1580 },
   0,
-  "entrance"
+  "entrance",
 );
 const greenGather = generateCurvedMotionPath(
   "rocky",
   { x: 600, y: 1580 },
   BRAND_GATHER_POSITIONS.green,
   1,
-  "brandGather"
+  "brandGather",
 );
 const greenSpread = generateCurvedMotionPath(
   "rocky",
   BRAND_GATHER_POSITIONS.green,
   WRITING_STAGE_POSITIONS.green,
   2,
-  "writingStageSpread"
+  "writingStageSpread",
 );
 
 // -----------------------------------------------------------------------------
@@ -106,21 +115,21 @@ const pinkEntrance = generateCurvedMotionPath(
   { x: 4180, y: 560 },
   { x: 3380, y: 940 },
   0,
-  "entrance"
+  "entrance",
 );
 const pinkGather = generateCurvedMotionPath(
   "ghosty",
   { x: 3380, y: 940 },
   BRAND_GATHER_POSITIONS.pink,
   1,
-  "brandGather"
+  "brandGather",
 );
 const pinkSpread = generateCurvedMotionPath(
   "ghosty",
   BRAND_GATHER_POSITIONS.pink,
   WRITING_STAGE_POSITIONS.pink,
   2,
-  "writingStageSpread"
+  "writingStageSpread",
 );
 
 // -----------------------------------------------------------------------------
@@ -131,21 +140,112 @@ const yellowEntrance = generateCurvedMotionPath(
   { x: 3120, y: 2480 },
   { x: 2520, y: 1680 },
   0,
-  "entrance"
+  "entrance",
 );
 const yellowGather = generateCurvedMotionPath(
   "boxy",
   { x: 2520, y: 1680 },
   BRAND_GATHER_POSITIONS.yellow,
   1,
-  "brandGather"
+  "brandGather",
 );
 const yellowSpread = generateCurvedMotionPath(
   "boxy",
   BRAND_GATHER_POSITIONS.yellow,
   WRITING_STAGE_POSITIONS.yellow,
   2,
-  "writingStageSpread"
+  "writingStageSpread",
+);
+
+// -----------------------------------------------------------------------------
+// 5. Domain assembly paths: stage -> directional edge -> dragged text slot -> roam
+// -----------------------------------------------------------------------------
+const blueDomainEdge = generateCurvedMotionPath(
+  "rolly",
+  WRITING_STAGE_POSITIONS.blue,
+  DOMAIN_EDGE_POSITIONS.blue,
+  3,
+  "domainEdge",
+);
+const blueDomainDrag = generateCurvedMotionPath(
+  "rolly",
+  DOMAIN_EDGE_POSITIONS.blue,
+  DOMAIN_DRAG_TARGETS.blue.actor,
+  4,
+  "domainDrag",
+);
+const blueDomainExit = generateCurvedMotionPath(
+  "rolly",
+  DOMAIN_DRAG_TARGETS.blue.actor,
+  DOMAIN_EXIT_POSITIONS.blue,
+  5,
+  "domainExit",
+);
+
+const greenDomainEdge = generateCurvedMotionPath(
+  "rocky",
+  WRITING_STAGE_POSITIONS.green,
+  DOMAIN_EDGE_POSITIONS.green,
+  3,
+  "domainEdge",
+);
+const greenDomainDrag = generateCurvedMotionPath(
+  "rocky",
+  DOMAIN_EDGE_POSITIONS.green,
+  DOMAIN_DRAG_TARGETS.green.actor,
+  4,
+  "domainDrag",
+);
+const greenDomainExit = generateCurvedMotionPath(
+  "rocky",
+  DOMAIN_DRAG_TARGETS.green.actor,
+  DOMAIN_EXIT_POSITIONS.green,
+  5,
+  "domainExit",
+);
+
+const pinkDomainEdge = generateCurvedMotionPath(
+  "ghosty",
+  WRITING_STAGE_POSITIONS.pink,
+  DOMAIN_EDGE_POSITIONS.pink,
+  3,
+  "domainEdge",
+);
+const pinkDomainDrag = generateCurvedMotionPath(
+  "ghosty",
+  DOMAIN_EDGE_POSITIONS.pink,
+  DOMAIN_DRAG_TARGETS.pink.actor,
+  4,
+  "domainDrag",
+);
+const pinkDomainExit = generateCurvedMotionPath(
+  "ghosty",
+  DOMAIN_DRAG_TARGETS.pink.actor,
+  DOMAIN_EXIT_POSITIONS.pink,
+  5,
+  "domainExit",
+);
+
+const yellowDomainEdge = generateCurvedMotionPath(
+  "boxy",
+  WRITING_STAGE_POSITIONS.yellow,
+  DOMAIN_EDGE_POSITIONS.yellow,
+  3,
+  "domainEdge",
+);
+const yellowDomainDrag = generateCurvedMotionPath(
+  "boxy",
+  DOMAIN_EDGE_POSITIONS.yellow,
+  DOMAIN_DRAG_TARGETS.yellow.actor,
+  4,
+  "domainDrag",
+);
+const yellowDomainExit = generateCurvedMotionPath(
+  "boxy",
+  DOMAIN_DRAG_TARGETS.yellow.actor,
+  DOMAIN_EXIT_POSITIONS.yellow,
+  5,
+  "domainExit",
 );
 
 export const ALLY_PATHS: Record<
@@ -175,6 +275,8 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.BLUE_GATHER_START,
         durationInFrames: TIMING.BLUE_GATHER_DURATION,
         timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+        cursorEndDirectionDeg: 40,
       },
       {
         id: "spread",
@@ -182,12 +284,41 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.BLUE_SPREAD_START,
         durationInFrames: TIMING.BLUE_SPREAD_DURATION,
         timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-edge",
+        path: blueDomainEdge.svgPath,
+        startFrame: TIMING.BLUE_DOMAIN_EDGE_START,
+        durationInFrames: TIMING.BLUE_DOMAIN_EDGE_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-drag",
+        path: blueDomainDrag.svgPath,
+        startFrame: TIMING.BLUE_DOMAIN_DRAG_START,
+        durationInFrames: TIMING.BLUE_DOMAIN_DRAG_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+        cursorEndDirectionDeg: 0,
+      },
+      {
+        id: "domain-exit",
+        path: blueDomainExit.svgPath,
+        startFrame: TIMING.BLUE_DOMAIN_EXIT_START,
+        durationInFrames: TIMING.BLUE_DOMAIN_EXIT_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
       },
     ],
     allBeziers: {
       entrance: blueEntrance,
       gather: blueGather,
       spread: blueSpread,
+      domainEdge: blueDomainEdge,
+      domainDrag: blueDomainDrag,
+      domainExit: blueDomainExit,
     },
     responsiveness: PERSONALITY_CONFIGS.rolly.responsiveness, // 0.32: Crisp, alert
     organicDeviation: PERSONALITY_CONFIGS.rolly.organicDeviation, // 1.5px
@@ -223,6 +354,8 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.GREEN_GATHER_START,
         durationInFrames: TIMING.GREEN_GATHER_DURATION,
         timingEase: motionEasing.softTravelIn,
+        cursorEndBehavior: "hold",
+        cursorEndDirectionDeg: -17,
       },
       {
         id: "spread",
@@ -230,12 +363,41 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.GREEN_SPREAD_START,
         durationInFrames: TIMING.GREEN_SPREAD_DURATION,
         timingEase: motionEasing.softTravelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-edge",
+        path: greenDomainEdge.svgPath,
+        startFrame: TIMING.GREEN_DOMAIN_EDGE_START,
+        durationInFrames: TIMING.GREEN_DOMAIN_EDGE_DURATION,
+        timingEase: motionEasing.softTravelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-drag",
+        path: greenDomainDrag.svgPath,
+        startFrame: TIMING.GREEN_DOMAIN_DRAG_START,
+        durationInFrames: TIMING.GREEN_DOMAIN_DRAG_DURATION,
+        timingEase: motionEasing.softTravelIn,
+        cursorEndBehavior: "hold",
+        cursorEndDirectionDeg: -90,
+      },
+      {
+        id: "domain-exit",
+        path: greenDomainExit.svgPath,
+        startFrame: TIMING.GREEN_DOMAIN_EXIT_START,
+        durationInFrames: TIMING.GREEN_DOMAIN_EXIT_DURATION,
+        timingEase: motionEasing.softTravelIn,
+        cursorEndBehavior: "hold",
       },
     ],
     allBeziers: {
       entrance: greenEntrance,
       gather: greenGather,
       spread: greenSpread,
+      domainEdge: greenDomainEdge,
+      domainDrag: greenDomainDrag,
+      domainExit: greenDomainExit,
     },
     responsiveness: PERSONALITY_CONFIGS.rocky.responsiveness, // 0.20: Soft, calm, gentle
     organicDeviation: PERSONALITY_CONFIGS.rocky.organicDeviation, // 2.0px
@@ -271,6 +433,8 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.PINK_GATHER_START,
         durationInFrames: TIMING.PINK_GATHER_DURATION,
         timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+        cursorEndDirectionDeg: 174,
       },
       {
         id: "spread",
@@ -278,12 +442,41 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.PINK_SPREAD_START,
         durationInFrames: TIMING.PINK_SPREAD_DURATION,
         timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-edge",
+        path: pinkDomainEdge.svgPath,
+        startFrame: TIMING.PINK_DOMAIN_EDGE_START,
+        durationInFrames: TIMING.PINK_DOMAIN_EDGE_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-drag",
+        path: pinkDomainDrag.svgPath,
+        startFrame: TIMING.PINK_DOMAIN_DRAG_START,
+        durationInFrames: TIMING.PINK_DOMAIN_DRAG_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+        cursorEndDirectionDeg: 90,
+      },
+      {
+        id: "domain-exit",
+        path: pinkDomainExit.svgPath,
+        startFrame: TIMING.PINK_DOMAIN_EXIT_START,
+        durationInFrames: TIMING.PINK_DOMAIN_EXIT_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
       },
     ],
     allBeziers: {
       entrance: pinkEntrance,
       gather: pinkGather,
       spread: pinkSpread,
+      domainEdge: pinkDomainEdge,
+      domainDrag: pinkDomainDrag,
+      domainExit: pinkDomainExit,
     },
     responsiveness: PERSONALITY_CONFIGS.ghosty.responsiveness, // 0.30: Energetic, dynamic
     organicDeviation: PERSONALITY_CONFIGS.ghosty.organicDeviation, // 1.8px
@@ -319,6 +512,8 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.YELLOW_GATHER_START,
         durationInFrames: TIMING.YELLOW_GATHER_DURATION,
         timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+        cursorEndDirectionDeg: -81,
       },
       {
         id: "spread",
@@ -326,12 +521,41 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.YELLOW_SPREAD_START,
         durationInFrames: TIMING.YELLOW_SPREAD_DURATION,
         timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-edge",
+        path: yellowDomainEdge.svgPath,
+        startFrame: TIMING.YELLOW_DOMAIN_EDGE_START,
+        durationInFrames: TIMING.YELLOW_DOMAIN_EDGE_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-drag",
+        path: yellowDomainDrag.svgPath,
+        startFrame: TIMING.YELLOW_DOMAIN_DRAG_START,
+        durationInFrames: TIMING.YELLOW_DOMAIN_DRAG_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+        cursorEndDirectionDeg: 180,
+      },
+      {
+        id: "domain-exit",
+        path: yellowDomainExit.svgPath,
+        startFrame: TIMING.YELLOW_DOMAIN_EXIT_START,
+        durationInFrames: TIMING.YELLOW_DOMAIN_EXIT_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
       },
     ],
     allBeziers: {
       entrance: yellowEntrance,
       gather: yellowGather,
       spread: yellowSpread,
+      domainEdge: yellowDomainEdge,
+      domainDrag: yellowDomainDrag,
+      domainExit: yellowDomainExit,
     },
     responsiveness: PERSONALITY_CONFIGS.boxy.responsiveness, // 0.24: Playful, smooth
     organicDeviation: PERSONALITY_CONFIGS.boxy.organicDeviation, // 1.6px

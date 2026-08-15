@@ -80,6 +80,6 @@ const content = `export const FONT_STYLE = \`
 \`;
 `;
 
-fs.mkdirSync("remotion/styles", { recursive: true });
-fs.writeFileSync("remotion/styles/font.ts", content);
-console.log("Successfully generated remotion/styles/font.ts from OpenRunde-1.0.1.zip assets");
+fs.mkdirSync("remotion/videos/waitlist/styles", { recursive: true });
+fs.writeFileSync("remotion/videos/waitlist/styles/font.ts", content);
+console.log("Successfully generated remotion/videos/waitlist/styles/font.ts from OpenRunde-1.0.1.zip assets");
