@@ -1,14 +1,16 @@
 import React from "react";
 import { Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 
-import idleBoxy from "../assets/ally/idle/idle_boxy.svg?raw";
-import idleGhosty from "../assets/ally/idle/idle_ghosty.svg?raw";
-import idleRocky from "../assets/ally/idle/idle_rocky.svg?raw";
-import idleRolly from "../assets/ally/idle/idle_rolly.svg?raw";
-import thinkingBoxy from "../assets/ally/thinking/thinking_boxy.svg?raw";
-import thinkingGhosty from "../assets/ally/thinking/thinking_ghosty.svg?raw";
-import thinkingRocky from "../assets/ally/thinking/thinking_rocky.svg?raw";
-import thinkingRolly from "../assets/ally/thinking/thinking_rolly.svg?raw";
+import {
+  idleBoxy,
+  idleGhosty,
+  idleRocky,
+  idleRolly,
+  thinkingBoxy,
+  thinkingGhosty,
+  thinkingRocky,
+  thinkingRolly,
+} from "../assets/ally/rawSvgAssets";
 
 import { AllyOrb } from "./AllyOrb";
 import { AllyIdentity, AllyState } from "../constants/allyStates";

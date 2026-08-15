@@ -1,14 +1,16 @@
 import React from "react";
 import { Composition } from "remotion";
 
-import idleRolly from "../assets/allies_idle/idle_rolly.svg?raw";
-import thinkingRolly from "../assets/allies_thinking/thinking_rolly.svg?raw";
-import idleRocky from "../assets/allies_idle/idle_rocky.svg?raw";
-import thinkingRocky from "../assets/allies_thinking/thinking_rocky.svg?raw";
-import idleGhosty from "../assets/allies_idle/idle_ghosty.svg?raw";
-import thinkingGhosty from "../assets/allies_thinking/thinking_ghosty.svg?raw";
-import idleBoxy from "../assets/allies_idle/idle_boxy.svg?raw";
-import thinkingBoxy from "../assets/allies_thinking/thinking_boxy.svg?raw";
+import {
+  idleBoxy,
+  idleGhosty,
+  idleRocky,
+  idleRolly,
+  thinkingBoxy,
+  thinkingGhosty,
+  thinkingRocky,
+  thinkingRolly,
+} from "../assets/ally/rawSvgAssets";
 import { FrameSyncedSvg } from "../components/FrameSyncedSvg";
 
 export interface SvgFrameProps {
