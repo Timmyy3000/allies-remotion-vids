@@ -86,17 +86,27 @@ export function AllyActor({
     idle: config.idle,
   });
 
-  // 4. Character personality tilt (gentle body lean that settles to 0 upon arrival)
-  const characterTilt = entryTiltDeg * (1 - travel.progress);
+  // 4. Character personality tilt & dynamic banking lean into turns
+  const turnDiff = travel.targetDirectionDeg - travel.directionDeg;
+  const wrappedTurnDiff = ((turnDiff + 540) % 360) - 180;
+  const bankingTilt = travel.isTraveling
+    ? Math.max(-16, Math.min(16, wrappedTurnDiff * 0.22)) *
+      Math.min(1, travel.velocity / 3)
+    : 0;
+  const characterTilt = entryTiltDeg * (1 - travel.progress) + bankingTilt;
 
-  // 5. Ambient Idle Floating (Multi-axis asynchronous sinusoidal motion)
+  // 5. Ambient Idle Floating (Rich multi-harmonic buoyant breathing & drift)
   const idle = config.idle;
   const t = (currentFrame / idle.periodFrames) * 2 * Math.PI + idle.phase;
-  const rawFloatY = Math.sin(t) * ((idle.yRange[1] - idle.yRange[0]) / 2);
+  const rawFloatY =
+    Math.sin(t) * ((idle.yRange[1] - idle.yRange[0]) / 2) +
+    Math.sin(t * 2.15 + 0.4) * 4.5;
   const rawFloatX =
-    Math.cos(t * 1.15) * ((idle.xRange[1] - idle.xRange[0]) / 2);
+    Math.cos(t * 1.15) * ((idle.xRange[1] - idle.xRange[0]) / 2) +
+    Math.sin(t * 0.65 + 1.2) * 3.5;
   const rawFloatRot =
-    Math.sin(t * 0.95) * ((idle.rotRange[1] - idle.rotRange[0]) / 2);
+    Math.sin(t * 0.95) * ((idle.rotRange[1] - idle.rotRange[0]) / 2) +
+    Math.cos(t * 1.8 + 0.9) * 0.8;
 
   // Smoothly blend idle floating into total translation as travel finishes
   const floatX = rawFloatX * travel.idleWeight;

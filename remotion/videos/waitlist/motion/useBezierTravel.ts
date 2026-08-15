@@ -255,17 +255,17 @@ function getLaggedAllyTravelPosition(
   let finalX = followerX * (1 - blendFactor) + target.x * blendFactor;
   let finalY = followerY * (1 - blendFactor) + target.y * blendFactor;
 
-  // Organic micro-deviation during active travel
+  // Organic multi-harmonic micro-deviation during active travel
   if (
     organicDeviation > 0 &&
-    target.progress > 0.02 &&
-    target.progress < 0.98
+    target.progress > 0.01 &&
+    target.progress < 0.99
   ) {
     const envelope = Math.sin(target.progress * Math.PI);
-    const dev =
-      Math.sin(target.progress * Math.PI * 4 + 1.2) *
-      organicDeviation *
-      envelope;
+    const wave1 = Math.sin(target.progress * Math.PI * 3 + 1.2);
+    const wave2 = Math.sin(target.progress * Math.PI * 6.5 + 0.8) * 0.45;
+    const wave3 = Math.cos(target.progress * Math.PI * 11 + 2.1) * 0.25;
+    const dev = (wave1 + wave2 + wave3) * organicDeviation * envelope;
     finalX += target.normalX * dev;
     finalY += target.normalY * dev;
   }

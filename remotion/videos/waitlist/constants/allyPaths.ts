@@ -275,7 +275,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.BLUE_GATHER_START,
         durationInFrames: TIMING.BLUE_GATHER_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
         cursorEndDirectionDeg: 40,
       },
       {
@@ -284,7 +283,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.BLUE_SPREAD_START,
         durationInFrames: TIMING.BLUE_SPREAD_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
       },
       {
         id: "domain-edge",
@@ -292,7 +290,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.BLUE_DOMAIN_EDGE_START,
         durationInFrames: TIMING.BLUE_DOMAIN_EDGE_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
       },
       {
         id: "domain-drag",
@@ -300,7 +297,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.BLUE_DOMAIN_DRAG_START,
         durationInFrames: TIMING.BLUE_DOMAIN_DRAG_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
         cursorEndDirectionDeg: 0,
       },
       {
@@ -309,7 +305,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.BLUE_DOMAIN_EXIT_START,
         durationInFrames: TIMING.BLUE_DOMAIN_EXIT_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
       },
     ],
     allBeziers: {
@@ -321,13 +316,13 @@ export const ALLY_PATHS: Record<
       domainExit: blueDomainExit,
     },
     responsiveness: PERSONALITY_CONFIGS.rolly.responsiveness, // 0.32: Crisp, alert
-    organicDeviation: PERSONALITY_CONFIGS.rolly.organicDeviation, // 1.5px
+    organicDeviation: PERSONALITY_CONFIGS.rolly.organicDeviation, // 2.8px
     timingEase: motionEasing.travelIn,
     idle: {
-      yRange: [-18, 18] as const,
-      xRange: [0, 7] as const,
-      rotRange: [0, 2.5] as const,
-      periodFrames: 222,
+      yRange: [-24, 24] as const,
+      xRange: [-16, 16] as const,
+      rotRange: [-3.5, 3.5] as const,
+      periodFrames: 180,
       phase: 0,
     },
   },
@@ -354,7 +349,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.GREEN_GATHER_START,
         durationInFrames: TIMING.GREEN_GATHER_DURATION,
         timingEase: motionEasing.softTravelIn,
-        cursorEndBehavior: "hold",
         cursorEndDirectionDeg: -17,
       },
       {
@@ -363,7 +357,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.GREEN_SPREAD_START,
         durationInFrames: TIMING.GREEN_SPREAD_DURATION,
         timingEase: motionEasing.softTravelIn,
-        cursorEndBehavior: "hold",
       },
       {
         id: "domain-edge",
@@ -371,7 +364,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.GREEN_DOMAIN_EDGE_START,
         durationInFrames: TIMING.GREEN_DOMAIN_EDGE_DURATION,
         timingEase: motionEasing.softTravelIn,
-        cursorEndBehavior: "hold",
       },
       {
         id: "domain-drag",
@@ -379,7 +371,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.GREEN_DOMAIN_DRAG_START,
         durationInFrames: TIMING.GREEN_DOMAIN_DRAG_DURATION,
         timingEase: motionEasing.softTravelIn,
-        cursorEndBehavior: "hold",
         cursorEndDirectionDeg: -90,
       },
       {
@@ -388,7 +379,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.GREEN_DOMAIN_EXIT_START,
         durationInFrames: TIMING.GREEN_DOMAIN_EXIT_DURATION,
         timingEase: motionEasing.softTravelIn,
-        cursorEndBehavior: "hold",
       },
     ],
     allBeziers: {
@@ -399,15 +389,15 @@ export const ALLY_PATHS: Record<
       domainDrag: greenDomainDrag,
       domainExit: greenDomainExit,
     },
-    responsiveness: PERSONALITY_CONFIGS.rocky.responsiveness, // 0.20: Soft, calm, gentle
-    organicDeviation: PERSONALITY_CONFIGS.rocky.organicDeviation, // 2.0px
+    responsiveness: PERSONALITY_CONFIGS.rocky.responsiveness, // 0.22: Soft, calm, gentle
+    organicDeviation: PERSONALITY_CONFIGS.rocky.organicDeviation, // 3.2px
     timingEase: motionEasing.softTravelIn,
     idle: {
-      yRange: [-15, 15] as const,
-      xRange: [-7, 0] as const,
-      rotRange: [-2, 2] as const,
-      periodFrames: 264,
-      phase: 1.2,
+      yRange: [-22, 22] as const,
+      xRange: [-18, 18] as const,
+      rotRange: [-3, 3] as const,
+      periodFrames: 210,
+      phase: 1.5,
     },
   },
   pink: {
@@ -433,7 +423,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.PINK_GATHER_START,
         durationInFrames: TIMING.PINK_GATHER_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
         cursorEndDirectionDeg: 174,
       },
       {
@@ -442,7 +431,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.PINK_SPREAD_START,
         durationInFrames: TIMING.PINK_SPREAD_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
       },
       {
         id: "domain-edge",
@@ -450,7 +438,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.PINK_DOMAIN_EDGE_START,
         durationInFrames: TIMING.PINK_DOMAIN_EDGE_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
       },
       {
         id: "domain-drag",
@@ -458,7 +445,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.PINK_DOMAIN_DRAG_START,
         durationInFrames: TIMING.PINK_DOMAIN_DRAG_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
         cursorEndDirectionDeg: 90,
       },
       {
@@ -467,7 +453,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.PINK_DOMAIN_EXIT_START,
         durationInFrames: TIMING.PINK_DOMAIN_EXIT_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
       },
     ],
     allBeziers: {
@@ -479,14 +464,14 @@ export const ALLY_PATHS: Record<
       domainExit: pinkDomainExit,
     },
     responsiveness: PERSONALITY_CONFIGS.ghosty.responsiveness, // 0.30: Energetic, dynamic
-    organicDeviation: PERSONALITY_CONFIGS.ghosty.organicDeviation, // 1.8px
+    organicDeviation: PERSONALITY_CONFIGS.ghosty.organicDeviation, // 3.0px
     timingEase: motionEasing.travelIn,
     idle: {
-      yRange: [-14, 14] as const,
-      xRange: [0, 9] as const,
-      rotRange: [-2.5, 2.5] as const,
-      periodFrames: 246,
-      phase: 2.4,
+      yRange: [-26, 26] as const,
+      xRange: [-15, 15] as const,
+      rotRange: [-4, 4] as const,
+      periodFrames: 170,
+      phase: 3.1,
     },
   },
   yellow: {
@@ -512,7 +497,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.YELLOW_GATHER_START,
         durationInFrames: TIMING.YELLOW_GATHER_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
         cursorEndDirectionDeg: -81,
       },
       {
@@ -521,7 +505,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.YELLOW_SPREAD_START,
         durationInFrames: TIMING.YELLOW_SPREAD_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
       },
       {
         id: "domain-edge",
@@ -529,7 +512,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.YELLOW_DOMAIN_EDGE_START,
         durationInFrames: TIMING.YELLOW_DOMAIN_EDGE_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
       },
       {
         id: "domain-drag",
@@ -537,7 +519,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.YELLOW_DOMAIN_DRAG_START,
         durationInFrames: TIMING.YELLOW_DOMAIN_DRAG_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
         cursorEndDirectionDeg: 180,
       },
       {
@@ -546,7 +527,6 @@ export const ALLY_PATHS: Record<
         startFrame: TIMING.YELLOW_DOMAIN_EXIT_START,
         durationInFrames: TIMING.YELLOW_DOMAIN_EXIT_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndBehavior: "hold",
       },
     ],
     allBeziers: {
@@ -557,15 +537,15 @@ export const ALLY_PATHS: Record<
       domainDrag: yellowDomainDrag,
       domainExit: yellowDomainExit,
     },
-    responsiveness: PERSONALITY_CONFIGS.boxy.responsiveness, // 0.24: Playful, smooth
-    organicDeviation: PERSONALITY_CONFIGS.boxy.organicDeviation, // 1.6px
+    responsiveness: PERSONALITY_CONFIGS.boxy.responsiveness, // 0.26: Playful, smooth
+    organicDeviation: PERSONALITY_CONFIGS.boxy.organicDeviation, // 2.8px
     timingEase: motionEasing.travelIn,
     idle: {
       yRange: [-20, 20] as const,
-      xRange: [-5, 5] as const,
-      rotRange: [0, 2.5] as const,
-      periodFrames: 198,
-      phase: 3.6,
+      xRange: [-20, 20] as const,
+      rotRange: [-3, 3] as const,
+      periodFrames: 195,
+      phase: 4.8,
     },
   },
 };

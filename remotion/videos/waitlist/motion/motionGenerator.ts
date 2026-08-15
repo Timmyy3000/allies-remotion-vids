@@ -66,35 +66,35 @@ export interface CurvePersonality {
 export const PERSONALITY_CONFIGS: Record<AllyIdentity, CurvePersonality> = {
   rolly: {
     bendBias: "auto",
-    curvatureIntensity: 0.45,
+    curvatureIntensity: 0.58,
     asymmetry: 0.15,
-    sCurveChance: 0.2,
+    sCurveChance: 0.7,
     responsiveness: 0.32,
-    organicDeviation: 1.5,
+    organicDeviation: 2.8,
   },
   rocky: {
     bendBias: "auto",
-    curvatureIntensity: 0.55,
+    curvatureIntensity: 0.65,
     asymmetry: -0.1,
-    sCurveChance: 0.05,
-    responsiveness: 0.20,
-    organicDeviation: 2.0,
+    sCurveChance: 0.65,
+    responsiveness: 0.22,
+    organicDeviation: 3.2,
   },
   ghosty: {
     bendBias: "auto",
-    curvatureIntensity: 0.50,
+    curvatureIntensity: 0.62,
     asymmetry: 0.25,
-    sCurveChance: 0.4,
-    responsiveness: 0.30,
-    organicDeviation: 1.8,
+    sCurveChance: 0.85,
+    responsiveness: 0.3,
+    organicDeviation: 3.0,
   },
   boxy: {
     bendBias: "auto",
-    curvatureIntensity: 0.48,
+    curvatureIntensity: 0.6,
     asymmetry: 0.05,
-    sCurveChance: 0.15,
-    responsiveness: 0.24,
-    organicDeviation: 1.6,
+    sCurveChance: 0.75,
+    responsiveness: 0.26,
+    organicDeviation: 2.8,
   },
 };
 
@@ -153,27 +153,27 @@ export function generateCurvedMotionPath(
   }
 
   // Distance-scaled curvature with minimum and maximum bend guarantees:
-  const MIN_BEND_PX = 45;
-  const MAX_BEND_PX = 480;
-  const rawBend = chordLength * (personality.curvatureIntensity + (rng() - 0.5) * 0.1);
+  const MIN_BEND_PX = 60;
+  const MAX_BEND_PX = 560;
+  const rawBend = chordLength * (personality.curvatureIntensity + (rng() - 0.5) * 0.15);
   const clampedBend = Math.max(MIN_BEND_PX, Math.min(MAX_BEND_PX, rawBend));
   const curveHeight = clampedBend * bendDir;
 
   // Control points along chord
   const t1 = Math.max(
-    0.2,
-    Math.min(0.45, 0.32 + personality.asymmetry * 0.1 + (rng() - 0.5) * 0.06)
+    0.18,
+    Math.min(0.46, 0.30 + personality.asymmetry * 0.1 + (rng() - 0.5) * 0.08)
   );
   const t2 = Math.max(
-    0.55,
-    Math.min(0.85, 0.68 + personality.asymmetry * 0.1 + (rng() - 0.5) * 0.06)
+    0.54,
+    Math.min(0.86, 0.70 + personality.asymmetry * 0.1 + (rng() - 0.5) * 0.08)
   );
 
-  const isSCurve = rng() < personality.sCurveChance && chordLength > 400;
-  const h1 = curveHeight * (0.88 + rng() * 0.24);
+  const isSCurve = rng() < personality.sCurveChance && chordLength > 250;
+  const h1 = curveHeight * (0.95 + rng() * 0.35);
   const h2 = isSCurve
-    ? -curveHeight * (0.6 + rng() * 0.3)
-    : curveHeight * (0.88 + rng() * 0.24);
+    ? -curveHeight * (0.85 + rng() * 0.35)
+    : curveHeight * (0.90 + rng() * 0.30);
 
   const c1: Point2D = {
     x: Math.round(start.x + ux * chordLength * t1 + nx * h1),
