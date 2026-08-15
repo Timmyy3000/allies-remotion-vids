@@ -102,9 +102,8 @@ export function AllyActor({
   const floatX = rawFloatX * travel.idleWeight;
   const floatY = rawFloatY * travel.idleWeight;
   const floatRot = rawFloatRot * travel.idleWeight;
-  const cursorDistanceScale = 1 - travel.cursorSuctionProgress;
-  const cursorX = travel.cursorX * cursorDistanceScale;
-  const cursorY = travel.cursorY * cursorDistanceScale;
+  const cursorX = travel.cursorX;
+  const cursorY = travel.cursorY;
   const cargoAngleRad = (travel.directionDeg * Math.PI) / 180;
   const cargoLeadDistance =
     cargoWidth == null ? 0 : pointerSize / 2 + cargoTipPadding + cargoWidth / 2;
@@ -195,8 +194,16 @@ export function AllyActor({
             </div>
           )}
 
-          {/* Layer 5: Ally Orb & Permanent Character Identity (State Switcher) */}
-          <div style={{ position: "relative", zIndex: 1 }}>
+          {/* Layer 5: Ally Orb & Permanent Character Identity (State Switcher with Squash & Stretch) */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
+              transform: `scale(${travel.blobSquashX.toFixed(3)}, ${travel.blobSquashY.toFixed(3)})`,
+              transformOrigin: "center center",
+              willChange: "transform",
+            }}
+          >
             {children ?? (
               <AllyAvatar
                 shape={identity}
