@@ -4,7 +4,7 @@ import { useBezierTravel } from "../motion/useBezierTravel";
 import { AllyMotionConfig, SHOW_CURSOR_GEOMETRY } from "../constants/allyPaths";
 import { CursorGeometryDebug } from "./CursorGeometryDebug";
 import { AllyOrb } from "./AllyOrb";
-import { AllyVisual } from "./AllyVisual";
+import { AllyAvatar } from "./AllyAvatar";
 import { AllyIdentity, AllyState, getAllyVisualState } from "../constants/allyStates";
 
 export interface AllyActorProps {
@@ -160,9 +160,12 @@ export function AllyActor({
             }}
           >
             {children ?? (
-              <AllyOrb color={activeColor} size={size}>
-                <AllyVisual identity={identity} state={activeState} />
-              </AllyOrb>
+              <AllyAvatar
+                shape={identity}
+                state={activeState}
+                color={activeColor}
+                size={size}
+              />
             )}
           </div>
 
