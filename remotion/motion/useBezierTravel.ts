@@ -57,6 +57,9 @@ export interface BezierTravelResult {
   cursorOrbitRadius: number; // Exact orbital track radius
   cursorAnchorRadius: number; // Ally radius + clearance (inner anchor distance)
   cursorOpacity: number; // 0 in IDLE, 0->1 in ANTICIPATING, 1 in TRAVELING, 1->0 in SETTLING
+  cursorRadialFraction: number; // 0 (inside blob edge) -> 1 (full orbital track)
+  blobSquashX: number; // Subtle character squash/stretch X scale (anticipation & spit/swallow reaction)
+  blobSquashY: number; // Subtle character squash/stretch Y scale
   motionState: AllyMotionState;
   velocity: number;
   isTraveling: boolean;
@@ -294,10 +297,11 @@ function getCompleteVisiblePosition(
  * Intentional Action Motion State Machine & Deterministic Cursor Opacity:
  *
  * Phases:
- * 1. IDLE (pre-action): Cursor Opacity = 0.
- * 2. ANTICIPATING (6-10 frames before travel): Cursor fades in 0 -> 1 on upcoming path tangent.
+ * Motion State Engine (4-Phase Lifecycle with Spit/Swallow Mechanics):
+ * 1. IDLE (pre-action): Cursor Opacity = 0, Blob Normal (1, 1).
+ * 2. ANTICIPATING (spit-out): Blob squashes (scaleX: 1.07, scaleY: 0.93), cursor pops outward from blob edge to orbital radius.
  * 3. TRAVELING: Cursor Opacity = 1, tracks visible velocity with smooth orbital steering.
- * 4. SETTLING (final 8-12 frames of travel): Cursor fades out 1 -> 0, locks final approach heading.
+ * 4. SETTLING (swallow): Blob compresses slightly (scale: 0.94), cursor retracts into blob center, blob recovers.
  * 5. IDLE (resting hover): Cursor Opacity = 0.
  */
 function evaluateMotionState(
@@ -307,58 +311,107 @@ function evaluateMotionState(
   anticipateFrames: number = 8,
   settleFadeLead: number = 6,
   settleFadeDuration: number = 10
-): { motionState: AllyMotionState; cursorOpacity: number } {
+): {
+  motionState: AllyMotionState;
+  cursorOpacity: number;
+  cursorRadialFraction: number;
+  blobSquashX: number;
+  blobSquashY: number;
+} {
   const anticipateStart = startFrame - anticipateFrames;
   const settleStart = startFrame + durationInFrames - settleFadeLead;
   const settleEnd = settleStart + settleFadeDuration;
 
   // Pre-action IDLE
   if (frame < anticipateStart) {
-    return { motionState: "idle", cursorOpacity: 0 };
+    return {
+      motionState: "idle",
+      cursorOpacity: 0,
+      cursorRadialFraction: 0,
+      blobSquashX: 1,
+      blobSquashY: 1,
+    };
   }
 
-  // ANTICIPATING: Smooth ease-out fade in (0 -> 1)
+  // ANTICIPATING: Squash & Spit Out Emergence
   if (frame < startFrame) {
     const t = (frame - anticipateStart) / anticipateFrames;
-    const eased = t * t * (3 - 2 * t); // Smooth cubic Hermite
-    return {
-      motionState: "anticipating",
-      cursorOpacity: Math.max(0, Math.min(1, eased)),
-    };
+    if (t <= 0.45) {
+      // Phase A: Anticipation Squash (4 frames)
+      const tau = t / 0.45;
+      const squash = Math.sin(Math.PI * tau) * 0.07;
+      return {
+        motionState: "anticipating",
+        cursorOpacity: 0,
+        cursorRadialFraction: 0,
+        blobSquashX: 1.0 + squash,
+        blobSquashY: 1.0 - squash,
+      };
+    } else {
+      // Phase B: Pop outward and recover blob size (6 frames)
+      const tau = (t - 0.45) / 0.55;
+      const eased = tau * tau * (3 - 2 * tau);
+      const residualSquash = (1 - eased) * 0.03;
+      return {
+        motionState: "anticipating",
+        cursorOpacity: Math.max(0, Math.min(1, eased)),
+        cursorRadialFraction: Math.max(0, Math.min(1, eased)),
+        blobSquashX: 1.0 + residualSquash,
+        blobSquashY: 1.0 - residualSquash,
+      };
+    }
   }
 
   // TRAVELING: Fully active
   if (frame < settleStart) {
-    return { motionState: "traveling", cursorOpacity: 1 };
-  }
-
-  // SETTLING: Smooth ease-in fade out (1 -> 0)
-  if (frame <= settleEnd) {
-    const t = (frame - settleStart) / settleFadeDuration;
-    const eased = 1 - t * t * (3 - 2 * t);
     return {
-      motionState: "settling",
-      cursorOpacity: Math.max(0, Math.min(1, eased)),
+      motionState: "traveling",
+      cursorOpacity: 1,
+      cursorRadialFraction: 1,
+      blobSquashX: 1,
+      blobSquashY: 1,
     };
   }
 
+  // SETTLING: Compress & Swallow Retraction
+  if (frame <= settleEnd) {
+    const t = (frame - settleStart) / settleFadeDuration;
+    if (t <= 0.55) {
+      // Phase A: Swallow retraction and compression
+      const tau = t / 0.55;
+      const eased = 1 - tau * tau * (3 - 2 * tau);
+      const compress = Math.sin(Math.PI * tau) * 0.05;
+      return {
+        motionState: "settling",
+        cursorOpacity: Math.max(0, Math.min(1, eased)),
+        cursorRadialFraction: Math.max(0, Math.min(1, eased)),
+        blobSquashX: 1.0 - compress,
+        blobSquashY: 1.0 - compress,
+      };
+    } else {
+      // Phase B: Blob relaxation recovery to normal
+      const tau = (t - 0.55) / 0.45;
+      const recover = (1 - tau) * 0.02;
+      return {
+        motionState: "settling",
+        cursorOpacity: 0,
+        cursorRadialFraction: 0,
+        blobSquashX: 1.0 - recover,
+        blobSquashY: 1.0 - recover,
+      };
+    }
+  }
+
   // Post-action IDLE
-  return { motionState: "idle", cursorOpacity: 0 };
+  return {
+    motionState: "idle",
+    cursorOpacity: 0,
+    cursorRadialFraction: 0,
+    blobSquashX: 1,
+    blobSquashY: 1,
+  };
 }
 
-/**
- * Reusable Target + Follower Bézier Motion Hook with Fluid Orbital Steering
- *
- * System Concept:
- * ally actual movement -> target travel direction -> smoothed cursor direction -> orbital cursor position & cursor rotation
- *
- * Rules:
- * 1. The cursor NEVER teleports or snaps across the blob.
- * 2. When the ally changes direction, the cursor physically travels around the circumference of the blob.
- * 3. Position around the ally (orbit) and cursor rotation come strictly from the SAME smoothed direction system.
- * 4. Exact 10px edge-to-edge clearance uniformly maintained in all orientations.
- * 5. Deterministic Remotion frame evaluation with zero browser-clock or CSS animation dependencies.
- */
 /**
  * Internal single-segment motion physics evaluator.
  */
@@ -382,8 +435,14 @@ function evaluateSingleSegmentMotion({
 }: Required<Omit<UseBezierTravelOptions, "segments">>): BezierTravelResult {
   const totalLength = getLength(path);
 
-  // 1. Motion State & Cursor Opacity
-  const { motionState, cursorOpacity } = evaluateMotionState(
+  // 1. Motion State, Cursor Opacity, and Blob Squash Dynamics
+  const {
+    motionState,
+    cursorOpacity,
+    cursorRadialFraction,
+    blobSquashX,
+    blobSquashY,
+  } = evaluateMotionState(
     frame,
     startFrame,
     durationInFrames,
@@ -513,24 +572,29 @@ function evaluateSingleSegmentMotion({
   }
 
   // 6. Exact Cursor Orbit & Inner Anchor Radius Calculation
-  const cursorOrbitRadius = calculateCursorOrbitRadius(
+  const maxCursorOrbitRadius = calculateCursorOrbitRadius(
     orbSize,
     pointerSize,
     clearance
   );
   const cursorAnchorRadius = orbSize / 2 + clearance;
 
+  // Dynamic emergence orbit radius (emerges from blob edge to full orbit)
+  const minEmergenceRadius = orbSize / 2;
+  const activeCursorOrbitRadius =
+    minEmergenceRadius + (maxCursorOrbitRadius - minEmergenceRadius) * cursorRadialFraction;
+
   // 7. Orbital Placement & Direction Derivation
   // BOTH the orbital (x, y) coordinates around the circumference AND the cursor rotation
   // are calculated directly from currentDisplayedAngle
   const displayedRad = (currentDisplayedAngle * Math.PI) / 180;
-  const cursorX = cursorOrbitRadius * Math.cos(displayedRad);
-  const cursorY = cursorOrbitRadius * Math.sin(displayedRad);
+  const cursorX = activeCursorOrbitRadius * Math.cos(displayedRad);
+  const cursorY = activeCursorOrbitRadius * Math.sin(displayedRad);
 
   // Raw unsmoothed target coordinates (for debug mode)
   const targetRad = (rawTargetAngle * Math.PI) / 180;
-  const rawTargetCursorX = cursorOrbitRadius * Math.cos(targetRad);
-  const rawTargetCursorY = cursorOrbitRadius * Math.sin(targetRad);
+  const rawTargetCursorX = maxCursorOrbitRadius * Math.cos(targetRad);
+  const rawTargetCursorY = maxCursorOrbitRadius * Math.sin(targetRad);
 
   const isTraveling = motionState === "traveling";
   const isSettled =
@@ -550,9 +614,12 @@ function evaluateSingleSegmentMotion({
     cursorY,
     rawTargetCursorX,
     rawTargetCursorY,
-    cursorOrbitRadius,
+    cursorOrbitRadius: maxCursorOrbitRadius,
     cursorAnchorRadius,
     cursorOpacity,
+    cursorRadialFraction,
+    blobSquashX,
+    blobSquashY,
     motionState,
     velocity,
     isTraveling,
@@ -628,6 +695,9 @@ export function useBezierTravel(options: UseBezierTravelOptions): BezierTravelRe
       cursorOrbitRadius,
       cursorAnchorRadius: orbSize / 2 + clearance,
       cursorOpacity: 0,
+      cursorRadialFraction: 0,
+      blobSquashX: 1,
+      blobSquashY: 1,
       motionState: "idle",
       velocity: 0,
       isTraveling: false,
@@ -659,6 +729,9 @@ export function useBezierTravel(options: UseBezierTravelOptions): BezierTravelRe
       cursorOrbitRadius,
       cursorAnchorRadius: orbSize / 2 + clearance,
       cursorOpacity: 0,
+      cursorRadialFraction: 0,
+      blobSquashX: 1,
+      blobSquashY: 1,
       motionState: "idle",
       velocity: 0,
       isTraveling: false,
@@ -695,6 +768,9 @@ export function useBezierTravel(options: UseBezierTravelOptions): BezierTravelRe
           cursorOrbitRadius,
           cursorAnchorRadius: orbSize / 2 + clearance,
           cursorOpacity: 0,
+          cursorRadialFraction: 0,
+          blobSquashX: 1,
+          blobSquashY: 1,
           motionState: "idle",
           velocity: 0,
           isTraveling: false,

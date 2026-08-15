@@ -5,11 +5,18 @@ import {
   Point2D,
   CubicBezierPathData,
   generateCurvedMotionPath,
+  createEscortMotionPath,
   PERSONALITY_CONFIGS,
   createCubicBezierSvgPath,
 } from "../motion/motionGenerator";
 import { MotionSegment } from "../motion/useBezierTravel";
-import { BRAND_GATHER_POSITIONS, WRITING_STAGE_POSITIONS } from "./layout";
+import {
+  BRAND_GATHER_POSITIONS,
+  WRITING_STAGE_POSITIONS,
+  CAPABILITY_LINES_LAYOUT,
+  SNUGGLE_CLUSTER_POSITIONS,
+  CTA_SURROUND_POSITIONS,
+} from "./layout";
 import { TIMING } from "./timing";
 
 export {
@@ -17,6 +24,7 @@ export {
   type CubicBezierPathData,
   type MotionSegment,
   generateCurvedMotionPath,
+  createEscortMotionPath,
   createCubicBezierSvgPath,
   PERSONALITY_CONFIGS,
 };
@@ -35,6 +43,10 @@ export interface AllyMotionConfig {
     entrance: CubicBezierPathData;
     gather: CubicBezierPathData;
     spread: CubicBezierPathData;
+    approach?: CubicBezierPathData;
+    escort?: CubicBezierPathData;
+    snuggle?: CubicBezierPathData;
+    ctaSurround?: CubicBezierPathData;
   };
   responsiveness: number; // Follower physical inertia response (alpha: 0.20 - 0.34)
   organicDeviation: number; // Subtle micro-course variation (pixels: 1.5 - 2.0)
@@ -49,7 +61,7 @@ export interface AllyMotionConfig {
 }
 
 // -----------------------------------------------------------------------------
-// 1. Blue (Rolly): Alert, crisp, decisive trajectories
+// 1. Blue (Rolly): Alert, crisp, decisive trajectories (Writes Line 2)
 // -----------------------------------------------------------------------------
 const blueEntrance = generateCurvedMotionPath(
   "rolly",
@@ -72,9 +84,35 @@ const blueSpread = generateCurvedMotionPath(
   2,
   "writingStageSpread"
 );
+const blueApproach = generateCurvedMotionPath(
+  "rolly",
+  WRITING_STAGE_POSITIONS.blue,
+  { x: CAPABILITY_LINES_LAYOUT.line2.x - 40, y: CAPABILITY_LINES_LAYOUT.line2.y - 70 },
+  3,
+  "approach"
+);
+const blueEscort = createEscortMotionPath(
+  { x: CAPABILITY_LINES_LAYOUT.line2.x - 40, y: CAPABILITY_LINES_LAYOUT.line2.y - 70 },
+  { x: CAPABILITY_LINES_LAYOUT.line2.endX + 80, y: CAPABILITY_LINES_LAYOUT.line2.y - 30 },
+  8
+);
+const blueSnuggle = generateCurvedMotionPath(
+  "rolly",
+  { x: CAPABILITY_LINES_LAYOUT.line2.endX + 80, y: CAPABILITY_LINES_LAYOUT.line2.y - 30 },
+  SNUGGLE_CLUSTER_POSITIONS.blue,
+  5,
+  "snuggle"
+);
+const blueCtaSurround = generateCurvedMotionPath(
+  "rolly",
+  SNUGGLE_CLUSTER_POSITIONS.blue,
+  CTA_SURROUND_POSITIONS.blue,
+  6,
+  "ctaSurround"
+);
 
 // -----------------------------------------------------------------------------
-// 2. Green (Rocky): Soft, calm, relaxed, wide parabolic arcs
+// 2. Green (Rocky): Soft, calm, relaxed, wide parabolic arcs (Writes Line 3)
 // -----------------------------------------------------------------------------
 const greenEntrance = generateCurvedMotionPath(
   "rocky",
@@ -97,9 +135,35 @@ const greenSpread = generateCurvedMotionPath(
   2,
   "writingStageSpread"
 );
+const greenApproach = generateCurvedMotionPath(
+  "rocky",
+  WRITING_STAGE_POSITIONS.green,
+  { x: CAPABILITY_LINES_LAYOUT.line3.x - 40, y: CAPABILITY_LINES_LAYOUT.line3.y - 70 },
+  3,
+  "approach"
+);
+const greenEscort = createEscortMotionPath(
+  { x: CAPABILITY_LINES_LAYOUT.line3.x - 40, y: CAPABILITY_LINES_LAYOUT.line3.y - 70 },
+  { x: CAPABILITY_LINES_LAYOUT.line3.endX + 30, y: CAPABILITY_LINES_LAYOUT.line3.y - 70 },
+  8
+);
+const greenSnuggle = generateCurvedMotionPath(
+  "rocky",
+  { x: CAPABILITY_LINES_LAYOUT.line3.endX + 30, y: CAPABILITY_LINES_LAYOUT.line3.y - 70 },
+  SNUGGLE_CLUSTER_POSITIONS.green,
+  5,
+  "snuggle"
+);
+const greenCtaSurround = generateCurvedMotionPath(
+  "rocky",
+  SNUGGLE_CLUSTER_POSITIONS.green,
+  CTA_SURROUND_POSITIONS.green,
+  6,
+  "ctaSurround"
+);
 
 // -----------------------------------------------------------------------------
-// 3. Pink (Ghosty): Energetic, dynamic, sweeping swoops (settles poised to write)
+// 3. Pink (Ghosty): Energetic, dynamic, sweeping swoops (Writes Line 1)
 // -----------------------------------------------------------------------------
 const pinkEntrance = generateCurvedMotionPath(
   "ghosty",
@@ -122,9 +186,35 @@ const pinkSpread = generateCurvedMotionPath(
   2,
   "writingStageSpread"
 );
+const pinkApproach = generateCurvedMotionPath(
+  "ghosty",
+  WRITING_STAGE_POSITIONS.pink,
+  { x: CAPABILITY_LINES_LAYOUT.line1.x - 40, y: CAPABILITY_LINES_LAYOUT.line1.y - 70 },
+  3,
+  "approach"
+);
+const pinkEscort = createEscortMotionPath(
+  { x: CAPABILITY_LINES_LAYOUT.line1.x - 40, y: CAPABILITY_LINES_LAYOUT.line1.y - 70 },
+  { x: CAPABILITY_LINES_LAYOUT.line1.endX + 30, y: CAPABILITY_LINES_LAYOUT.line1.y - 70 },
+  8
+);
+const pinkSnuggle = generateCurvedMotionPath(
+  "ghosty",
+  { x: CAPABILITY_LINES_LAYOUT.line1.endX + 30, y: CAPABILITY_LINES_LAYOUT.line1.y - 70 },
+  SNUGGLE_CLUSTER_POSITIONS.pink,
+  5,
+  "snuggle"
+);
+const pinkCtaSurround = generateCurvedMotionPath(
+  "ghosty",
+  SNUGGLE_CLUSTER_POSITIONS.pink,
+  CTA_SURROUND_POSITIONS.pink,
+  6,
+  "ctaSurround"
+);
 
 // -----------------------------------------------------------------------------
-// 4. Yellow (Boxy): Playful, leisurely, looping arcs
+// 4. Yellow (Boxy): Playful, leisurely, looping arcs (Writes Line 4)
 // -----------------------------------------------------------------------------
 const yellowEntrance = generateCurvedMotionPath(
   "boxy",
@@ -146,6 +236,32 @@ const yellowSpread = generateCurvedMotionPath(
   WRITING_STAGE_POSITIONS.yellow,
   2,
   "writingStageSpread"
+);
+const yellowApproach = generateCurvedMotionPath(
+  "boxy",
+  WRITING_STAGE_POSITIONS.yellow,
+  { x: CAPABILITY_LINES_LAYOUT.line4.x - 40, y: CAPABILITY_LINES_LAYOUT.line4.y - 70 },
+  3,
+  "approach"
+);
+const yellowEscort = createEscortMotionPath(
+  { x: CAPABILITY_LINES_LAYOUT.line4.x - 40, y: CAPABILITY_LINES_LAYOUT.line4.y - 70 },
+  { x: CAPABILITY_LINES_LAYOUT.line4.endX + 30, y: CAPABILITY_LINES_LAYOUT.line4.y - 70 },
+  8
+);
+const yellowSnuggle = generateCurvedMotionPath(
+  "boxy",
+  { x: CAPABILITY_LINES_LAYOUT.line4.endX + 30, y: CAPABILITY_LINES_LAYOUT.line4.y - 70 },
+  SNUGGLE_CLUSTER_POSITIONS.yellow,
+  5,
+  "snuggle"
+);
+const yellowCtaSurround = generateCurvedMotionPath(
+  "boxy",
+  SNUGGLE_CLUSTER_POSITIONS.yellow,
+  CTA_SURROUND_POSITIONS.yellow,
+  6,
+  "ctaSurround"
 );
 
 export const ALLY_PATHS: Record<
@@ -183,11 +299,43 @@ export const ALLY_PATHS: Record<
         durationInFrames: TIMING.BLUE_SPREAD_DURATION,
         timingEase: motionEasing.travelIn,
       },
+      {
+        id: "line2_approach",
+        path: blueApproach.svgPath,
+        startFrame: TIMING.BLUE_LINE2_APPROACH_START,
+        durationInFrames: TIMING.BLUE_LINE2_APPROACH_DURATION,
+        timingEase: motionEasing.travelIn,
+      },
+      {
+        id: "line2_escort",
+        path: blueEscort.svgPath,
+        startFrame: TIMING.BLUE_LINE2_WRITE_START,
+        durationInFrames: TIMING.BLUE_LINE2_WRITE_DURATION,
+        timingEase: (t) => t, // Uniform line tracking
+      },
+      {
+        id: "snuggle",
+        path: blueSnuggle.svgPath,
+        startFrame: TIMING.SNUGGLE_MOVE_START,
+        durationInFrames: TIMING.SNUGGLE_MOVE_DURATION,
+        timingEase: motionEasing.softTravelIn,
+      },
+      {
+        id: "cta_surround",
+        path: blueCtaSurround.svgPath,
+        startFrame: TIMING.CTA_SURROUND_MOVE_START,
+        durationInFrames: TIMING.CTA_SURROUND_MOVE_DURATION,
+        timingEase: motionEasing.travelIn,
+      },
     ],
     allBeziers: {
       entrance: blueEntrance,
       gather: blueGather,
       spread: blueSpread,
+      approach: blueApproach,
+      escort: blueEscort,
+      snuggle: blueSnuggle,
+      ctaSurround: blueCtaSurround,
     },
     responsiveness: PERSONALITY_CONFIGS.rolly.responsiveness, // 0.32: Crisp, alert
     organicDeviation: PERSONALITY_CONFIGS.rolly.organicDeviation, // 1.5px
@@ -231,11 +379,43 @@ export const ALLY_PATHS: Record<
         durationInFrames: TIMING.GREEN_SPREAD_DURATION,
         timingEase: motionEasing.softTravelIn,
       },
+      {
+        id: "line3_approach",
+        path: greenApproach.svgPath,
+        startFrame: TIMING.GREEN_LINE3_APPROACH_START,
+        durationInFrames: TIMING.GREEN_LINE3_APPROACH_DURATION,
+        timingEase: motionEasing.softTravelIn,
+      },
+      {
+        id: "line3_escort",
+        path: greenEscort.svgPath,
+        startFrame: TIMING.GREEN_LINE3_WRITE_START,
+        durationInFrames: TIMING.GREEN_LINE3_WRITE_DURATION,
+        timingEase: (t) => t,
+      },
+      {
+        id: "snuggle",
+        path: greenSnuggle.svgPath,
+        startFrame: TIMING.SNUGGLE_MOVE_START + 2,
+        durationInFrames: TIMING.SNUGGLE_MOVE_DURATION,
+        timingEase: motionEasing.softTravelIn,
+      },
+      {
+        id: "cta_surround",
+        path: greenCtaSurround.svgPath,
+        startFrame: TIMING.CTA_SURROUND_MOVE_START + 2,
+        durationInFrames: TIMING.CTA_SURROUND_MOVE_DURATION,
+        timingEase: motionEasing.softTravelIn,
+      },
     ],
     allBeziers: {
       entrance: greenEntrance,
       gather: greenGather,
       spread: greenSpread,
+      approach: greenApproach,
+      escort: greenEscort,
+      snuggle: greenSnuggle,
+      ctaSurround: greenCtaSurround,
     },
     responsiveness: PERSONALITY_CONFIGS.rocky.responsiveness, // 0.20: Soft, calm, gentle
     organicDeviation: PERSONALITY_CONFIGS.rocky.organicDeviation, // 2.0px
@@ -279,11 +459,43 @@ export const ALLY_PATHS: Record<
         durationInFrames: TIMING.PINK_SPREAD_DURATION,
         timingEase: motionEasing.travelIn,
       },
+      {
+        id: "line1_approach",
+        path: pinkApproach.svgPath,
+        startFrame: TIMING.PINK_LINE1_APPROACH_START,
+        durationInFrames: TIMING.PINK_LINE1_APPROACH_DURATION,
+        timingEase: motionEasing.travelIn,
+      },
+      {
+        id: "line1_escort",
+        path: pinkEscort.svgPath,
+        startFrame: TIMING.PINK_LINE1_WRITE_START,
+        durationInFrames: TIMING.PINK_LINE1_WRITE_DURATION,
+        timingEase: (t) => t,
+      },
+      {
+        id: "snuggle",
+        path: pinkSnuggle.svgPath,
+        startFrame: TIMING.SNUGGLE_MOVE_START + 1,
+        durationInFrames: TIMING.SNUGGLE_MOVE_DURATION,
+        timingEase: motionEasing.travelIn,
+      },
+      {
+        id: "cta_surround",
+        path: pinkCtaSurround.svgPath,
+        startFrame: TIMING.CTA_SURROUND_MOVE_START + 1,
+        durationInFrames: TIMING.CTA_SURROUND_MOVE_DURATION,
+        timingEase: motionEasing.travelIn,
+      },
     ],
     allBeziers: {
       entrance: pinkEntrance,
       gather: pinkGather,
       spread: pinkSpread,
+      approach: pinkApproach,
+      escort: pinkEscort,
+      snuggle: pinkSnuggle,
+      ctaSurround: pinkCtaSurround,
     },
     responsiveness: PERSONALITY_CONFIGS.ghosty.responsiveness, // 0.30: Energetic, dynamic
     organicDeviation: PERSONALITY_CONFIGS.ghosty.organicDeviation, // 1.8px
@@ -327,11 +539,43 @@ export const ALLY_PATHS: Record<
         durationInFrames: TIMING.YELLOW_SPREAD_DURATION,
         timingEase: motionEasing.travelIn,
       },
+      {
+        id: "line4_approach",
+        path: yellowApproach.svgPath,
+        startFrame: TIMING.YELLOW_LINE4_APPROACH_START,
+        durationInFrames: TIMING.YELLOW_LINE4_APPROACH_DURATION,
+        timingEase: motionEasing.travelIn,
+      },
+      {
+        id: "line4_escort",
+        path: yellowEscort.svgPath,
+        startFrame: TIMING.YELLOW_LINE4_WRITE_START,
+        durationInFrames: TIMING.YELLOW_LINE4_WRITE_DURATION,
+        timingEase: (t) => t,
+      },
+      {
+        id: "snuggle",
+        path: yellowSnuggle.svgPath,
+        startFrame: TIMING.SNUGGLE_MOVE_START + 3,
+        durationInFrames: TIMING.SNUGGLE_MOVE_DURATION,
+        timingEase: motionEasing.travelIn,
+      },
+      {
+        id: "cta_surround",
+        path: yellowCtaSurround.svgPath,
+        startFrame: TIMING.CTA_SURROUND_MOVE_START + 3,
+        durationInFrames: TIMING.CTA_SURROUND_MOVE_DURATION,
+        timingEase: motionEasing.travelIn,
+      },
     ],
     allBeziers: {
       entrance: yellowEntrance,
       gather: yellowGather,
       spread: yellowSpread,
+      approach: yellowApproach,
+      escort: yellowEscort,
+      snuggle: yellowSnuggle,
+      ctaSurround: yellowCtaSurround,
     },
     responsiveness: PERSONALITY_CONFIGS.boxy.responsiveness, // 0.24: Playful, smooth
     organicDeviation: PERSONALITY_CONFIGS.boxy.organicDeviation, // 1.6px

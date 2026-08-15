@@ -210,3 +210,52 @@ export function generateCurvedMotionPath(
     finalTangentDeg,
   };
 }
+
+/**
+ * Generates an organic, gently waving linear escort motion path directly riding
+ * along a line of text (subtle ±10px wave, forward left-to-right tangent).
+ */
+export function createEscortMotionPath(
+  start: Point2D,
+  end: Point2D,
+  waveAmplitude: number = 8
+): CubicBezierPathData {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const chordLength = Math.hypot(dx, dy) || 1;
+
+  const c1: Point2D = {
+    x: Math.round(start.x + dx * 0.33),
+    y: Math.round(start.y - waveAmplitude),
+  };
+
+  const c2: Point2D = {
+    x: Math.round(start.x + dx * 0.66),
+    y: Math.round(start.y + waveAmplitude * 0.6),
+  };
+
+  const svgPath = createCubicBezierSvgPath({ start, c1, c2, end });
+  const totalLength = getLength(svgPath);
+
+  const p0 = getPointAtLength(svgPath, 0)!;
+  const p1 = getPointAtLength(svgPath, Math.min(totalLength, 1.0))!;
+  const initialTangentDeg = (Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180) / Math.PI;
+
+  const pEnd = getPointAtLength(svgPath, totalLength)!;
+  const pPreEnd = getPointAtLength(svgPath, Math.max(0, totalLength - 1.0))!;
+  const finalTangentDeg =
+    (Math.atan2(pEnd.y - pPreEnd.y, pEnd.x - pPreEnd.x) * 180) / Math.PI;
+
+  return {
+    start,
+    c1,
+    c2,
+    end,
+    svgPath,
+    chordLength,
+    totalLength,
+    initialTangentDeg,
+    finalTangentDeg,
+  };
+}
+

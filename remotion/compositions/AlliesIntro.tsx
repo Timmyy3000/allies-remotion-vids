@@ -8,15 +8,28 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { COLORS } from "../constants/colors";
+import { ALLY_COLORS, COLORS } from "../constants/colors";
 import { TIMING } from "../constants/timing";
-import { ALLY_ACTORS, HEADLINE_LAYOUT, TYPOGRAPHY } from "../constants/layout";
-import { ALLIES, ALLY_PATHS, SHOW_MOTION_PATHS, SHOW_TIMELINE_DEBUG } from "../constants/allyPaths";
+import {
+  ALLY_ACTORS,
+  CAPABILITY_LINES_LAYOUT,
+  HEADLINE_LAYOUT,
+  TYPOGRAPHY,
+} from "../constants/layout";
+import {
+  ALLIES,
+  SHOW_MOTION_PATHS,
+  SHOW_TIMELINE_DEBUG,
+} from "../constants/allyPaths";
 import { FocusWord } from "../components/FocusWord";
 import { AlliesLogo } from "../components/AlliesLogo";
 import { AllyActor } from "../components/AllyActor";
 import { MotionPathDebug } from "../components/MotionPathDebug";
 import { TimelineDebugOverlay } from "../components/TimelineDebugOverlay";
+import { ClickSpark } from "../components/ClickSpark";
+import { CapabilityLine } from "../components/CapabilityLine";
+import { CollaborativeStatement } from "../components/CollaborativeStatement";
+import { EndCTA } from "../components/EndCTA";
 import { FONT_STYLE } from "../styles/font";
 
 // Camera push zoom out curve (soft start, gentle deceleration into 1.0)
@@ -28,13 +41,33 @@ const brandRecenterEase = Easing.bezier(0.22, 1, 0.36, 1);
 // Meet Your exit pull curve: [0.4, 0, 0.6, 1] (gentle start, accelerated pull into logo)
 const meetYourExitEase = Easing.bezier(0.4, 0, 0.6, 1);
 
+/**
+ * Calculates subtle camera click push-in emphasis scale (1.0 -> 1.022 -> 1.0)
+ */
+function getClickPushScale(frame: number, clickFrame: number): number {
+  const age = frame - clickFrame;
+  if (age < 0 || age > 44) return 1.0;
+
+  if (age <= 8) {
+    // Quick ease-in push
+    const t = age / 8;
+    return 1.0 + (t * t * (3 - 2 * t)) * 0.022;
+  } else if (age <= 20) {
+    // Brief hold
+    return 1.022;
+  } else {
+    // Gentle recovery back to 1.0
+    const t = (age - 20) / 24;
+    return 1.022 - (t * t * (3 - 2 * t)) * 0.022;
+  }
+}
+
 export function AlliesIntro() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // --- 1. SLIGHT PUSH ZOOM OUT RIGHT BEFORE ALLIES ENTER ---
-  // Starts in intimate 1.15x framing, breathes out to 1.0x master canvas
-  const cameraScale = interpolate(
+  // --- 1. SLIGHT PUSH ZOOM OUT RIGHT BEFORE ALLIES ENTER & CLICK PUSHES ---
+  const baseCameraScale = interpolate(
     frame,
     [TIMING.ZOOM_OUT_START, TIMING.ZOOM_OUT_END],
     [1.15, 1.0],
@@ -44,6 +77,15 @@ export function AlliesIntro() {
       extrapolateRight: "clamp",
     }
   );
+
+  // Subtle click push-in multipliers for each ally's writing initiation
+  const pushScale1 = getClickPushScale(frame, TIMING.PINK_LINE1_CLICK_FRAME);
+  const pushScale2 = getClickPushScale(frame, TIMING.BLUE_LINE2_CLICK_FRAME);
+  const pushScale3 = getClickPushScale(frame, TIMING.GREEN_LINE3_CLICK_FRAME);
+  const pushScale4 = getClickPushScale(frame, TIMING.YELLOW_LINE4_CLICK_FRAME);
+
+  const totalCameraScale =
+    baseCameraScale * pushScale1 * pushScale2 * pushScale3 * pushScale4;
 
   // --- 2. BRAND TRANSFORMATION CALCULATIONS ---
   const isTransformStarted = frame >= TIMING.BRAND_TRANSFORM_START;
@@ -224,6 +266,36 @@ export function AlliesIntro() {
   const isBrandGroupVisible =
     frame < TIMING.LOGO_COLLAPSE_END || frame < TIMING.ALLIES_WORD_COLLAPSE_END;
 
+  // --- 6. CAPABILITY LINES EXIT PROGRESS (PHASE 22) ---
+  const isCapabilityExitStarted = frame >= TIMING.CAPABILITY_LINES_EXIT_START;
+  const capabilityExitProgress = isCapabilityExitStarted
+    ? interpolate(
+        frame,
+        [TIMING.CAPABILITY_LINES_EXIT_START, TIMING.CAPABILITY_LINES_EXIT_END],
+        [0, 1],
+        {
+          easing: Easing.out(Easing.cubic),
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        }
+      )
+    : 0;
+
+  // --- 7. COLLABORATIVE STATEMENT EXIT PROGRESS (PHASE 24) ---
+  const isCollabExitStarted = frame >= TIMING.COLLABORATIVE_EXIT_START;
+  const collabExitProgress = isCollabExitStarted
+    ? interpolate(
+        frame,
+        [TIMING.COLLABORATIVE_EXIT_START, TIMING.COLLABORATIVE_EXIT_END],
+        [0, 1],
+        {
+          easing: Easing.out(Easing.cubic),
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        }
+      )
+    : 0;
+
   return (
     <AbsoluteFill
       style={{
@@ -235,14 +307,14 @@ export function AlliesIntro() {
       {/* Self-contained OpenRunde & SF Pro Rounded Fonts */}
       <style>{FONT_STYLE}</style>
 
-      {/* 4K SCENE WORLD WITH SLIGHT PUSH ZOOM OUT */}
+      {/* 4K SCENE WORLD WITH DYNAMIC CAMERA SCALE */}
       <div
         className="scene-world"
         style={{
           position: "relative",
           width: "100%",
           height: "100%",
-          transform: `scale(${cameraScale.toFixed(4)})`,
+          transform: `scale(${totalCameraScale.toFixed(4)})`,
           transformOrigin: "center center",
         }}
       >
@@ -269,9 +341,7 @@ export function AlliesIntro() {
               userSelect: "none",
             }}
           >
-            {/* ========================================================================= */}
-            {/* GROUP 1: EXIT GROUP ("Meet your") - Translates & Reverse-Focuses into Logo */}
-            {/* ========================================================================= */}
+            {/* GROUP 1: EXIT GROUP ("Meet your") */}
             <div
               className="meet-your-exit-wrapper"
               style={{
@@ -345,9 +415,7 @@ export function AlliesIntro() {
               &nbsp;
             </span>
 
-            {/* ========================================================================= */}
-            {/* GROUP 2: BRAND GROUP ("[LOGO] allies") - Glides smoothly into exact center */}
-            {/* ========================================================================= */}
+            {/* GROUP 2: BRAND GROUP ("[LOGO] allies") */}
             <div
               className="brand-recenter-wrapper"
               style={{
@@ -358,7 +426,7 @@ export function AlliesIntro() {
                 willChange: "transform",
               }}
             >
-              {/* RESERVED LOGO SLOT (Fixed geometric slot with stable dimensions) */}
+              {/* RESERVED LOGO SLOT */}
               <div
                 className="logo-slot"
                 style={{
@@ -371,7 +439,6 @@ export function AlliesIntro() {
                   flexShrink: 0,
                 }}
               >
-                {/* LOGO ENTRANCE & ALIGNMENT WRAPPER */}
                 <div
                   style={{
                     width: HEADLINE_LAYOUT.logoWidth,
@@ -404,7 +471,7 @@ export function AlliesIntro() {
                 </div>
               </div>
 
-              {/* WORD 3: "allies" (Translates from -logoShiftDistance to 0 during entrance, pulls left on exit) */}
+              {/* WORD 3: "allies" */}
               <div
                 style={{
                   height: "100%",
@@ -430,49 +497,157 @@ export function AlliesIntro() {
           </div>
         )}
 
-        {/* REUSABLE ALLY ACTORS (PERMANENT IDENTITIES: ROLLY, ROCKY, GHOSTY, BOXY) */}
+        {/* ========================================================================= */}
+        {/* CLICK SPARK BURSTS (Frame-driven Remotion Vector Burst Effects) */}
+        {/* ========================================================================= */}
 
-        {/* 1. Blue Ally (Rolly): Descends smoothly along upper arc */}
+        {/* 1. Pink Click Spark */}
+        <ClickSpark
+          x={CAPABILITY_LINES_LAYOUT.line1.x}
+          y={CAPABILITY_LINES_LAYOUT.line1.y + 36}
+          triggerFrame={TIMING.PINK_LINE1_CLICK_FRAME}
+          currentFrame={frame}
+          color={ALLY_COLORS.pink}
+        />
+
+        {/* 2. Blue Click Spark */}
+        <ClickSpark
+          x={CAPABILITY_LINES_LAYOUT.line2.x}
+          y={CAPABILITY_LINES_LAYOUT.line2.y + 36}
+          triggerFrame={TIMING.BLUE_LINE2_CLICK_FRAME}
+          currentFrame={frame}
+          color={ALLY_COLORS.blue}
+        />
+
+        {/* 3. Green Click Spark */}
+        <ClickSpark
+          x={CAPABILITY_LINES_LAYOUT.line3.x}
+          y={CAPABILITY_LINES_LAYOUT.line3.y + 36}
+          triggerFrame={TIMING.GREEN_LINE3_CLICK_FRAME}
+          currentFrame={frame}
+          color={ALLY_COLORS.green}
+        />
+
+        {/* 4. Yellow Click Spark */}
+        <ClickSpark
+          x={CAPABILITY_LINES_LAYOUT.line4.x}
+          y={CAPABILITY_LINES_LAYOUT.line4.y + 36}
+          triggerFrame={TIMING.YELLOW_LINE4_CLICK_FRAME}
+          currentFrame={frame}
+          color={ALLY_COLORS.yellow}
+        />
+
+        {/* ========================================================================= */}
+        {/* 4 CAPABILITY STATEMENTS (Word-by-word reveal & Ally Color -> Black) */}
+        {/* ========================================================================= */}
+
+        {/* Line 1: Pink ("We’re personal helpers built around what matters to you.") */}
+        <CapabilityLine
+          words={CAPABILITY_LINES_LAYOUT.line1.words}
+          startX={CAPABILITY_LINES_LAYOUT.line1.x}
+          startY={CAPABILITY_LINES_LAYOUT.line1.y}
+          startFrame={TIMING.PINK_LINE1_WRITE_START}
+          currentFrame={frame}
+          allyColor={ALLY_COLORS.pink}
+          exitProgress={capabilityExitProgress}
+        />
+
+        {/* Line 2: Blue ("Our job is to give you back time") */}
+        <CapabilityLine
+          words={CAPABILITY_LINES_LAYOUT.line2.words}
+          startX={CAPABILITY_LINES_LAYOUT.line2.x}
+          startY={CAPABILITY_LINES_LAYOUT.line2.y}
+          startFrame={TIMING.BLUE_LINE2_WRITE_START}
+          currentFrame={frame}
+          allyColor={ALLY_COLORS.blue}
+          exitProgress={capabilityExitProgress}
+        />
+
+        {/* Line 3: Green ("We track your finances, spot overspending, and keep you updated") */}
+        <CapabilityLine
+          words={CAPABILITY_LINES_LAYOUT.line3.words}
+          startX={CAPABILITY_LINES_LAYOUT.line3.x}
+          startY={CAPABILITY_LINES_LAYOUT.line3.y}
+          startFrame={TIMING.GREEN_LINE3_WRITE_START}
+          currentFrame={frame}
+          allyColor={ALLY_COLORS.green}
+          exitProgress={capabilityExitProgress}
+        />
+
+        {/* Line 4: Yellow ("We remember what matters and keep you in control") */}
+        <CapabilityLine
+          words={CAPABILITY_LINES_LAYOUT.line4.words}
+          startX={CAPABILITY_LINES_LAYOUT.line4.x}
+          startY={CAPABILITY_LINES_LAYOUT.line4.y}
+          startFrame={TIMING.YELLOW_LINE4_WRITE_START}
+          currentFrame={frame}
+          allyColor={ALLY_COLORS.yellow}
+          exitProgress={capabilityExitProgress}
+        />
+
+        {/* ========================================================================= */}
+        {/* COLLABORATIVE STATEMENT ("When a task needs more than one of us, we work together") */}
+        {/* ========================================================================= */}
+        <CollaborativeStatement
+          startFrame={TIMING.COLLABORATIVE_START}
+          currentFrame={frame}
+          exitProgress={collabExitProgress}
+        />
+
+        {/* ========================================================================= */}
+        {/* FINAL CTA & WAITLIST URL ("Come meet your ally" & "yourallies.io") */}
+        {/* ========================================================================= */}
+        <EndCTA
+          textStartFrame={TIMING.CTA_TEXT_START}
+          urlStartFrame={TIMING.CTA_URL_START}
+          currentFrame={frame}
+        />
+
+        {/* ========================================================================= */}
+        {/* REUSABLE ALLY ACTORS (PERMANENT IDENTITIES: ROLLY, ROCKY, GHOSTY, BOXY) */}
+        {/* ========================================================================= */}
+
+        {/* 1. Blue Ally (Rolly) */}
         <AllyActor
           identity="rolly"
           config={ALLIES.blue}
           currentFrame={frame}
           size={153}
           pointerSize={110.5}
-          clearance={ALLY_ACTORS.clearance}
+          clearance={10.0}
           entryTiltDeg={-8}
         />
 
-        {/* 2. Green Ally (Rocky): Rises gracefully along lower-left arc */}
+        {/* 2. Green Ally (Rocky) */}
         <AllyActor
           identity="rocky"
           config={ALLIES.green}
           currentFrame={frame}
           size={153}
           pointerSize={110.5}
-          clearance={ALLY_ACTORS.clearance}
+          clearance={10.0}
           entryTiltDeg={8}
         />
 
-        {/* 3. Pink Ally (Ghosty): Sweeps inward along right arc */}
+        {/* 3. Pink Ally (Ghosty) */}
         <AllyActor
           identity="ghosty"
           config={ALLIES.pink}
           currentFrame={frame}
           size={153}
           pointerSize={110.5}
-          clearance={ALLY_ACTORS.clearance}
+          clearance={10.0}
           entryTiltDeg={-10}
         />
 
-        {/* 4. Yellow Ally (Boxy): Glides upward along lower-right arc */}
+        {/* 4. Yellow Ally (Boxy) */}
         <AllyActor
           identity="boxy"
           config={ALLIES.yellow}
           currentFrame={frame}
           size={153}
           pointerSize={110.5}
-          clearance={ALLY_ACTORS.clearance}
+          clearance={10.0}
           entryTiltDeg={8}
         />
 
@@ -485,3 +660,4 @@ export function AlliesIntro() {
     </AbsoluteFill>
   );
 }
+

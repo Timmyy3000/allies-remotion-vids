@@ -2,7 +2,7 @@ export const CANVAS = {
   width: 3840,
   height: 2160,
   fps: 60,
-  durationInFrames: 1200,
+  durationInFrames: 1800,
 } as const;
 
 export const TYPOGRAPHY = {
@@ -63,6 +63,85 @@ export const TEXT_STAGE_SAFE_RECT = {
   right: 3080,
   top: 680,
   bottom: 1480,
+} as const;
+
+// 4 Capability Lines Layout (OpenRunde-Semibold in 4K space)
+export const CAPABILITY_LINES_LAYOUT = {
+  fontSize: 66,
+  fontWeight: 600,
+  letterSpacing: -0.6,
+  lineHeight: 1.25,
+  line1: {
+    x: 780,
+    y: 620,
+    endX: 2540,
+    text: "We’re personal helpers built around what matters to you.",
+    words: ["We’re", "personal", "helpers", "built", "around", "what", "matters", "to", "you."],
+  },
+  line2: {
+    x: 780,
+    y: 770,
+    endX: 1940,
+    text: "Our job is to give you back time",
+    words: ["Our", "job", "is", "to", "give", "you", "back", "time"],
+  },
+  line3: {
+    x: 780,
+    y: 920,
+    endX: 2980,
+    text: "We track your finances, spot overspending, and keep you updated",
+    words: ["We", "track", "your", "finances,", "spot", "overspending,", "and", "keep", "you", "updated"],
+  },
+  line4: {
+    x: 780,
+    y: 1070,
+    endX: 2580,
+    text: "We remember what matters and keep you in control",
+    words: ["We", "remember", "what", "matters", "and", "keep", "you", "in", "control"],
+  },
+} as const;
+
+// Snuggle Cluster Anchors (Bottom-Center friendly team huddle)
+export const SNUGGLE_CLUSTER_POSITIONS = {
+  blue: { x: 1720, y: 1820 },
+  pink: { x: 1850, y: 1790 },
+  green: { x: 1990, y: 1830 },
+  yellow: { x: 2120, y: 1800 },
+} as const;
+
+// Collaborative Statement Layout
+export const COLLABORATIVE_LAYOUT = {
+  centerX: 1920,
+  centerY: 1360,
+  fontSize: 62,
+  fontWeight: 600,
+  letterSpacing: -0.6,
+  text: "When a task needs more than one of us, we work together",
+  words: ["When", "a", "task", "needs", "more", "than", "one", "of", "us,", "we", "work", "together"],
+} as const;
+
+// CTA Framing Positions & Layout
+export const CTA_SURROUND_POSITIONS = {
+  blue: { x: 1920, y: 680 },   // Top
+  green: { x: 1060, y: 1080 },  // Left
+  pink: { x: 2780, y: 1080 },   // Right
+  yellow: { x: 1920, y: 1480 }, // Bottom
+} as const;
+
+export const CTA_LAYOUT = {
+  centerX: 1920,
+  mainTextY: 1010,
+  mainFontSize: 88,
+  mainFontWeight: 700,
+  mainLetterSpacing: -1.0,
+  mainText: "Come meet your ally",
+
+  urlY: 1150,
+  urlFontSize: 66,
+  urlFontWeight: 600,
+  urlLetterSpacing: -0.6,
+  urlText: "yourallies.io",
+  urlColor: "#FF5800",
 } as const;
 
 export const ALLY_ACTORS = {

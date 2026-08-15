@@ -175,8 +175,114 @@ export const ALL_ALLIES_SPREAD_SETTLED = PINK_SPREAD_START + PINK_SPREAD_DURATIO
 // ============================================================================
 export const STAGE_READY_FRAME = ALL_ALLIES_SPREAD_SETTLED; // Frame 592 (~9.87s)
 
-// Total Composition Capacity (20 seconds = 1200 frames)
-export const TOTAL_DURATION_FRAMES = 1200;
+// ============================================================================
+// PHASE 17: LINE 1 (PINK - "We’re personal helpers built around what matters to you.")
+// ============================================================================
+export const PINK_LINE1_SPIT_START = STAGE_READY_FRAME; // Frame 592
+export const PINK_LINE1_APPROACH_START = PINK_LINE1_SPIT_START + 8; // Frame 600
+export const PINK_LINE1_APPROACH_DURATION = 36;
+export const PINK_LINE1_CLICK_FRAME = PINK_LINE1_APPROACH_START + PINK_LINE1_APPROACH_DURATION; // Frame 636
+export const PINK_LINE1_WRITE_START = PINK_LINE1_CLICK_FRAME; // Frame 636
+export const PINK_LINE1_WRITE_DURATION = 94; // ~1.57s for 9 words
+export const PINK_LINE1_WRITE_END = PINK_LINE1_WRITE_START + PINK_LINE1_WRITE_DURATION; // Frame 730
+export const PINK_LINE1_SWALLOW_START = PINK_LINE1_WRITE_END; // Frame 730
+export const PINK_LINE1_SETTLE_END = PINK_LINE1_SWALLOW_START + 20; // Frame 750
+
+// ============================================================================
+// PHASE 18: LINE 2 (BLUE - "Our job is to give you back time")
+// ============================================================================
+export const BLUE_LINE2_SPIT_START = PINK_LINE1_SETTLE_END; // Frame 750
+export const BLUE_LINE2_APPROACH_START = BLUE_LINE2_SPIT_START + 8; // Frame 758
+export const BLUE_LINE2_APPROACH_DURATION = 34;
+export const BLUE_LINE2_CLICK_FRAME = BLUE_LINE2_APPROACH_START + BLUE_LINE2_APPROACH_DURATION; // Frame 792
+export const BLUE_LINE2_WRITE_START = BLUE_LINE2_CLICK_FRAME; // Frame 792
+export const BLUE_LINE2_WRITE_DURATION = 76; // ~1.27s for 8 words
+export const BLUE_LINE2_WRITE_END = BLUE_LINE2_WRITE_START + BLUE_LINE2_WRITE_DURATION; // Frame 868
+export const BLUE_LINE2_SWALLOW_START = BLUE_LINE2_WRITE_END; // Frame 868
+export const BLUE_LINE2_SETTLE_END = BLUE_LINE2_SWALLOW_START + 20; // Frame 888
+
+// ============================================================================
+// PHASE 19: LINE 3 (GREEN - "We track your finances, spot overspending, and keep you updated")
+// ============================================================================
+export const GREEN_LINE3_SPIT_START = BLUE_LINE2_SETTLE_END; // Frame 888
+export const GREEN_LINE3_APPROACH_START = GREEN_LINE3_SPIT_START + 8; // Frame 896
+export const GREEN_LINE3_APPROACH_DURATION = 38;
+export const GREEN_LINE3_CLICK_FRAME = GREEN_LINE3_APPROACH_START + GREEN_LINE3_APPROACH_DURATION; // Frame 934
+export const GREEN_LINE3_WRITE_START = GREEN_LINE3_CLICK_FRAME; // Frame 934
+export const GREEN_LINE3_WRITE_DURATION = 106; // ~1.77s for 10 words
+export const GREEN_LINE3_WRITE_END = GREEN_LINE3_WRITE_START + GREEN_LINE3_WRITE_DURATION; // Frame 1040
+export const GREEN_LINE3_SWALLOW_START = GREEN_LINE3_WRITE_END; // Frame 1040
+export const GREEN_LINE3_SETTLE_END = GREEN_LINE3_SWALLOW_START + 20; // Frame 1060
+
+// ============================================================================
+// PHASE 20: LINE 4 (YELLOW - "We remember what matters and keep you in control")
+// ============================================================================
+export const YELLOW_LINE4_SPIT_START = GREEN_LINE3_SETTLE_END; // Frame 1060
+export const YELLOW_LINE4_APPROACH_START = YELLOW_LINE4_SPIT_START + 8; // Frame 1068
+export const YELLOW_LINE4_APPROACH_DURATION = 36;
+export const YELLOW_LINE4_CLICK_FRAME = YELLOW_LINE4_APPROACH_START + YELLOW_LINE4_APPROACH_DURATION; // Frame 1104
+export const YELLOW_LINE4_WRITE_START = YELLOW_LINE4_CLICK_FRAME; // Frame 1104
+export const YELLOW_LINE4_WRITE_DURATION = 92; // ~1.53s for 9 words
+export const YELLOW_LINE4_WRITE_END = YELLOW_LINE4_WRITE_START + YELLOW_LINE4_WRITE_DURATION; // Frame 1196
+export const YELLOW_LINE4_SWALLOW_START = YELLOW_LINE4_WRITE_END; // Frame 1196
+export const YELLOW_LINE4_SETTLE_END = YELLOW_LINE4_SWALLOW_START + 20; // Frame 1216
+
+// ============================================================================
+// PHASE 21: 4 CAPABILITY LINES FULL SETTLED HOLD
+// ============================================================================
+export const CAPABILITY_LINES_HOLD_END = YELLOW_LINE4_SETTLE_END + 24; // Frame 1240
+
+// ============================================================================
+// PHASE 22: CAPABILITY LINES EXIT & ALLIES MOVE TO BOTTOM SNUGGLE CLUSTER
+// ============================================================================
+export const CAPABILITY_LINES_EXIT_START = CAPABILITY_LINES_HOLD_END; // Frame 1240
+export const CAPABILITY_LINES_EXIT_DURATION = 30;
+export const CAPABILITY_LINES_EXIT_END = CAPABILITY_LINES_EXIT_START + CAPABILITY_LINES_EXIT_DURATION; // Frame 1270
+
+export const SNUGGLE_SPIT_START = CAPABILITY_LINES_HOLD_END; // Frame 1240
+export const SNUGGLE_MOVE_START = SNUGGLE_SPIT_START + 8; // Frame 1248
+export const SNUGGLE_MOVE_DURATION = 52;
+export const SNUGGLE_SETTLED_FRAME = SNUGGLE_MOVE_START + SNUGGLE_MOVE_DURATION; // Frame 1300
+
+// ============================================================================
+// PHASE 23: COLLABORATIVE STATEMENT ("When a task needs more than one of us, we work together")
+// ============================================================================
+export const COLLABORATIVE_START = SNUGGLE_SETTLED_FRAME + 4; // Frame 1304
+export const COLLABORATIVE_DURATION = 76;
+export const COLLABORATIVE_SETTLED = COLLABORATIVE_START + COLLABORATIVE_DURATION; // Frame 1380
+export const COLLABORATIVE_HOLD_END = COLLABORATIVE_SETTLED + 44; // Frame 1424
+
+// ============================================================================
+// PHASE 24: COLLABORATIVE STATEMENT EXIT
+// ============================================================================
+export const COLLABORATIVE_EXIT_START = COLLABORATIVE_HOLD_END; // Frame 1424
+export const COLLABORATIVE_EXIT_DURATION = 26;
+export const COLLABORATIVE_EXIT_END = COLLABORATIVE_EXIT_START + COLLABORATIVE_EXIT_DURATION; // Frame 1450
+
+// ============================================================================
+// PHASE 25: ALLIES MOVE TO SURROUND CTA
+// ============================================================================
+export const CTA_SURROUND_SPIT_START = COLLABORATIVE_EXIT_START + 6; // Frame 1430
+export const CTA_SURROUND_MOVE_START = CTA_SURROUND_SPIT_START + 8; // Frame 1438
+export const CTA_SURROUND_MOVE_DURATION = 56;
+export const CTA_SURROUND_SETTLED = CTA_SURROUND_MOVE_START + CTA_SURROUND_MOVE_DURATION; // Frame 1494
+
+// ============================================================================
+// PHASE 26: FINAL CTA REVEAL ("Come meet your ally" & "yourallies.io")
+// ============================================================================
+export const CTA_TEXT_START = CTA_SURROUND_SETTLED + 6; // Frame 1500
+export const CTA_TEXT_DURATION = 36;
+export const CTA_TEXT_SETTLED = CTA_TEXT_START + CTA_TEXT_DURATION; // Frame 1536
+
+export const CTA_URL_START = CTA_TEXT_START + 26; // Frame 1526 (revealed shortly after main text)
+export const CTA_URL_DURATION = 36;
+export const CTA_URL_SETTLED = CTA_URL_START + CTA_URL_DURATION; // Frame 1562
+
+// ============================================================================
+// PHASE 27: FINAL CTA HOLD & LIVING FINALE
+// ============================================================================
+export const FINAL_CTA_HOLD_START = CTA_URL_SETTLED; // Frame 1562
+export const TOTAL_DURATION_FRAMES = 1800; // 30.0 seconds at 60fps
 
 // Export structured object for clean access across components
 export const TIMING = {
@@ -284,6 +390,84 @@ export const TIMING = {
 
   // Phase 16
   STAGE_READY_FRAME,
+
+  // Phase 17 (Pink Line 1)
+  PINK_LINE1_SPIT_START,
+  PINK_LINE1_APPROACH_START,
+  PINK_LINE1_APPROACH_DURATION,
+  PINK_LINE1_CLICK_FRAME,
+  PINK_LINE1_WRITE_START,
+  PINK_LINE1_WRITE_DURATION,
+  PINK_LINE1_WRITE_END,
+  PINK_LINE1_SWALLOW_START,
+  PINK_LINE1_SETTLE_END,
+
+  // Phase 18 (Blue Line 2)
+  BLUE_LINE2_SPIT_START,
+  BLUE_LINE2_APPROACH_START,
+  BLUE_LINE2_APPROACH_DURATION,
+  BLUE_LINE2_CLICK_FRAME,
+  BLUE_LINE2_WRITE_START,
+  BLUE_LINE2_WRITE_DURATION,
+  BLUE_LINE2_WRITE_END,
+  BLUE_LINE2_SWALLOW_START,
+  BLUE_LINE2_SETTLE_END,
+
+  // Phase 19 (Green Line 3)
+  GREEN_LINE3_SPIT_START,
+  GREEN_LINE3_APPROACH_START,
+  GREEN_LINE3_APPROACH_DURATION,
+  GREEN_LINE3_CLICK_FRAME,
+  GREEN_LINE3_WRITE_START,
+  GREEN_LINE3_WRITE_DURATION,
+  GREEN_LINE3_WRITE_END,
+  GREEN_LINE3_SWALLOW_START,
+  GREEN_LINE3_SETTLE_END,
+
+  // Phase 20 (Yellow Line 4)
+  YELLOW_LINE4_SPIT_START,
+  YELLOW_LINE4_APPROACH_START,
+  YELLOW_LINE4_APPROACH_DURATION,
+  YELLOW_LINE4_CLICK_FRAME,
+  YELLOW_LINE4_WRITE_START,
+  YELLOW_LINE4_WRITE_DURATION,
+  YELLOW_LINE4_WRITE_END,
+  YELLOW_LINE4_SWALLOW_START,
+  YELLOW_LINE4_SETTLE_END,
+
+  // Phase 21 & 22 (Capability Lines Exit & Snuggle Move)
+  CAPABILITY_LINES_HOLD_END,
+  CAPABILITY_LINES_EXIT_START,
+  CAPABILITY_LINES_EXIT_DURATION,
+  CAPABILITY_LINES_EXIT_END,
+  SNUGGLE_SPIT_START,
+  SNUGGLE_MOVE_START,
+  SNUGGLE_MOVE_DURATION,
+  SNUGGLE_SETTLED_FRAME,
+
+  // Phase 23 & 24 (Collaborative Statement)
+  COLLABORATIVE_START,
+  COLLABORATIVE_DURATION,
+  COLLABORATIVE_SETTLED,
+  COLLABORATIVE_HOLD_END,
+  COLLABORATIVE_EXIT_START,
+  COLLABORATIVE_EXIT_DURATION,
+  COLLABORATIVE_EXIT_END,
+
+  // Phase 25 (CTA Surround Move)
+  CTA_SURROUND_SPIT_START,
+  CTA_SURROUND_MOVE_START,
+  CTA_SURROUND_MOVE_DURATION,
+  CTA_SURROUND_SETTLED,
+
+  // Phase 26 & 27 (CTA Reveal & Final Hold)
+  CTA_TEXT_START,
+  CTA_TEXT_DURATION,
+  CTA_TEXT_SETTLED,
+  CTA_URL_START,
+  CTA_URL_DURATION,
+  CTA_URL_SETTLED,
+  FINAL_CTA_HOLD_START,
 } as const;
 
 /**
@@ -304,5 +488,19 @@ export function getTimelinePhase(frame: number): string {
   if (frame < LOGO_COLLAPSE_END) return "BRAND_COLLAPSE";
   if (frame < STAGE_SPREAD_START) return "EMPTY_CENTER_HOLD";
   if (frame < ALL_ALLIES_SPREAD_SETTLED) return "STAGE_SPREAD_MOTION";
-  return "WRITING_STAGE_READY";
+  if (frame < PINK_LINE1_CLICK_FRAME) return "PINK_APPROACH";
+  if (frame < PINK_LINE1_WRITE_END) return "PINK_LINE1_WRITING";
+  if (frame < BLUE_LINE2_CLICK_FRAME) return "BLUE_APPROACH";
+  if (frame < BLUE_LINE2_WRITE_END) return "BLUE_LINE2_WRITING";
+  if (frame < GREEN_LINE3_CLICK_FRAME) return "GREEN_APPROACH";
+  if (frame < GREEN_LINE3_WRITE_END) return "GREEN_LINE3_WRITING";
+  if (frame < YELLOW_LINE4_CLICK_FRAME) return "YELLOW_APPROACH";
+  if (frame < YELLOW_LINE4_WRITE_END) return "YELLOW_LINE4_WRITING";
+  if (frame < CAPABILITY_LINES_EXIT_START) return "CAPABILITY_LINES_HOLD";
+  if (frame < SNUGGLE_SETTLED_FRAME) return "SNUGGLE_GATHER_MOTION";
+  if (frame < COLLABORATIVE_EXIT_START) return "COLLABORATIVE_STATEMENT";
+  if (frame < CTA_SURROUND_SETTLED) return "CTA_SURROUND_MOTION";
+  if (frame < CTA_URL_SETTLED) return "CTA_REVEAL";
+  return "FINAL_CTA_HOLD";
 }
+

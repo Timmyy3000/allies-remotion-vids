@@ -149,8 +149,16 @@ export function AllyActor({
             </div>
           )}
 
-          {/* Layer 5: Ally Orb & Permanent Character Identity (State Switcher) */}
-          <div style={{ position: "relative", zIndex: 1 }}>
+          {/* Layer 5: Ally Orb & Permanent Character Identity (State Switcher with Squash & Stretch) */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
+              transform: `scale(${travel.blobSquashX.toFixed(3)}, ${travel.blobSquashY.toFixed(3)})`,
+              transformOrigin: "center center",
+              willChange: "transform",
+            }}
+          >
             {children ?? (
               <AllyOrb color={activeColor} size={size}>
                 <AllyVisual identity={identity} state={activeState} />
