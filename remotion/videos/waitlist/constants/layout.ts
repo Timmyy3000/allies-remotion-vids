@@ -45,18 +45,19 @@ export const HEADLINE_LAYOUT = {
 
 export const BRAND_GATHER_PADDING = 80.0;
 
-export const LOGO_DELIVERY_LAYOUT = {
-  blueEntry: { x: 960, y: -280 },
-  logoDockTarget: { x: 1920 - HEADLINE_LAYOUT.totalContainerWidth / 2 + HEADLINE_LAYOUT.exitGroupWidth + HEADLINE_LAYOUT.wordGap + HEADLINE_LAYOUT.logoShiftDistance / 2, y: 1080 },
-  blueDockPosition: { x: 1640, y: 880 },
-  bluePostDockRoam: { x: 1600, y: 640 },
-} as const;
-
 export const WORD_CARRIAGE_LAYOUT = {
-  greenMeetPickup: { x: 1320, y: 1080 },
-  greenMeetExit: { x: -480, y: 880 },
-  yellowYourPickup: { x: 1980, y: 1080 },
-  yellowYourExit: { x: -480, y: 1680 },
+  meetPickup: {
+    textCenter: { x: 1034.01, y: 1080.0 },
+    actorBody: { x: 1034.0, y: 840.0 },
+    cursorTip: { x: 1034.0, y: 980.0 },
+  },
+  yourPickup: {
+    textCenter: { x: 1734.94, y: 1080.0 },
+    actorBody: { x: 1735.0, y: 840.0 },
+    cursorTip: { x: 1735.0, y: 980.0 },
+  },
+  greenMeetExit: { x: -480, y: 780 },
+  yellowYourExit: { x: -480, y: 1650 },
   greenReturnTarget: { x: 1220, y: 1360 },
   yellowReturnTarget: { x: 2060, y: 1440 },
 } as const;
@@ -86,7 +87,7 @@ export const WRITING_STAGE_POSITIONS = {
   blue: { x: 640, y: 500 },
   green: { x: 560, y: 1720 },
   yellow: { x: 3260, y: 1740 },
-  pink: { x: 3300, y: 840 }, // Active staging anchor ready to initiate first line
+  pink: { x: 3300, y: 840 },
 } as const;
 
 export const TEXT_STAGE_SAFE_RECT = {
@@ -131,11 +132,6 @@ function domainActorLeadDistance(pieceWidth: number) {
   );
 }
 
-/**
- * The second lockup uses the same headline metrics as the opening title, but
- * keeps each arriving domain piece in a measured slot so the ally can land it
- * without shifting the already-settled "allies" word.
- */
 export const DOMAIN_LAYOUT = {
   centerX: 1920,
   centerY: 1080,
@@ -244,8 +240,6 @@ export const DOMAIN_DRAG_TARGETS = {
 } as const;
 
 export const DOMAIN_EXIT_POSITIONS = {
-  // Keep the finished allies close to the lockup so the final hold reads as
-  // a living wordmark rather than an immediate exit to the corners.
   blue: {
     x: DOMAIN_LAYOUT.pieces.your.centerX - 300,
     y: DOMAIN_LAYOUT.centerY - 300,
@@ -270,7 +264,7 @@ export const ALLY_ACTORS = {
   clearance: 35,
   blue: {
     entry: { x: 1280, y: -220 },
-    final: { x: 1720, y: 620 },
+    final: { x: 1600, y: 640 },
     arc: { x: 90, y: -45 },
     entryRotation: -14,
     pointer: { offsetX: 68, offsetY: -34, baseRotation: -15, flipX: false },
@@ -278,13 +272,13 @@ export const ALLY_ACTORS = {
       yRange: [-18, 18] as [number, number],
       xRange: [0, 7] as [number, number],
       rotRange: [0, 2.5] as [number, number],
-      periodFrames: 222, // 3.7s * 60
+      periodFrames: 222,
       phase: 0,
     },
   },
   green: {
     entry: { x: -220, y: 1980 },
-    final: { x: 620, y: 1540 },
+    final: { x: 1220, y: 1360 },
     arc: { x: -50, y: 60 },
     entryRotation: 16,
     pointer: { offsetX: 68, offsetY: -34, baseRotation: -15, flipX: false },
@@ -292,13 +286,13 @@ export const ALLY_ACTORS = {
       yRange: [-15, 15] as [number, number],
       xRange: [-7, 0] as [number, number],
       rotRange: [-2, 2] as [number, number],
-      periodFrames: 264, // 4.4s * 60
+      periodFrames: 264,
       phase: 1.2,
     },
   },
   pink: {
     entry: { x: 4060, y: 720 },
-    final: { x: 3360, y: 940 },
+    final: { x: 2660, y: 1020 },
     arc: { x: 60, y: -50 },
     entryRotation: -16,
     pointer: { offsetX: 68, offsetY: -34, baseRotation: -20, flipX: false },
@@ -306,13 +300,13 @@ export const ALLY_ACTORS = {
       yRange: [-14, 14] as [number, number],
       xRange: [0, 9] as [number, number],
       rotRange: [-2.5, 2.5] as [number, number],
-      periodFrames: 246, // 4.1s * 60
+      periodFrames: 246,
       phase: 2.4,
     },
   },
   yellow: {
     entry: { x: 2850, y: 2380 },
-    final: { x: 2520, y: 1540 },
+    final: { x: 2060, y: 1440 },
     arc: { x: -60, y: 40 },
     entryRotation: 14,
     pointer: { offsetX: 68, offsetY: -34, baseRotation: -15, flipX: false },
@@ -320,7 +314,7 @@ export const ALLY_ACTORS = {
       yRange: [-20, 20] as [number, number],
       xRange: [-5, 5] as [number, number],
       rotRange: [0, 2.5] as [number, number],
-      periodFrames: 198, // 3.3s * 60
+      periodFrames: 198,
       phase: 3.6,
     },
   },

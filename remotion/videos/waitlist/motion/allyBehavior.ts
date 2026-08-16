@@ -1,15 +1,17 @@
 /**
- * 3-Layer Character Motion Model & Physical Playfulness Engine (V4)
+ * 3-Layer Character Motion Model & Physical Playfulness Engine (V5)
  *
  * Architecture:
  * - Layer 1: Ambient Life (continuous organic Lissajous drift, gentle breathing, eyeball gaze)
  * - Layer 2: Reactive Motion (startles, side-steps, leans, yielding, curiosity bobs)
- * - Layer 3: Intentional Hero Actions (Double-Hop, Text Boop, Race, Single Swirl, Near-Miss,
- *             Peek-Behind, Squeeze-In, Gap-Thread, Follow-and-Peel, Final Linger)
+ * - Layer 3: Intentional Hero Actions (Double-Hop, Physical Text Boop, Brand Race,
+ *             Single Momentum Swirl, Near-Miss, Peek-Behind, Squeeze-In, Gap-Thread,
+ *             Follow-and-Peel, Final Linger)
  *
- * Enforces strictly:
- * - Single-Swirl Count = 1 in entire video
+ * Invariants Guaranteed:
+ * - Single-Swirl Count = 1 in entire video (strictly as consequence of race contact)
  * - Single-Race Count = 1 in entire video
+ * - Single Double-Hop Count = 1 in entire video
  * - Continuous velocity blending & smooth area-preserving soft-body deformations
  */
 
@@ -40,6 +42,7 @@ export interface TextBoopReaction {
 
 /**
  * Evaluates the physical reaction of the 'allies' text when booped by Pink.
+ * Impact frame is f500 (10 frames into PINK_BOOP_START).
  */
 export function getTextBoopReaction(frame: number): TextBoopReaction {
   const BOOP_START = TIMING.PINK_BOOP_START;
@@ -49,33 +52,40 @@ export function getTextBoopReaction(frame: number): TextBoopReaction {
     return { x: 0, y: 0, rotDeg: 0, scaleX: 1, scaleY: 1 };
   }
 
-  const p = (frame - BOOP_START) / BOOP_DURATION;
+  const age = frame - BOOP_START;
 
-  // Impact curve: sharp displacement (first 20%) -> damped elastic oscillation (remaining 80%)
-  if (p < 0.2) {
-    const inP = p / 0.2;
+  // Pre-impact drift (frames 0-9 before contact)
+  if (age < 10) {
+    return { x: 0, y: 0, rotDeg: 0, scaleX: 1, scaleY: 1 };
+  }
+
+  // Impact curve at age >= 10: sharp impulse -> single overshoot -> damped elastic settle
+  const p = (age - 10) / (BOOP_DURATION - 10);
+
+  if (p < 0.15) {
+    // Sharp impact compression (15% of reaction window)
+    const inP = p / 0.15;
     const squish = Math.sin(inP * Math.PI * 0.5);
     return {
-      x: -18 * squish,
-      y: 9 * squish,
-      rotDeg: -2.8 * squish,
-      scaleX: 1 - 0.045 * squish,
-      scaleY: 1 + 0.038 * squish,
+      x: -24 * squish,
+      y: -8 * squish,
+      rotDeg: -3.2 * squish,
+      scaleX: 1 - 0.052 * squish,
+      scaleY: 1 + 0.042 * squish,
     };
   }
 
-  const recoveryP = (p - 0.2) / 0.8;
-  const decay = Math.exp(-recoveryP * 4.2);
-  const oscillation = Math.cos(recoveryP * Math.PI * 3.5);
-
+  const recoveryP = (p - 0.15) / 0.85;
+  const decay = Math.exp(-recoveryP * 4.0);
+  const oscillation = Math.cos(recoveryP * Math.PI * 3.0);
   const currentDisplacement = decay * oscillation;
 
   return {
-    x: -18 * currentDisplacement,
-    y: 9 * currentDisplacement,
-    rotDeg: -2.8 * currentDisplacement,
-    scaleX: 1 - 0.045 * currentDisplacement,
-    scaleY: 1 + 0.038 * currentDisplacement,
+    x: -24 * currentDisplacement,
+    y: -8 * currentDisplacement,
+    rotDeg: -3.2 * currentDisplacement,
+    scaleX: 1 - 0.052 * currentDisplacement,
+    scaleY: 1 + 0.042 * currentDisplacement,
   };
 }
 
@@ -108,53 +118,59 @@ export function getAllyPlayfulOffset(
 
     // Double-hop cycle: 2 peaks
     const hopCycle = Math.sin(p * Math.PI * 4);
-    const hopHeight = Math.max(0, hopCycle) * 32 * env;
+    const hopHeight = Math.max(0, hopCycle) * 34 * env;
     offsetY -= hopHeight;
-    offsetRot += Math.sin(p * Math.PI * 2) * 6 * env;
+    offsetRot += Math.sin(p * Math.PI * 2) * 7 * env;
 
     // Contact bounce compression vs flight stretch
     if (hopHeight > 4) {
-      squashX *= 0.94;
-      squashY *= 1.06;
+      squashX *= 0.93;
+      squashY *= 1.07;
     } else {
-      squashX *= 1.05;
-      squashY *= 0.95;
+      squashX *= 1.06;
+      squashY *= 0.94;
     }
   }
 
   // =========================================================================
   // 2. LAYER 3: PINK'S PHYSICAL TEXT BOOP (Frames 490 to 530)
-  // Pink drifts in curiously and bumps into the right edge of 'allies' text
+  // Pink approaches from base (2660, 1020) and physically impacts right edge
+  // of centered "allies" text (rendered right edge at x=2439.2) at frame 500
   // =========================================================================
   const BOOP_START = TIMING.PINK_BOOP_START;
   const BOOP_DURATION = TIMING.PINK_BOOP_DURATION;
   if (frame >= BOOP_START && frame < BOOP_START + BOOP_DURATION && identity === "ghosty") {
-    const p = (frame - BOOP_START) / BOOP_DURATION;
-    const env = Math.sin(p * Math.PI);
+    const age = frame - BOOP_START;
 
-    if (p < 0.25) {
-      // Drift inward toward 'allies' text (around x=2200)
-      const inP = p / 0.25;
-      offsetX -= inP * 55;
-      offsetY += inP * 38;
-      offsetRot -= inP * 8;
+    if (age <= 10) {
+      // Approach right edge of "allies": reaches x=2490 (overlap ~25px with x=2439 edge)
+      const inP = age / 10;
+      const easeIn = inP * inP;
+      offsetX = -170 * easeIn;
+      offsetY = 40 * easeIn;
+      offsetRot = -10 * easeIn;
+
+      if (age === 10) {
+        // Peak impact compression at f500
+        squashX *= 0.94;
+        squashY *= 1.06;
+      }
     } else {
-      // Elastic collision recoil
-      const outP = (p - 0.25) / 0.75;
+      // Elastic collision recoil and rebound into new position
+      const outP = (age - 10) / (BOOP_DURATION - 10);
       const decay = Math.exp(-outP * 3.6);
-      const recoilX = -55 + (1 - decay) * 75;
-      const recoilY = 38 - (1 - decay) * 52;
-      offsetX += recoilX * env;
-      offsetY += recoilY * env;
-      offsetRot += (decay * -8 + (1 - decay) * 6) * env;
+      const recoilX = -170 + (1 - decay) * 70; // Settles at offsetX = -100 (x = 2560)
+      const recoilY = 40 - (1 - decay) * 80;  // Settles at offsetY = -40 (y = 980)
+      offsetX = recoilX;
+      offsetY = recoilY;
+      offsetRot = decay * -10 + (1 - decay) * 4;
 
-      // Soft-body contact compression
       const contact = evaluateContactResponse(frame, {
-        startFrame: BOOP_START + 8,
-        durationFrames: 28,
+        startFrame: BOOP_START + 10,
+        durationFrames: 25,
         impactAngleRad: -Math.PI * 0.2,
-        maxCompression: 0.055,
-        maxRecoil: 18,
+        maxCompression: 0.06,
+        maxRecoil: 20,
       });
       squashX *= contact.squashX;
       squashY *= contact.squashY;
@@ -162,54 +178,70 @@ export function getAllyPlayfulOffset(
   }
 
   // =========================================================================
-  // 3. LAYER 3: BLUE & PINK RACE AROUND 'allies' (Frames 530 to 585)
-  // Blue accelerates around wordmark; Pink chases on tighter inner line
+  // 3. LAYER 3: BLUE & PINK RACE AROUND 'allies' (Frames 515 to 595)
+  // Blue notices Pink's bump (f515-f535), squashes in anticipation, then darts off at f535!
+  // Pink notices Blue and gives chase at f542!
   // =========================================================================
   const RACE_START = TIMING.RACE_START;
   const RACE_DURATION = TIMING.RACE_DURATION;
+
+  // A. Blue Notice Phase (Frames 515 to 535)
+  if (frame >= 515 && frame < 535 && identity === "rolly") {
+    const p = (frame - 515) / 20;
+    const env = Math.sin(p * Math.PI);
+    // Blue tilts toward Pink (down-right), bobs in curiously, squashes in anticipation
+    offsetX += env * 25;
+    offsetY += env * 15;
+    offsetRot += env * 14;
+    squashX *= 1 + env * 0.05;
+    squashY *= 1 - env * 0.045;
+  }
+
+  // B. Active Race Phase (Frames 535 to 595)
   if (frame >= RACE_START && frame < RACE_START + RACE_DURATION) {
     const p = (frame - RACE_START) / RACE_DURATION;
     const env = Math.sin(p * Math.PI);
 
     if (identity === "rolly") {
-      // Blue leads race along outer curve
-      const raceAngle = p * Math.PI * 1.6 - Math.PI * 0.4;
-      const rx = 190;
-      const ry = 100;
-      offsetX += Math.cos(raceAngle) * rx * env - 40 * env;
-      offsetY += Math.sin(raceAngle) * ry * env - 20 * env;
-      offsetRot += Math.sin(p * Math.PI * 2) * 14 * env;
-      squashX *= 1 + 0.04 * env;
-      squashY *= 1 - 0.035 * env;
+      // Blue takes wide outer route around the top and right of the brand lockup
+      const raceAngle = p * Math.PI * 1.55 - Math.PI * 0.45;
+      const rx = 380;
+      const ry = 220;
+      offsetX += (Math.cos(raceAngle) * rx + 60) * env;
+      offsetY += (Math.sin(raceAngle) * ry + 180) * env;
+      offsetRot += Math.sin(p * Math.PI * 2) * 16 * env;
+      squashX *= 1 + 0.05 * env;
+      squashY *= 1 - 0.045 * env;
     } else if (identity === "ghosty") {
-      // Pink chases 7 frames delayed on a tighter inside cut (gaining on Blue)
+      // Pink starts chase 7 frames delayed on tighter inside line, catching up to Blue!
       const delayedP = Math.max(0, p - 0.12) / 0.88;
       const delayedEnv = Math.sin(delayedP * Math.PI);
-      const raceAngle = delayedP * Math.PI * 1.65 - Math.PI * 0.45;
-      const rx = 160;
-      const ry = 85;
-      offsetX += Math.cos(raceAngle) * rx * delayedEnv - 30 * delayedEnv;
-      offsetY += Math.sin(raceAngle) * ry * delayedEnv - 15 * delayedEnv;
-      offsetRot += Math.sin(delayedP * Math.PI * 2) * 12 * delayedEnv;
-      squashX *= 1 + 0.045 * delayedEnv;
-      squashY *= 1 - 0.04 * delayedEnv;
+      const raceAngle = delayedP * Math.PI * 1.65 - Math.PI * 0.55;
+      const rx = 310;
+      const ry = 175;
+      offsetX += (Math.cos(raceAngle) * rx - 100) * delayedEnv;
+      offsetY += (Math.sin(raceAngle) * ry + 120) * delayedEnv;
+      offsetRot += Math.sin(delayedP * Math.PI * 2) * 15 * delayedEnv;
+      squashX *= 1 + 0.055 * delayedEnv;
+      squashY *= 1 - 0.05 * delayedEnv;
     } else if (identity === "rocky") {
-      // Layer 2: Green notices racers zooming by and leans away (-24px)
-      const leanX = -Math.sin(p * Math.PI) * 26 * env;
-      const leanY = Math.sin(p * Math.PI) * 15 * env;
+      // Layer 2: Green leans away as racers zoom by
+      const leanX = -Math.sin(p * Math.PI) * 28 * env;
+      const leanY = Math.sin(p * Math.PI) * 16 * env;
       offsetX += leanX;
       offsetY += leanY;
       offsetRot -= Math.sin(p * Math.PI) * 6 * env;
     } else if (identity === "boxy") {
-      // Layer 2: Yellow does an excited micro-bob as racers pass
-      const bob = Math.sin(p * Math.PI * 2) * 8 * env;
+      // Layer 2: Yellow does an excited micro-bob
+      const bob = Math.sin(p * Math.PI * 2) * 10 * env;
       offsetY += bob;
     }
   }
 
   // =========================================================================
-  // 4. LAYER 3: THE ONE SINGLE SWIRL (Frames 580 to 630)
-  // THE ONLY SWIRL IN THE ENTIRE VIDEO: Pink catches Blue -> momentum spiral -> peel apart
+  // 4. LAYER 3: THE ONE SINGLE MOMENTUM SWIRL (Frames 595 to 640)
+  // STRICTLY THE ONLY SWIRL IN THE ENTIRE VIDEO:
+  // Pink catches Blue -> soft collision squash -> 220° shared spiral rotation -> peel apart
   // =========================================================================
   const SWIRL_START = TIMING.SWIRL_START;
   const SWIRL_DURATION = TIMING.SWIRL_DURATION;
@@ -218,27 +250,26 @@ export function getAllyPlayfulOffset(
     const env = Math.sin(p * Math.PI);
     const easeProgress = 0.5 - 0.5 * Math.cos(p * Math.PI);
 
-    const swirlRadius = 80 * env;
-    const angle = easeProgress * Math.PI * 1.33; // 240° smooth spiral
+    const swirlRadius = 75 * env;
+    const angle = easeProgress * Math.PI * 1.22; // 220° smooth spiral
 
     if (identity === "rolly") {
-      offsetX += Math.cos(angle) * swirlRadius - 20 * env;
-      offsetY += Math.sin(angle) * (swirlRadius * 0.55);
+      offsetX += Math.cos(angle) * swirlRadius - 40 * env;
+      offsetY += Math.sin(angle) * (swirlRadius * 0.6) + 120 * env;
       offsetRot += Math.sin(angle) * 12 * env;
 
-      // Contact compression at start of swirl
-      if (p < 0.3) {
-        squashX *= 0.95;
-        squashY *= 1.05;
+      if (p < 0.25) {
+        squashX *= 0.94;
+        squashY *= 1.06;
       }
     } else if (identity === "ghosty") {
-      offsetX += Math.cos(angle + Math.PI) * swirlRadius + 20 * env;
-      offsetY += Math.sin(angle + Math.PI) * (swirlRadius * 0.55);
+      offsetX += Math.cos(angle + Math.PI) * swirlRadius - 40 * env;
+      offsetY += Math.sin(angle + Math.PI) * (swirlRadius * 0.6) + 120 * env;
       offsetRot += Math.sin(angle + Math.PI) * 12 * env;
 
-      if (p < 0.3) {
-        squashX *= 0.95;
-        squashY *= 1.05;
+      if (p < 0.25) {
+        squashX *= 0.94;
+        squashY *= 1.06;
       }
     }
   }
@@ -320,7 +351,7 @@ export function getAllyPlayfulOffset(
 
   // =========================================================================
   // 8. LAYER 3: YELLOW & GREEN COZY SQUEEZE (Frames 1060 to 1125)
-  // Yellow snuggles next to Green; both compress 4.5%, Green yields 18px left
+  // Yellow snuggles next to Green; both compress 4.5%, Green yields 20px left
   // =========================================================================
   const SQUEEZE_START = TIMING.SQUEEZE_START;
   const SQUEEZE_DURATION = TIMING.SQUEEZE_DURATION;
@@ -329,7 +360,6 @@ export function getAllyPlayfulOffset(
     const env = Math.sin(p * Math.PI);
 
     if (identity === "boxy") {
-      // Boxy moves toward Rocky
       const approach = p < 0.4 ? (p / 0.4) * -45 : -45 + ((p - 0.4) / 0.6) * 15;
       offsetX += approach * env;
       offsetY -= Math.sin(p * Math.PI) * 10;
@@ -337,7 +367,6 @@ export function getAllyPlayfulOffset(
       squashX *= 1 - 0.05 * env;
       squashY *= 1 + 0.045 * env;
     } else if (identity === "rocky") {
-      // Rocky yields gently leftward
       const yieldAmt = p < 0.4 ? (p / 0.4) * -22 : -22 + ((p - 0.4) / 0.6) * 8;
       offsetX += yieldAmt * env;
       offsetRot += 4 * env;
@@ -357,7 +386,6 @@ export function getAllyPlayfulOffset(
     const env = Math.sin(p * Math.PI);
 
     if (identity === "rolly") {
-      // Blue sweeps diagonally across with safe elevation above text geometry
       const threadX = Math.sin(p * Math.PI) * 520 * env;
       const threadY = Math.sin(p * Math.PI) * -85 * env;
       offsetX += threadX;
@@ -366,11 +394,9 @@ export function getAllyPlayfulOffset(
       squashX *= 1 + 0.045 * env;
       squashY *= 1 - 0.04 * env;
     } else if (identity === "ghosty") {
-      // Pink leans upward to give Blue space
       offsetY -= Math.sin(p * Math.PI) * 28 * env;
       offsetRot += 5 * env;
     } else if (identity === "rocky") {
-      // Green leans downward to give Blue space
       offsetY += Math.sin(p * Math.PI) * 25 * env;
       offsetRot -= 5 * env;
     }
@@ -387,12 +413,10 @@ export function getAllyPlayfulOffset(
     const env = Math.sin(p * Math.PI);
 
     if (identity === "boxy") {
-      // Yellow drifts across
       offsetX += Math.sin(p * Math.PI) * -110 * env;
       offsetY += Math.sin(p * Math.PI) * 45 * env;
       offsetRot -= Math.sin(p * Math.PI) * 6 * env;
     } else if (identity === "ghosty") {
-      // Pink follows 8 frames delayed, then peels upward
       const delayedP = Math.max(0, p - 0.12) / 0.88;
       const delayedEnv = Math.sin(delayedP * Math.PI);
       const followX = Math.sin(delayedP * Math.PI) * -95 * delayedEnv;
@@ -412,7 +436,6 @@ export function getAllyPlayfulOffset(
   if (frame >= LINGER_START && frame < LINGER_START + LINGER_DURATION && identity === "rocky") {
     const p = (frame - LINGER_START) / LINGER_DURATION;
     const env = Math.sin(p * Math.PI);
-    // Soft look-back bob
     offsetRot += Math.sin(p * Math.PI) * 7 * env;
     offsetY -= Math.sin(p * Math.PI) * 8 * env;
   }

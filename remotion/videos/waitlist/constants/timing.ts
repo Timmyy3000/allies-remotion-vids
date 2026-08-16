@@ -1,5 +1,5 @@
 /**
- * Centralized Additive Timeline & Choreography Constants (V4 - 1560 Frames)
+ * Centralized Additive Timeline & Choreography Constants (V5 - 1560 Frames)
  *
  * Master Composition Working Duration: 1560 frames (~26.0 seconds at 60fps)
  */
@@ -13,97 +13,107 @@ export const TOTAL_DURATION_FRAMES = 1560;
 export const OPENING_BLANK_DURATION = 16; // ~0.27s
 
 // ============================================================================
-// PHASE 2: GENERATIVE FOCUS HEADLINE ENTRANCE ("Meet your")
+// PHASE 2: GENERATIVE FOCUS HEADLINE ENTRANCE ("Meet your allies")
 // ============================================================================
 export const TEXT_GENERATION_START = OPENING_BLANK_DURATION; // Frame 16
 export const MEET_FOCUS_START = TEXT_GENERATION_START; // Frame 16
 export const YOUR_FOCUS_START = MEET_FOCUS_START + 16; // Frame 32
+export const ALLIES_FOCUS_START = YOUR_FOCUS_START + 16; // Frame 48
 
 export const CHAR_FOCUS_SPEED = 1.15;
 export const CHAR_FOCUS_DURATION = Math.round((0.28 / CHAR_FOCUS_SPEED) * FPS); // 15 frames
-export const ALL_WORDS_FOCUSED = YOUR_FOCUS_START + CHAR_FOCUS_DURATION + 4; // Frame 51
+export const ALL_WORDS_FOCUSED = ALLIES_FOCUS_START + CHAR_FOCUS_DURATION + 4; // Frame 67
 
 // ============================================================================
 // PHASE 3: FULL PHRASE CRISP HOLD
 // ============================================================================
-export const FULL_PHRASE_HOLD_DURATION = 40; // ~0.67s
-export const FULL_PHRASE_HOLD_END = ALL_WORDS_FOCUSED + FULL_PHRASE_HOLD_DURATION; // Frame 91
+export const FULL_PHRASE_HOLD_DURATION = 36; // 0.60s
+export const FULL_PHRASE_HOLD_END = ALL_WORDS_FOCUSED + FULL_PHRASE_HOLD_DURATION; // Frame 103
 
 // ============================================================================
-// PHASE 4: BLUE LOGO DELIVERY & BRAND TRANSFORMATION
+// PHASE 4: BRAND TRANSFORMATION & LOGO SPRING ENTRANCE (Exact more-motion port)
 // ============================================================================
-// Blue enters carrying the orange Allies logo tile
-export const BLUE_LOGO_ENTRANCE_START = 105;
-export const BLUE_LOGO_ENTRANCE_DURATION = 75; // Arrives at slot at f180
-export const LOGO_DOCK_START = 175;
-export const LOGO_DOCK_SETTLE = 205; // Settles with 0.97 -> 1.0 compression
-
 // "allies" text slides to make room and turns orange
-export const BRAND_TRANSFORM_START = 115;
-export const BRAND_TRANSFORM_DURATION = 35;
+export const BRAND_TRANSFORM_START = FULL_PHRASE_HOLD_END; // Frame 103
+export const BRAND_TRANSFORM_DURATION = 24; // 0.40s
 
-export const ZOOM_OUT_START = 150;
-export const ZOOM_OUT_END = 190;
+// Official Allies SVG logo springs in (No Blue involvement)
+export const LOGO_START = BRAND_TRANSFORM_START + 6; // Frame 109
+export const LOGO_SETTLED = LOGO_START + 32; // Frame 141
+
+// Full Branded Lockup Hold ("Meet your [LOGO] allies")
+export const BRANDED_LOCKUP_HOLD_DURATION = 24; // 0.40s
+export const BRANDED_LOCKUP_HOLD_END = LOGO_SETTLED + BRANDED_LOCKUP_HOLD_DURATION; // Frame 165
+
+// Camera push zoom out (1.15x -> 1.0x master framing)
+export const ZOOM_OUT_START = BRANDED_LOCKUP_HOLD_END - 5; // Frame 160
+export const ZOOM_OUT_END = ZOOM_OUT_START + 30; // Frame 190
 
 // ============================================================================
-// PHASE 5: REMAINING ALLIES ENTRANCE & YELLOW'S DOUBLE-HOP
+// PHASE 5: ALL ALLIES ENTER & YELLOW'S DOUBLE-HOP
 // ============================================================================
-export const PINK_ENTRANCE_START = 180;
+export const ALLY_SEQUENCE_START = BRANDED_LOCKUP_HOLD_END + 5; // Frame 170
+
+export const BLUE_ENTRANCE_START = ALLY_SEQUENCE_START; // Frame 170
+export const BLUE_ENTRANCE_DURATION = 55;
+
+export const GREEN_ENTRANCE_START = 180;
+export const GREEN_ENTRANCE_DURATION = 55;
+
+export const PINK_ENTRANCE_START = 185;
 export const PINK_ENTRANCE_DURATION = 55;
 
-export const GREEN_ENTRANCE_START = 190;
-export const GREEN_ENTRANCE_DURATION = 58;
-
-export const YELLOW_ENTRANCE_START = 205;
+export const YELLOW_ENTRANCE_START = 195;
 export const YELLOW_ENTRANCE_DURATION = 55;
 
-// Yellow's unique signature double-hop
+// Yellow's unique signature double-hop (approved)
 export const YELLOW_DOUBLE_HOP_START = 240;
 export const YELLOW_DOUBLE_HOP_DURATION = 65; // f240 - f305
 
 // ============================================================================
-// PHASE 6: PHYSICAL WORD CARRIAGE BY GREEN & YELLOW & BRAND RECENTER
+// PHASE 6: PHYSICAL WORD PICKUP BY GREEN & YELLOW & BRAND RECENTER
 // ============================================================================
-// Green carries "Meet" offscreen left
-export const GREEN_MEET_PICKUP_START = 315;
-export const GREEN_MEET_CARRY_DURATION = 95; // Exits past left boundary
+// Green travels to "Meet", contacts, tugs, and carries offscreen left
+export const GREEN_MEET_APPROACH_START = 310;
+export const GREEN_MEET_PICKUP_START = 345;
+export const GREEN_MEET_CARRY_DURATION = 80; // f345 - f425
 
-// Yellow carries "your" offscreen lower-left on diverging path
-export const YELLOW_YOUR_PICKUP_START = 335;
-export const YELLOW_YOUR_CARRY_DURATION = 95; // Exits past boundary
+// Yellow travels to "your", contacts, tugs, and carries offscreen bottom-left
+export const YELLOW_YOUR_APPROACH_START = 325;
+export const YELLOW_YOUR_PICKUP_START = 360;
+export const YELLOW_YOUR_CARRY_DURATION = 80; // f360 - f440
 
 // Central brand mark ("[LOGO] allies") smoothly recenters as one unit
-export const BRAND_RECENTER_START = 340;
+export const BRAND_RECENTER_START = 345;
 export const BRAND_RECENTER_DURATION = 70;
-export const BRAND_RECENTER_END = BRAND_RECENTER_START + BRAND_RECENTER_DURATION; // Frame 410
+export const BRAND_RECENTER_END = BRAND_RECENTER_START + BRAND_RECENTER_DURATION; // Frame 415
 
 // Return paths for Green and Yellow from canvas edges
-export const GREEN_RETURN_START = 415;
-export const GREEN_RETURN_DURATION = 65;
+export const GREEN_RETURN_START = 425;
+export const GREEN_RETURN_DURATION = 60; // f425 - f485
 
-export const YELLOW_RETURN_START = 430;
-export const YELLOW_RETURN_DURATION = 65;
+export const YELLOW_RETURN_START = 440;
+export const YELLOW_RETURN_DURATION = 55; // f440 - f495
 
 // ============================================================================
 // PHASE 7: INSPECTION, PINK TEXT BOOP, BLUE/PINK RACE & THE ONE SWIRL
 // ============================================================================
-// All allies gathered around centered brand
 export const ALL_GATHERED_FRAME = 485;
 
-// Pink accidentally bumps the "allies" text
+// Pink accidentally bumps the rendered right edge of "allies" text
 export const PINK_BOOP_START = 490;
-export const PINK_BOOP_DURATION = 40; // f490 - f530
+export const PINK_BOOP_DURATION = 40; // f490 - f530 (impact at f500)
 
-// Blue notices, accelerates into race, Pink gives chase
-export const RACE_START = 530;
-export const RACE_DURATION = 55; // f530 - f585
+// Blue notices collision (f515-f535), darts off, Pink gives chase
+export const RACE_START = 535;
+export const RACE_DURATION = 60; // f535 - f595
 
 // Pink catches Blue -> Contact Squash -> Tangential ONE SWIRL
-export const SWIRL_START = 580;
-export const SWIRL_DURATION = 50; // f580 - f630
+export const SWIRL_START = 595;
+export const SWIRL_DURATION = 45; // f595 - f640 (ONE SWIRL ONLY)
 
-// Post-swirl peel-away to new roaming coordinates
-export const POST_SWIRL_ROAM_START = 625;
+// Post-swirl peel-away to new staging coordinates
+export const POST_SWIRL_ROAM_START = 635;
 
 // ============================================================================
 // PHASE 8: LOGO COLLAPSE & DOMAIN FETCH LAUNCHES
@@ -161,19 +171,19 @@ export const COMPLETION_FULL_BLACK_FRAME = 920;
 // ============================================================================
 // PHASE 10: EXTENDED POST-COMPLETION PLAY WINDOW
 // ============================================================================
-// Event 1: Pink Peeks Behind Blue + Blue Startle
+// Event 1: Pink Peeks Behind Blue + Blue Startle (z-index peek, no cursor)
 export const PEEK_BEHIND_START = 980;
 export const PEEK_BEHIND_DURATION = 75;
 
-// Event 2: Yellow & Green Cozy Squeeze-In
+// Event 2: Yellow & Green Cozy Squeeze-In (body compression + yield, no cursor)
 export const SQUEEZE_START = 1060;
 export const SQUEEZE_DURATION = 65;
 
-// Event 3: Blue Threads Gap between Pink & Green
+// Event 3: Blue Threads Gap between Pink & Green (make-space shift, no cursor)
 export const GAP_THREAD_START = 1130;
 export const GAP_THREAD_DURATION = 70;
 
-// Event 4: Follow-and-Peel (Yellow leads, Pink follows then peels)
+// Event 4: Follow-and-Peel (Yellow leads, Pink follows then peels, no cursor)
 export const FOLLOW_PEEL_START = 1210;
 export const FOLLOW_PEEL_DURATION = 80;
 
@@ -203,29 +213,35 @@ export const TIMING = {
   TEXT_GENERATION_START,
   MEET_FOCUS_START,
   YOUR_FOCUS_START,
+  ALLIES_FOCUS_START,
   CHAR_FOCUS_SPEED,
   CHAR_FOCUS_DURATION,
   ALL_WORDS_FOCUSED,
   FULL_PHRASE_HOLD_DURATION,
   FULL_PHRASE_HOLD_END,
-  BLUE_LOGO_ENTRANCE_START,
-  BLUE_LOGO_ENTRANCE_DURATION,
-  LOGO_DOCK_START,
-  LOGO_DOCK_SETTLE,
   BRAND_TRANSFORM_START,
   BRAND_TRANSFORM_DURATION,
+  LOGO_START,
+  LOGO_SETTLED,
+  BRANDED_LOCKUP_HOLD_DURATION,
+  BRANDED_LOCKUP_HOLD_END,
   ZOOM_OUT_START,
   ZOOM_OUT_END,
-  PINK_ENTRANCE_START,
-  PINK_ENTRANCE_DURATION,
+  ALLY_SEQUENCE_START,
+  BLUE_ENTRANCE_START,
+  BLUE_ENTRANCE_DURATION,
   GREEN_ENTRANCE_START,
   GREEN_ENTRANCE_DURATION,
+  PINK_ENTRANCE_START,
+  PINK_ENTRANCE_DURATION,
   YELLOW_ENTRANCE_START,
   YELLOW_ENTRANCE_DURATION,
   YELLOW_DOUBLE_HOP_START,
   YELLOW_DOUBLE_HOP_DURATION,
+  GREEN_MEET_APPROACH_START,
   GREEN_MEET_PICKUP_START,
   GREEN_MEET_CARRY_DURATION,
+  YELLOW_YOUR_APPROACH_START,
   YELLOW_YOUR_PICKUP_START,
   YELLOW_YOUR_CARRY_DURATION,
   BRAND_RECENTER_START,

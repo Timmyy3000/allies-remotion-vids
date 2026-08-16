@@ -4,7 +4,9 @@ import {
   Easing,
   interpolate,
   interpolateColors,
+  spring,
   useCurrentFrame,
+  useVideoConfig,
 } from "remotion";
 import { COLORS } from "../constants/colors";
 import { TIMING } from "../constants/timing";
@@ -33,33 +35,32 @@ import { getTextBoopReaction } from "../motion/allyBehavior";
 
 // Brand Recenter curve: [0.22, 1, 0.36, 1] (confident initial movement, long smooth deceleration to 0)
 const brandRecenterEase = Easing.bezier(0.22, 1, 0.36, 1);
-const brandEntranceEase = Easing.bezier(0.22, 1, 0.36, 1);
 
 export function AlliesIntro() {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
   // --- 1. UNIFIED DETERMINISTIC CAMERA SYSTEM ---
   const camera = getCameraState(frame);
 
-  // --- 2. BRAND TRANSFORMATION CALCULATIONS ---
+  // --- 2. BRAND TRANSFORMATION & LOGO SPRING ENTRANCE (Exact more-motion port) ---
   const isTransformStarted = frame >= TIMING.BRAND_TRANSFORM_START;
 
-  // Smooth jitter-free "allies" Translation (moves from -logoShiftDistance to 0 during entrance)
-  const alliesShiftProgress = isTransformStarted
-    ? interpolate(
-        frame,
-        [TIMING.BRAND_TRANSFORM_START, TIMING.BRAND_TRANSFORM_START + TIMING.BRAND_TRANSFORM_DURATION],
-        [0, 1],
-        {
-          easing: brandEntranceEase,
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
+  // "allies" Translation Spring (moves from -logoShiftDistance to 0 during entrance)
+  const alliesShiftSpring = isTransformStarted
+    ? spring({
+        frame: frame - TIMING.BRAND_TRANSFORM_START,
+        fps,
+        config: {
+          damping: 20,
+          stiffness: 200,
+          mass: 0.8,
         },
-      )
+      })
     : 0;
 
   const alliesX = interpolate(
-    alliesShiftProgress,
+    alliesShiftSpring,
     [0, 1],
     [-HEADLINE_LAYOUT.logoShiftDistance, 0],
   );
@@ -68,32 +69,40 @@ export function AlliesIntro() {
   const alliesColor = isTransformStarted
     ? interpolateColors(
         frame,
-        [TIMING.BRAND_TRANSFORM_START, TIMING.BRAND_TRANSFORM_START + 20],
+        [TIMING.BRAND_TRANSFORM_START, TIMING.BRAND_TRANSFORM_START + 18],
         [COLORS.headlineText, COLORS.brandOrange],
       )
     : COLORS.headlineText;
 
-  // --- 3. LOGO DOCKING & SETTLE IN SLOT ---
-  // Logo is placed in slot by Blue at LOGO_DOCK_START, settles smoothly with 0.97 -> 1.0 compression
-  const isLogoDocked = frame >= TIMING.LOGO_DOCK_START;
-  const logoDockProgress = isLogoDocked
-    ? interpolate(
-        frame,
-        [TIMING.LOGO_DOCK_START, TIMING.LOGO_DOCK_SETTLE],
-        [0, 1],
-        {
-          easing: brandEntranceEase,
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
+  // Official Allies SVG Logo Spring Entrance (No Blue involvement)
+  const isLogoStarted = frame >= TIMING.LOGO_START;
+  const logoFrameOffset = Math.max(0, frame - TIMING.LOGO_START);
+  const logoSpring = isLogoStarted
+    ? spring({
+        frame: logoFrameOffset,
+        fps,
+        config: {
+          damping: 17,
+          stiffness: 220,
+          mass: 0.8,
         },
-      )
+      })
     : 0;
 
-  const logoScale = isLogoDocked
-    ? interpolate(logoDockProgress, [0, 0.35, 1], [0.97, 1.02, 1.0])
+  const logoOpacity = isLogoStarted
+    ? interpolate(logoFrameOffset, [0, 8], [0, 1], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      })
     : 0;
 
-  const logoOpacity = isLogoDocked ? 1 : 0;
+  const logoScale = isLogoStarted
+    ? interpolate(logoSpring, [0, 1], [0.72, 1])
+    : 0.72;
+
+  const logoY = isLogoStarted
+    ? interpolate(logoSpring, [0, 1], [30.93, 0])
+    : 30.93;
 
   // Brand Group ("[LOGO] allies") Recenter Glide as Green and Yellow carry words away
   const brandRecenterProgress = interpolate(
@@ -113,7 +122,7 @@ export function AlliesIntro() {
     [0, HEADLINE_LAYOUT.brandShiftDistance],
   );
 
-  // --- 4. LOGO INWARD COLLAPSE (Leaves 'allies' standing) ---
+  // --- 3. LOGO INWARD COLLAPSE (Leaves 'allies' standing) ---
   const isLogoCollapseStarted = frame >= TIMING.LOGO_COLLAPSE_START;
   const logoCollapseProgress = isLogoCollapseStarted
     ? interpolate(
@@ -146,12 +155,13 @@ export function AlliesIntro() {
 
   const finalLogoScale = logoScale * logoCollapseScale;
   const finalLogoOpacity = logoOpacity * logoCollapseOpacity;
+  const isLogoVisible = isLogoStarted && frame < TIMING.LOGO_COLLAPSE_END;
   const isBrandGroupVisible = frame < TIMING.LOGO_COLLAPSE_END;
 
-  // --- 5. PHYSICAL 'allies' TEXT REACTION (WHEN BOOPED BY PINK) ---
+  // --- 4. PHYSICAL 'allies' TEXT REACTION (WHEN BOOPED BY PINK) ---
   const textBoop = getTextBoopReaction(frame);
 
-  // Words remain rendered in the headline lockup until physically picked up by Green and Yellow
+  // Words remain rendered in the headline lockup until physically reached & picked up
   const isMeetInHeadline = frame < TIMING.GREEN_MEET_PICKUP_START;
   const isYourInHeadline = frame < TIMING.YELLOW_YOUR_PICKUP_START;
 
@@ -293,7 +303,7 @@ export function AlliesIntro() {
                 willChange: "transform",
               }}
             >
-              {/* RESERVED LOGO SLOT */}
+              {/* RESERVED LOGO SLOT (Strict Width Reservation to eliminate any layout reflow) */}
               <div
                 className="logo-slot"
                 style={{
@@ -306,28 +316,37 @@ export function AlliesIntro() {
                   flexShrink: 0,
                 }}
               >
-                {/* LOGO DOCKED ALIGNMENT WRAPPER */}
-                {isLogoDocked && (
-                  <div
-                    style={{
-                      width: HEADLINE_LAYOUT.logoWidth,
-                      height: HEADLINE_LAYOUT.logoHeight,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      pointerEvents: "none",
-                      opacity: finalLogoOpacity,
-                      transform: `scale(${finalLogoScale.toFixed(4)})`,
-                      transformOrigin: "center center",
-                      willChange: "transform, opacity",
-                    }}
-                  >
-                    <AlliesLogo
-                      width={HEADLINE_LAYOUT.logoWidth}
-                      height={HEADLINE_LAYOUT.logoHeight}
-                    />
-                  </div>
-                )}
+                <div
+                  style={{
+                    width: HEADLINE_LAYOUT.logoWidth,
+                    height: HEADLINE_LAYOUT.logoHeight,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    pointerEvents: "none",
+                  }}
+                >
+                  {isLogoVisible && (
+                    <div
+                      style={{
+                        opacity: finalLogoOpacity,
+                        transform: `translate(0px, ${logoY.toFixed(
+                          3,
+                        )}px) scale(${finalLogoScale.toFixed(4)})`,
+                        transformOrigin: "center center",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        willChange: "transform, opacity",
+                      }}
+                    >
+                      <AlliesLogo
+                        width={HEADLINE_LAYOUT.logoWidth}
+                        height={HEADLINE_LAYOUT.logoHeight}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* WORD 3: "allies" WITH PHYSICAL TEXT REACTION WRAPPER */}
@@ -373,7 +392,7 @@ export function AlliesIntro() {
         {/* REUSABLE ALLY ACTORS (PERMANENT IDENTITIES: ROLLY, ROCKY, GHOSTY, BOXY) */}
         {/* ========================================================================= */}
 
-        {/* 1. Blue Ally (Rolly): Guides logo in, races, swirls, fetches 'your', threads gap, departs */}
+        {/* 1. Blue Ally (Rolly): Enters clean, races around brand, swirls, fetches 'your', threads gap, departs */}
         <AllyActor
           identity="rolly"
           config={ALLIES.blue}
@@ -383,15 +402,6 @@ export function AlliesIntro() {
           clearance={ALLY_ACTORS.clearance}
           entryTiltDeg={-8}
           cargoMap={{
-            "logo-entrance": {
-              node: (
-                <div style={{ transform: "scale(1.0)", transformOrigin: "center center" }}>
-                  <AlliesLogo width={HEADLINE_LAYOUT.logoWidth} height={HEADLINE_LAYOUT.logoHeight} />
-                </div>
-              ),
-              width: HEADLINE_LAYOUT.logoWidth,
-              tipPadding: 16,
-            },
             "domain-drag": {
               node: <DomainPieceText piece={DOMAIN_DRAG_TARGETS.blue.piece} />,
               width: DOMAIN_LAYOUT.pieces.your.width,
@@ -400,7 +410,7 @@ export function AlliesIntro() {
           }}
         />
 
-        {/* 2. Green Ally (Rocky): Enters, carries 'Meet' offscreen, returns, fetches 'i', snuggles Yellow, lingers & departs */}
+        {/* 2. Green Ally (Rocky): Enters, travels to 'Meet', carries 'Meet' offscreen, returns, fetches 'i', snuggles Yellow, departs */}
         <AllyActor
           identity="rocky"
           config={ALLIES.green}
@@ -454,7 +464,7 @@ export function AlliesIntro() {
           }}
         />
 
-        {/* 4. Yellow Ally (Boxy): Double-hop, carries 'your' offscreen, returns, fetches 'o', snuggles Green, leads follow-and-peel, departs */}
+        {/* 4. Yellow Ally (Boxy): Double-hop, travels to 'your', carries 'your' offscreen, returns, fetches 'o', snuggles Green, departs */}
         <AllyActor
           identity="boxy"
           config={ALLIES.yellow}
