@@ -189,74 +189,7 @@ export function getAllyPlayfulOffset(
     }
   }
 
-  // =========================================================================
-  // LAYER C4. BLUE & PINK RACE AROUND 'allies' PERIMETER (Frames 530 to 585)
-  // Blue darts around the text perimeter; Pink chases 8 frames later on a tighter lane.
-  // Green (Rocky) leans away to avoid the racers.
-  // =========================================================================
-  const RACE_START = 530;
-  const RACE_DURATION = 55;
-  if (frame >= RACE_START && frame < RACE_START + RACE_DURATION) {
-    const p = (frame - RACE_START) / RACE_DURATION;
-    const env = Math.sin(p * Math.PI);
 
-    if (identity === "rolly") {
-      // Blue leads the race: loops over the top and down the left side of 'allies'
-      const raceAngle = p * Math.PI * 1.6 - Math.PI * 0.4;
-      const rx = 180;
-      const ry = 95;
-      offsetX += Math.cos(raceAngle) * rx * env - 40 * env;
-      offsetY += Math.sin(raceAngle) * ry * env - 20 * env;
-      offsetRot += Math.sin(p * Math.PI * 2) * 14 * env;
-      squashX += 0.04 * env;
-      squashY -= 0.03 * env;
-    } else if (identity === "ghosty") {
-      // Pink follows 8 frames delayed on a tighter inner line (gaining on Blue)
-      const delayedP = Math.max(0, p - 0.14) / 0.86;
-      const delayedEnv = Math.sin(delayedP * Math.PI);
-      const raceAngle = delayedP * Math.PI * 1.6 - Math.PI * 0.45;
-      const rx = 150;
-      const ry = 80;
-      offsetX += Math.cos(raceAngle) * rx * delayedEnv - 30 * delayedEnv;
-      offsetY += Math.sin(raceAngle) * ry * delayedEnv - 15 * delayedEnv;
-      offsetRot += Math.sin(delayedP * Math.PI * 2) * 12 * delayedEnv;
-      squashX += 0.04 * delayedEnv;
-      squashY -= 0.03 * delayedEnv;
-    } else if (identity === "rocky") {
-      // Layer B: Green notices racers zooming by and leans away (-22px) to make room
-      const leanX = -Math.sin(p * Math.PI) * 24 * env;
-      const leanY = Math.sin(p * Math.PI) * 14 * env;
-      offsetX += leanX;
-      offsetY += leanY;
-      offsetRot -= Math.sin(p * Math.PI) * 5 * env;
-    }
-  }
-
-  // =========================================================================
-  // LAYER C5. THE ONE SINGLE SWIRL (Frames 580 to 625)
-  // THE ONLY SWIRL IN THE ENTIRE VIDEO: Blue and Pink converge into a 220° relative spiral
-  // preserving momentum, then peeling apart to new roaming coordinates (no snap-backs!)
-  // =========================================================================
-  const SWIRL_START = 580;
-  const SWIRL_DURATION = 45;
-  if (frame >= SWIRL_START && frame < SWIRL_START + SWIRL_DURATION) {
-    const p = (frame - SWIRL_START) / SWIRL_DURATION;
-    const env = Math.sin(p * Math.PI);
-    const easeProgress = 0.5 - 0.5 * Math.cos(p * Math.PI);
-
-    const swirlRadius = 75 * env;
-    const angle = easeProgress * Math.PI * 1.22; // 220° smooth spiral
-
-    if (identity === "rolly") {
-      offsetX += Math.cos(angle) * swirlRadius - 20 * env;
-      offsetY += Math.sin(angle) * (swirlRadius * 0.55);
-      offsetRot += Math.sin(angle) * 10 * env;
-    } else if (identity === "ghosty") {
-      offsetX += Math.cos(angle + Math.PI) * swirlRadius + 20 * env;
-      offsetY += Math.sin(angle + Math.PI) * (swirlRadius * 0.55);
-      offsetRot += Math.sin(angle + Math.PI) * 10 * env;
-    }
-  }
 
   // =========================================================================
   // LAYER B2. DOMAIN ASSEMBLY: GREEN & YELLOW NEAR-MISS (Frames 755 to 795)

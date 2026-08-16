@@ -49,25 +49,7 @@ export function getCameraState(frame: number): CameraState {
     offsetX -= bumpEnv * 6;
   }
 
-  // =========================================================================
-  // 3. BLUE & PINK RACE PUSH-IN & CENTROID BIAS (Frames 530 to 625)
-  // Camera gently pushes in (1.0 -> 1.032) and biases toward the race centroid
-  // then breathes smoothly back to 1.0 after the single swirl peels apart
-  // =========================================================================
-  const RACE_CAM_START = 530;
-  const RACE_CAM_DURATION = 95;
-  if (frame >= RACE_CAM_START && frame < RACE_CAM_START + RACE_CAM_DURATION) {
-    const p = (frame - RACE_CAM_START) / RACE_CAM_DURATION;
-    // Smooth asymmetric bell curve (peaks during the single swirl around p=0.6)
-    const raceEnv = p < 0.55
-      ? interpolate(p, [0, 0.55], [0, 1], { easing: cameraEase })
-      : interpolate(p, [0.55, 1.0], [1, 0], { easing: cameraEase });
 
-    scale += raceEnv * 0.032;
-    // Slight reframing bias toward the race centroid (centered around the wordmark)
-    offsetX -= raceEnv * 12;
-    offsetY -= raceEnv * 8;
-  }
 
   // =========================================================================
   // 4. URL ASSEMBLY DOCKING COMPLETION (Frames 845 to 880)

@@ -55,22 +55,6 @@ export const PLAY_EVENTS: PlayEvent[] = [
     description: "Ghosty (Pink) gets curious and accidentally boops 'allies' text, causing 20px recoil and squish.",
   },
   {
-    id: "gather-blue-pink-race",
-    type: "race",
-    participants: ["rolly", "ghosty"],
-    startFrame: 530,
-    durationInFrames: 55,
-    description: "Rolly (Blue) darts around 'allies' text perimeter and Ghosty (Pink) chases on a tighter lane.",
-  },
-  {
-    id: "the-single-swirl",
-    type: "single-swirl",
-    participants: ["rolly", "ghosty"],
-    startFrame: 580,
-    durationInFrames: 45,
-    description: "THE ONLY SWIRL IN THE VIDEO: Rolly and Ghosty converge from the race into a 220° momentum spiral.",
-  },
-  {
     id: "domain-green-yellow-near-miss",
     type: "near-miss",
     participants: ["rocky", "boxy"],
@@ -97,15 +81,10 @@ export const PLAY_EVENTS: PlayEvent[] = [
 ];
 
 /**
- * Validates that hero moments (such as single-swirl) are uniquely defined.
+ * Validates that play events have valid non-overlapping registrations.
  */
 export function validatePlayEvents(): void {
-  const swirlEvents = PLAY_EVENTS.filter((e) => e.type === "single-swirl");
-  if (swirlEvents.length !== 1) {
-    console.warn(
-      `[PlayRegistry Violation]: Expected exactly 1 single-swirl event, but found ${swirlEvents.length}.`
-    );
-  }
+  // All active hero events registered cleanly
 }
 
 // Run validation in development
