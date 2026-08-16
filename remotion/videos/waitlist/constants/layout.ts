@@ -1,8 +1,10 @@
+import { FPS, TOTAL_DURATION_FRAMES } from "./timing";
+
 export const CANVAS = {
   width: 3840,
   height: 2160,
-  fps: 60,
-  durationInFrames: 1580,
+  fps: FPS,
+  durationInFrames: TOTAL_DURATION_FRAMES,
 } as const;
 
 export const TYPOGRAPHY = {
@@ -36,7 +38,7 @@ export const HEADLINE_LAYOUT = {
   // Shift = - (exitGroupWidth + wordGap) / 2 = -1401.85375 / 2 = -700.926875px
   brandShiftDistance: -700.926875,
 
-  // Exit Pull Distance into Logo left aperture / center
+  // Exit Pull Distance into Logo left aperture / center (from more-motion)
   meetYourPullDistance: 290.0,
 
   // Allies Word Exit Pull Distance toward logo
@@ -45,23 +47,18 @@ export const HEADLINE_LAYOUT = {
 
 export const BRAND_GATHER_PADDING = 80.0;
 
-export const WORD_CARRIAGE_LAYOUT = {
-  meetPickup: {
-    textCenter: { x: 1034.01, y: 1080.0 },
-    actorBody: { x: 1034.0, y: 780.0 },
-    cursorTip: { x: 1034.0, y: 940.0 },
-    carryOffset: { x: 0, y: 140 }, // Word sits below Green during carry from above
-  },
-  yourPickup: {
-    textCenter: { x: 1734.94, y: 1080.0 },
-    actorBody: { x: 1735.0, y: 1380.0 },
-    cursorTip: { x: 1735.0, y: 1220.0 },
-    carryOffset: { x: 0, y: -140 }, // Word sits above Yellow during carry from underneath
-  },
-  greenMeetExit: { x: -550, y: 750 },
-  yellowYourExit: { x: -550, y: 1850 },
-  greenReturnTarget: { x: 1220, y: 1360 },
-  yellowReturnTarget: { x: 2060, y: 1440 },
+export const BRAND_GATHER_POSITIONS = {
+  blue: { x: 1680, y: 720 },
+  pink: { x: 2660, y: 1020 },
+  green: { x: 1220, y: 1360 },
+  yellow: { x: 2060, y: 1440 },
+} as const;
+
+export const POST_ACTION_ANCHORS = {
+  blue: { x: 1692, y: 712 },
+  pink: { x: 2580, y: 970 },
+  green: { x: 1238, y: 1346 },
+  yellow: { x: 2085, y: 1425 },
 } as const;
 
 export const BRAND_PLAY_BOUNDS = {
@@ -74,15 +71,8 @@ export const BRAND_PLAY_BOUNDS = {
 export const DEPARTURE_TARGETS = {
   pink: { x: 4250, y: 380 },
   yellow: { x: 2650, y: 2480 },
-  blue: { x: -380, y: 320 },
+  blue: { x: -450, y: 320 },
   green: { x: -420, y: 1180 },
-} as const;
-
-export const BRAND_GATHER_POSITIONS = {
-  blue: { x: 1600, y: 640 },
-  pink: { x: 2660, y: 1020 },
-  green: { x: 1220, y: 1360 },
-  yellow: { x: 2060, y: 1440 },
 } as const;
 
 export const WRITING_STAGE_POSITIONS = {
@@ -266,13 +256,19 @@ export const DOMAIN_EXIT_POSITIONS = {
   },
 } as const;
 
+export const POST_SWIRL_POSITIONS = {
+  blue: { x: 1250, y: 720 },
+  pink: { x: 2450, y: 720 },
+} as const;
+
+
 export const ALLY_ACTORS = {
   size: 153,
   pointerSize: 110.5,
   clearance: 35,
   blue: {
     entry: { x: 1280, y: -220 },
-    final: { x: 1600, y: 640 },
+    final: { x: 1680, y: 720 },
     arc: { x: 90, y: -45 },
     entryRotation: -14,
     pointer: { offsetX: 68, offsetY: -34, baseRotation: -15, flipX: false },

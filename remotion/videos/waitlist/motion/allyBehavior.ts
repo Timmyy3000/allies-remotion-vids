@@ -1,24 +1,26 @@
 /**
- * 3-Layer Character Motion Model & Physical Playfulness Engine (V6)
+ * 3-Layer Character Motion Model & Physical Playfulness Engine (V8)
  *
  * Architecture:
- * - Layer 1: Ambient Life (continuous organic Lissajous drift, gentle breathing, eyeball gaze)
- * - Layer 2: Reactive Motion (startles, side-steps, leans, yielding, curiosity bobs)
- * - Layer 3: Intentional Hero Actions (Double-Hop, Physical Text Boop, Blue Peek, Green Lean,
- *             Race around 'yourallies.io', The ONE Momentum Swirl, Cozy Squeeze, Gap-Thread,
- *             Follow-and-Peel, Final Linger)
+ * - Layer 1: Ambient Life & Micro-Actions (handled by ambientActions.ts)
+ * - Layer 2: Reactive Motion (near-misses, pulses, yields)
+ * - Layer 3: Social Play & Interactions (Race/Swirl, Cozy Squeeze, Pink Solo Swoop, Staggered Departures)
  *
  * Invariants Guaranteed:
- * - Strictly ONE Swirl in entire video (after race contact around yourallies.io)
- * - Strictly ONE Race in entire video (around completed yourallies.io lockup)
- * - Strictly ONE Double-Hop in entire video (Yellow entrance)
+ * - Strictly ONE Swirl in entire video
+ * - Strictly ONE Double-Hop in entire video (Yellow)
+ * - Strictly ONE Jiggle (Blue)
+ * - Strictly ONE 360 Turn (Green)
+ * - Strictly ONE Text Boop (Pink) with continuous recoil drift into new anchor
+ * - Distinct non-repeating signature end actions: Yellow/Green do Cozy Snuggle, Pink does Airy Mischievous Swoop
+ * - Clean physical contact with zero ugly interpenetration
  * - Social play is 100% cursor-free
- * - No robotic magnetic-home out-and-back motions: every drift settles into a new local position
  */
 
 import { AllyIdentity } from "../constants/allyStates";
 import { TIMING } from "../constants/timing";
-import { evaluateContactResponse } from "./contactPhysics";
+import { DOMAIN_LAYOUT, DOMAIN_EXIT_POSITIONS } from "../constants/layout";
+import { getAllyAmbientState } from "./ambientActions";
 
 export interface PlayfulBehaviorOffset {
   x: number;
@@ -43,7 +45,7 @@ export interface TextBoopReaction {
 
 /**
  * Evaluates the physical reaction of the 'allies' text when booped by Pink.
- * Impact frame is f600 (10 frames into PINK_BOOP_START at f590).
+ * Impact frame is f440 (10 frames into PINK_BOOP_START at f430).
  */
 export function getTextBoopReaction(frame: number): TextBoopReaction {
   const BOOP_START = TIMING.PINK_BOOP_START;
@@ -91,7 +93,7 @@ export function getTextBoopReaction(frame: number): TextBoopReaction {
 }
 
 /**
- * Evaluates the composite 3-layer playful offsets for an Ally at current frame.
+ * Evaluates the composite playful offsets for an Ally at current frame.
  */
 export function getAllyPlayfulOffset(
   identity: AllyIdentity,
@@ -99,120 +101,19 @@ export function getAllyPlayfulOffset(
   baseX: number,
   baseY: number,
 ): PlayfulBehaviorOffset {
-  let offsetX = 0;
-  let offsetY = 0;
-  let offsetRot = 0;
-  let squashX = 1;
-  let squashY = 1;
+  // 1. Layer 1: Ambient Action System (Solo personality actions: hop, jiggle, turn, boop)
+  const ambient = getAllyAmbientState(identity, frame);
+
+  let offsetX = ambient.x;
+  let offsetY = ambient.y;
+  let offsetRot = ambient.rotDeg;
+  let squashX = ambient.squashX;
+  let squashY = ambient.squashY;
   let zIndexOffset = 0;
   let cursorOverride: { active: boolean; angleDeg: number } | undefined = undefined;
 
   // =========================================================================
-  // 1. LAYER 3: YELLOW ENTRANCE DOUBLE-HOP (Frames 240 to 305)
-  // Yellow executes its unique signature double-hop with landing squash and stretch
-  // =========================================================================
-  const HOP_START = TIMING.YELLOW_DOUBLE_HOP_START;
-  const HOP_DURATION = TIMING.YELLOW_DOUBLE_HOP_DURATION;
-  if (frame >= HOP_START && frame < HOP_START + HOP_DURATION && identity === "boxy") {
-    const p = (frame - HOP_START) / HOP_DURATION;
-    const env = Math.sin(p * Math.PI);
-
-    // Double-hop cycle: 2 buoyant peaks
-    const hopCycle = Math.sin(p * Math.PI * 4);
-    const hopHeight = Math.max(0, hopCycle) * 34 * env;
-    offsetY -= hopHeight;
-    offsetRot += Math.sin(p * Math.PI * 2) * 7 * env;
-
-    // Contact bounce compression vs flight stretch
-    if (hopHeight > 4) {
-      squashX *= 0.93;
-      squashY *= 1.07;
-    } else {
-      squashX *= 1.06;
-      squashY *= 0.94;
-    }
-  }
-
-  // =========================================================================
-  // 2. LAYER 3: PINK'S PHYSICAL TEXT BOOP (Frames 590 to 630)
-  // Pink approaches from base (2660, 1020) and physically impacts right edge
-  // of centered "allies" text (rendered right edge at x=2439.2) at frame 600
-  // =========================================================================
-  const BOOP_START = TIMING.PINK_BOOP_START;
-  const BOOP_DURATION = TIMING.PINK_BOOP_DURATION;
-  if (frame >= BOOP_START && frame < BOOP_START + BOOP_DURATION && identity === "ghosty") {
-    const age = frame - BOOP_START;
-
-    if (age <= 10) {
-      // Approach right edge of "allies": reaches x=2490 (overlap ~25px with x=2439 edge)
-      const inP = age / 10;
-      const easeIn = inP * inP;
-      offsetX = -170 * easeIn;
-      offsetY = 40 * easeIn;
-      offsetRot = -10 * easeIn;
-
-      if (age === 10) {
-        // Peak impact compression at f600
-        squashX *= 0.94;
-        squashY *= 1.06;
-      }
-    } else {
-      // Elastic collision recoil and rebound into new position
-      const outP = (age - 10) / (BOOP_DURATION - 10);
-      const decay = Math.exp(-outP * 3.6);
-      const recoilX = -170 + (1 - decay) * 70; // Settles at offsetX = -100 (x = 2560)
-      const recoilY = 40 - (1 - decay) * 80;  // Settles at offsetY = -40 (y = 980)
-      offsetX = recoilX;
-      offsetY = recoilY;
-      offsetRot = decay * -10 + (1 - decay) * 4;
-
-      const contact = evaluateContactResponse(frame, {
-        startFrame: BOOP_START + 10,
-        durationFrames: 25,
-        impactAngleRad: -Math.PI * 0.2,
-        maxCompression: 0.06,
-        maxRecoil: 20,
-      });
-      squashX *= contact.squashX;
-      squashY *= contact.squashY;
-    }
-  }
-
-  // =========================================================================
-  // 3. LAYER 3: BLUE SOLO CURIOSITY PEEK & GREEN CALM CURIOSITY LEAN (Frames 625 to 675)
-  // - Blue: drifts closer to inspect, leans/tilts +12°, overshoots, curves away to new position
-  // - Green: gentle curiosity dip/lean, holds a beat, drifts into new nearby spot
-  // =========================================================================
-  const BLUE_PEEK_START = TIMING.BLUE_SOLO_PEEK_START;
-  const BLUE_PEEK_DURATION = TIMING.BLUE_SOLO_PEEK_DURATION;
-  if (frame >= BLUE_PEEK_START && frame < BLUE_PEEK_START + BLUE_PEEK_DURATION && identity === "rolly") {
-    const p = (frame - BLUE_PEEK_START) / BLUE_PEEK_DURATION;
-    const env = Math.sin(p * Math.PI);
-    // Blue drifts down-right toward brand center (+45px X, +35px Y), tilts +12°, overshoots slightly
-    const peekX = Math.sin(p * Math.PI * 0.8) * 45;
-    const peekY = Math.sin(p * Math.PI * 0.8) * 35;
-    offsetX += peekX * env;
-    offsetY += peekY * env;
-    offsetRot += Math.sin(p * Math.PI) * 12;
-    squashX *= 1 + 0.04 * env;
-    squashY *= 1 - 0.035 * env;
-  }
-
-  const GREEN_LEAN_START = TIMING.GREEN_SOLO_LEAN_START;
-  const GREEN_LEAN_DURATION = TIMING.GREEN_SOLO_LEAN_DURATION;
-  if (frame >= GREEN_LEAN_START && frame < GREEN_LEAN_START + GREEN_LEAN_DURATION && identity === "rocky") {
-    const p = (frame - GREEN_LEAN_START) / GREEN_LEAN_DURATION;
-    const env = Math.sin(p * Math.PI);
-    // Green gently dips up-right to observe, holds for a beat, settles into new position
-    const leanX = Math.sin(p * Math.PI * 0.7) * 30;
-    const leanY = -Math.sin(p * Math.PI * 0.7) * 25;
-    offsetX += leanX * env;
-    offsetY += leanY * env;
-    offsetRot += Math.sin(p * Math.PI) * 6;
-  }
-
-  // =========================================================================
-  // 4. LAYER 2: GREEN & YELLOW NEAR-MISS (Frames 785 to 830)
+  // 2. LAYER 2: GREEN & YELLOW NEAR-MISS (Frames 669 to 714)
   // Green banks +8° to yield space to Yellow returning with domain pieces
   // =========================================================================
   const NEAR_MISS_START = TIMING.NEAR_MISS_START;
@@ -232,11 +133,11 @@ export function getAllyPlayfulOffset(
   }
 
   // =========================================================================
-  // 5. LAYER 2: PUZZLE COMPLETION IMPULSE (Frames 906 to 935)
+  // 3. LAYER 2: PUZZLE COMPLETION IMPULSE (Frames 774 to 794)
   // Shared micro-reaction when the URL flashes orange simultaneously
   // =========================================================================
   const PULSE_START = TIMING.COMPLETION_ORANGE_HOLD_START;
-  const PULSE_DURATION = 30;
+  const PULSE_DURATION = 20;
   if (frame >= PULSE_START && frame < PULSE_START + PULSE_DURATION) {
     const p = (frame - PULSE_START) / PULSE_DURATION;
     const env = Math.sin(p * Math.PI);
@@ -253,94 +154,335 @@ export function getAllyPlayfulOffset(
       offsetRot -= env * 4;
     }
   }
-
   // =========================================================================
-  // 6. LAYER 3: RACE AROUND COMPLETED 'yourallies.io' (Frames 960 to 1025)
-  // Blue initiates race around completed URL obstacle; Pink gives chase on tighter cut!
-  // Safe clearance around URL safeBounds [800..3040, 750..1410]
+  // 4. LAYER 3: BLUE & PINK PLAYFUL MEETING, SWIRL, CLEAN BUMP & NATURAL DRIFT
+  // Motion Quality & True Continuous Float-to-Swirl Handoff:
+  // - Captures true on-screen world position, velocity, and rotation at frame 851
+  // - ZERO frame-to-frame jump (0.00px jump across transition frames)
+  // - First 15-20 frames naturally steer out of floating drift before accelerating
+  // - Asymmetric approach arcs (Blue dips & sweeps, Pink lifts & swoops)
+  // - Incoming path tangents flow seamlessly into the 360° rotational swirl
+  // - Breathing angular velocity curve during the 360° swirl (quintic smoothstep)
+  // - Deepened cute contact squeeze with soft-body elastic compression & tilt
+  // - Smooth broad outward recoil drift decelerating into natural resting shoulder anchors
+  // - Sustained post-interaction continuous resting anchor until departure (ZERO snap)
   // =========================================================================
-  const RACE_START = TIMING.RACE_START;
-  const RACE_DURATION = TIMING.RACE_DURATION;
+  // =========================================================================
+  // 4. LAYER 3: REBUILT BLUE & PINK CONTINUOUS TWIRL, SOFT SQUISH & LIVING AMBIENT HANDOVER
+  // Rebuilt from Scratch:
+  // - Starts directly from exact live on-screen world coordinates P0 = ScreenPos(851) (0.00px jump)
+  // - First 12-16 frames steer gently out of floating momentum before ramping kinetic travel speed
+  // - Asymmetric approach curves feed tangent-continuously into 360° counter-clockwise swirl
+  // - Dynamic angular velocity curve with body banking
+  // - Cute soft-body contact bump with 11% elastic squish (156px center-to-center distance)
+  // - Recoil drift with non-zero exit speed, smoothly blending into living ambient roam
+  // - Zero hard stops: continuous position, velocity, and rotation throughout
+  // =========================================================================
+  const BLUE_PINK_START = TIMING.BLUE_PINK_SWIRL_START;
 
-  if (frame >= RACE_START && frame < RACE_START + RACE_DURATION) {
-    const p = (frame - RACE_START) / RACE_DURATION;
-    const env = Math.sin(p * Math.PI);
+  if (frame >= BLUE_PINK_START) {
+    const meetCenterX = DOMAIN_LAYOUT.pieces.allies.centerX; // 1948.0
+    const meetCenterY = 640.0;
+    const loopRadiusX = 115.0;
+    const loopRadiusY = 85.0;
+
+    const F_APPROACH_DUR = 38; // f851..f888 (~0.63s)
+    const F_SWIRL_DUR = 48;    // f889..f936 (~0.80s)
+    const F_BUMP_DUR = 17;     // f937..f953 (peak at f945)
+    const F_DRIFT_DUR = 46;    // f954..f999 (separation & ambient blend)
+
+    // Helper: Exact baseline ambient visible world position of an ally
+    const getBaseWorldState = (id: AllyIdentity, f: number) => {
+      let period = 180;
+      let phase = 0;
+      let yHalf = 20;
+      let xHalf = 14;
+      let rotHalf = 3;
+      let pathEndX = DOMAIN_EXIT_POSITIONS.blue.x; // 1080.0
+      let pathEndY = DOMAIN_EXIT_POSITIONS.blue.y; // 780.0
+
+      if (id === "ghosty") {
+        period = 170;
+        phase = 3.1;
+        yHalf = 22;
+        xHalf = 14;
+        rotHalf = 3.5;
+        pathEndX = DOMAIN_EXIT_POSITIONS.pink.x; // 2680.0
+        pathEndY = DOMAIN_EXIT_POSITIONS.pink.y; // 780.0
+      }
+
+      const t = (f / period) * 2 * Math.PI + phase;
+      const travelIdleY = Math.sin(t) * yHalf;
+      const travelIdleX = Math.cos(t * 1.15) * xHalf;
+
+      const rawFloatY = Math.sin(t) * yHalf + Math.sin(t * 2.15 + 0.4) * 4.5;
+      const rawFloatX = Math.cos(t * 1.15) * xHalf + Math.sin(t * 0.65 + 1.2) * 3.5;
+      const rawFloatRot = Math.sin(t * 0.95) * rotHalf + Math.cos(t * 1.8 + 0.9) * 0.8;
+
+      const travelX = pathEndX + travelIdleX;
+      const travelY = pathEndY + travelIdleY;
+
+      return {
+        worldX: travelX + rawFloatX,
+        worldY: travelY + rawFloatY,
+        worldRot: rawFloatRot,
+        travelX,
+        travelY,
+        rawFloatX,
+        rawFloatY,
+        rawFloatRot,
+      };
+    };
+
+    // Helper: 2D Cubic Bezier
+    const cubicBezier = (
+      p0: { x: number; y: number },
+      p1: { x: number; y: number },
+      p2: { x: number; y: number },
+      p3: { x: number; y: number },
+      t: number
+    ) => {
+      const mt = 1 - t;
+      return {
+        x: mt * mt * mt * p0.x + 3 * mt * mt * t * p1.x + 3 * mt * t * t * p2.x + t * t * t * p3.x,
+        y: mt * mt * mt * p0.y + 3 * mt * mt * t * p1.y + 3 * mt * t * t * p2.y + t * t * t * p3.y,
+      };
+    };
+
+    const quinticStep = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
+    const smoothStep = (t: number) => t * t * (3 - 2 * t);
 
     if (identity === "rolly") {
-      // Blue takes wide outer route around the top and right of yourallies.io
-      const raceAngle = p * Math.PI * 1.55 - Math.PI * 0.45;
-      const rx = 440;
-      const ry = 260;
-      offsetX += (Math.cos(raceAngle) * rx + 80) * env;
-      offsetY += (Math.sin(raceAngle) * ry + 160) * env;
-      offsetRot += Math.sin(p * Math.PI * 2) * 16 * env;
-      squashX *= 1 + 0.05 * env;
-      squashY *= 1 - 0.045 * env;
+      if (frame < TIMING.BLUE_DEPART_START) {
+        const blueArrive = { x: meetCenterX - loopRadiusX, y: meetCenterY }; // (1833, 640)
+        const blueRoamCenter = { x: 1250.0, y: 720.0 };
+
+        const baseNow = getBaseWorldState("rolly", frame);
+        const init850 = getBaseWorldState("rolly", BLUE_PINK_START - 1);
+        const init851 = getBaseWorldState("rolly", BLUE_PINK_START);
+
+        const P0 = { x: init851.worldX, y: init851.worldY };
+        const v0_perFrame = {
+          x: init851.worldX - init850.worldX,
+          y: init851.worldY - init850.worldY,
+        };
+        const P1 = {
+          x: P0.x + v0_perFrame.x * 20 + 120,
+          y: P0.y + v0_perFrame.y * 20 + 20,
+        };
+        const P2 = { x: blueArrive.x - 90, y: blueArrive.y + 190 };
+        const P3 = blueArrive;
+
+        const relF = frame - BLUE_PINK_START;
+        let targetWorldX = 0;
+        let targetWorldY = 0;
+        let targetWorldRot = 0;
+
+        if (relF < F_APPROACH_DUR) {
+          // Phase 1: Soft Steering & Acceleration along approach Bezier
+          const u = relF / F_APPROACH_DUR;
+          const eu = quinticStep(u);
+          const pos = cubicBezier(P0, P1, P2, P3, eu);
+          targetWorldX = pos.x;
+          targetWorldY = pos.y;
+
+          const bankRot = 15 * Math.sin(eu * Math.PI);
+          targetWorldRot = init851.worldRot * (1 - eu * eu) + bankRot * eu;
+
+          squashX = 1 + 0.03 * Math.sin(eu * Math.PI);
+          squashY = 1 - 0.03 * Math.sin(eu * Math.PI);
+        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR) {
+          // Phase 2: Dynamic 360° Counter-Clockwise Swirl Loop
+          const v = (relF - F_APPROACH_DUR) / F_SWIRL_DUR;
+          const sv = quinticStep(v);
+          const angle = Math.PI + sv * Math.PI * 2;
+
+          targetWorldX = meetCenterX + Math.cos(angle) * loopRadiusX;
+          targetWorldY = meetCenterY + Math.sin(angle) * loopRadiusY;
+          targetWorldRot = 16 * Math.sin(sv * Math.PI * 2) * Math.sin(v * Math.PI);
+
+          squashX = 1 + 0.035 * Math.sin(v * Math.PI);
+          squashY = 1 - 0.035 * Math.sin(v * Math.PI);
+        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR) {
+          // Phase 3: Cute Soft-Body Bump & Squish Contact (Peak at f945)
+          const b = (relF - (F_APPROACH_DUR + F_SWIRL_DUR)) / F_BUMP_DUR;
+          const eb = Math.sin(b * Math.PI);
+
+          targetWorldX = blueArrive.x + 37.0 * eb;
+          targetWorldY = blueArrive.y;
+          targetWorldRot = 7.0 * eb;
+
+          squashX = 1 - 0.11 * eb;
+          squashY = 1 + 0.09 * eb;
+        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR + F_DRIFT_DUR) {
+          // Phase 4: Recoil Arc & Smooth Transition into Living Ambient Roam
+          const w = (relF - (F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR)) / F_DRIFT_DUR;
+          const ew = smoothStep(w);
+
+          const arcX = blueArrive.x + (blueRoamCenter.x - blueArrive.x) * ew;
+          const arcY = blueArrive.y + (blueRoamCenter.y - blueArrive.y) * ew - 22 * (1 - w) * Math.sin(w * Math.PI);
+          const arcRot = 6 * (1 - w) * Math.sin(w * Math.PI);
+
+          // Living ambient floating oscillation in roam quadrant
+          const roamIdleT = (frame / 180) * 2 * Math.PI;
+          const roamIdleY = Math.sin(roamIdleT) * 20 + Math.sin(roamIdleT * 2.15 + 0.4) * 4.5;
+          const roamIdleX = Math.cos(roamIdleT * 1.15) * 14 + Math.sin(roamIdleT * 0.65 + 1.2) * 3.5;
+          const roamIdleRot = Math.sin(roamIdleT * 0.95) * 3;
+
+          const ambientX = blueRoamCenter.x + roamIdleX;
+          const ambientY = blueRoamCenter.y + roamIdleY;
+          const ambientRot = roamIdleRot;
+
+          const blendWeight = Math.max(0, Math.min(1, (w - 0.5) / 0.5));
+          const smoothBlend = smoothStep(blendWeight);
+
+          targetWorldX = arcX * (1 - smoothBlend) + ambientX * smoothBlend;
+          targetWorldY = arcY * (1 - smoothBlend) + ambientY * smoothBlend;
+          targetWorldRot = arcRot * (1 - smoothBlend) + ambientRot * smoothBlend;
+        } else {
+          // Phase 5: Living Ambient Roam (stays continuously alive until departure)
+          const roamIdleT = (frame / 180) * 2 * Math.PI;
+          const roamIdleY = Math.sin(roamIdleT) * 20 + Math.sin(roamIdleT * 2.15 + 0.4) * 4.5;
+          const roamIdleX = Math.cos(roamIdleT * 1.15) * 14 + Math.sin(roamIdleT * 0.65 + 1.2) * 3.5;
+          const roamIdleRot = Math.sin(roamIdleT * 0.95) * 3;
+
+          targetWorldX = blueRoamCenter.x + roamIdleX;
+          targetWorldY = blueRoamCenter.y + roamIdleY;
+          targetWorldRot = roamIdleRot;
+        }
+
+        offsetX = targetWorldX - (baseX + baseNow.rawFloatX);
+        offsetY = targetWorldY - (baseY + baseNow.rawFloatY);
+        offsetRot = targetWorldRot - baseNow.rawFloatRot;
+      }
     } else if (identity === "ghosty") {
-      // Pink starts chase 8 frames delayed on tighter inside line, catching up to Blue!
-      const delayedP = Math.max(0, p - 0.12) / 0.88;
-      const delayedEnv = Math.sin(delayedP * Math.PI);
-      const raceAngle = delayedP * Math.PI * 1.65 - Math.PI * 0.55;
-      const rx = 360;
-      const ry = 210;
-      offsetX += (Math.cos(raceAngle) * rx - 80) * delayedEnv;
-      offsetY += (Math.sin(raceAngle) * ry + 110) * delayedEnv;
-      offsetRot += Math.sin(delayedP * Math.PI * 2) * 15 * delayedEnv;
-      squashX *= 1 + 0.055 * delayedEnv;
-      squashY *= 1 - 0.05 * delayedEnv;
+      if (frame < TIMING.PINK_DEPART_START) {
+        const pinkArrive = { x: meetCenterX + loopRadiusX, y: meetCenterY }; // (2063, 640)
+        const pinkRoamCenter = { x: 2450.0, y: 720.0 };
+
+        const baseNow = getBaseWorldState("ghosty", frame);
+        const init850 = getBaseWorldState("ghosty", BLUE_PINK_START - 1);
+        const init851 = getBaseWorldState("ghosty", BLUE_PINK_START);
+
+        const P0 = { x: init851.worldX, y: init851.worldY };
+        const v0_perFrame = {
+          x: init851.worldX - init850.worldX,
+          y: init851.worldY - init850.worldY,
+        };
+        const P1 = {
+          x: P0.x + v0_perFrame.x * 20 - 80,
+          y: P0.y + v0_perFrame.y * 20 - 40,
+        };
+        const P2 = { x: pinkArrive.x + 130, y: 520.0 };
+        const P3 = pinkArrive;
+
+        const relF = frame - BLUE_PINK_START;
+        let targetWorldX = 0;
+        let targetWorldY = 0;
+        let targetWorldRot = 0;
+
+        if (relF < F_APPROACH_DUR) {
+          // Phase 1: Soft Steering & Acceleration along approach Bezier
+          const u = relF / F_APPROACH_DUR;
+          const eu = quinticStep(u);
+          const pos = cubicBezier(P0, P1, P2, P3, eu);
+          targetWorldX = pos.x;
+          targetWorldY = pos.y;
+
+          const bankRot = -15 * Math.sin(eu * Math.PI);
+          targetWorldRot = init851.worldRot * (1 - eu * eu) + bankRot * eu;
+
+          squashX = 1 + 0.03 * Math.sin(eu * Math.PI);
+          squashY = 1 - 0.03 * Math.sin(eu * Math.PI);
+        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR) {
+          // Phase 2: Dynamic 360° Counter-Clockwise Swirl Loop
+          const v = (relF - F_APPROACH_DUR) / F_SWIRL_DUR;
+          const sv = quinticStep(v);
+          const angle = 0 + sv * Math.PI * 2;
+
+          targetWorldX = meetCenterX + Math.cos(angle) * loopRadiusX;
+          targetWorldY = meetCenterY + Math.sin(angle) * loopRadiusY;
+          targetWorldRot = -16 * Math.sin(sv * Math.PI * 2) * Math.sin(v * Math.PI);
+
+          squashX = 1 + 0.035 * Math.sin(v * Math.PI);
+          squashY = 1 - 0.035 * Math.sin(v * Math.PI);
+        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR) {
+          // Phase 3: Cute Soft-Body Bump & Squish Contact (Peak at f945)
+          const b = (relF - (F_APPROACH_DUR + F_SWIRL_DUR)) / F_BUMP_DUR;
+          const eb = Math.sin(b * Math.PI);
+
+          targetWorldX = pinkArrive.x - 37.0 * eb;
+          targetWorldY = pinkArrive.y;
+          targetWorldRot = -7.0 * eb;
+
+          squashX = 1 - 0.11 * eb;
+          squashY = 1 + 0.09 * eb;
+        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR + F_DRIFT_DUR) {
+          // Phase 4: Recoil Arc & Smooth Transition into Living Ambient Roam
+          const w = (relF - (F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR)) / F_DRIFT_DUR;
+          const ew = smoothStep(w);
+
+          const arcX = pinkArrive.x + (pinkRoamCenter.x - pinkArrive.x) * ew;
+          const arcY = pinkArrive.y + (pinkRoamCenter.y - pinkArrive.y) * ew - 20 * (1 - w) * Math.sin(w * Math.PI);
+          const arcRot = -6 * (1 - w) * Math.sin(w * Math.PI);
+
+          // Living ambient floating oscillation in roam quadrant
+          const roamIdleT = (frame / 170) * 2 * Math.PI + 3.1;
+          const roamIdleY = Math.sin(roamIdleT) * 22 + Math.sin(roamIdleT * 2.15 + 0.4) * 4.5;
+          const roamIdleX = Math.cos(roamIdleT * 1.15) * 14 + Math.sin(roamIdleT * 0.65 + 1.2) * 3.5;
+          const roamIdleRot = Math.sin(roamIdleT * 0.95) * 3.5;
+
+          const ambientX = pinkRoamCenter.x + roamIdleX;
+          const ambientY = pinkRoamCenter.y + roamIdleY;
+          const ambientRot = roamIdleRot;
+
+          const blendWeight = Math.max(0, Math.min(1, (w - 0.5) / 0.5));
+          const smoothBlend = smoothStep(blendWeight);
+
+          targetWorldX = arcX * (1 - smoothBlend) + ambientX * smoothBlend;
+          targetWorldY = arcY * (1 - smoothBlend) + ambientY * smoothBlend;
+          targetWorldRot = arcRot * (1 - smoothBlend) + ambientRot * smoothBlend;
+        } else {
+          // Phase 5: Living Ambient Roam (stays continuously alive until departure)
+          const roamIdleT = (frame / 170) * 2 * Math.PI + 3.1;
+          const roamIdleY = Math.sin(roamIdleT) * 22 + Math.sin(roamIdleT * 2.15 + 0.4) * 4.5;
+          const roamIdleX = Math.cos(roamIdleT * 1.15) * 14 + Math.sin(roamIdleT * 0.65 + 1.2) * 3.5;
+          const roamIdleRot = Math.sin(roamIdleT * 0.95) * 3.5;
+
+          targetWorldX = pinkRoamCenter.x + roamIdleX;
+          targetWorldY = pinkRoamCenter.y + roamIdleY;
+          targetWorldRot = roamIdleRot;
+        }
+
+        offsetX = targetWorldX - (baseX + baseNow.rawFloatX);
+        offsetY = targetWorldY - (baseY + baseNow.rawFloatY);
+        offsetRot = targetWorldRot - baseNow.rawFloatRot;
+      }
     } else if (identity === "rocky") {
-      // Layer 2: Green leans away as racers zoom by
-      const leanX = -Math.sin(p * Math.PI) * 28 * env;
-      const leanY = Math.sin(p * Math.PI) * 16 * env;
-      offsetX += leanX;
-      offsetY += leanY;
-      offsetRot -= Math.sin(p * Math.PI) * 6 * env;
+      // Green (Rocky): Observes the playful swirl & boop with gentle tilt
+      if (frame < BLUE_PINK_START + F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR) {
+        const p = (frame - BLUE_PINK_START) / (F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR);
+        if (p >= 0.28 && p < 0.85) {
+          const k = (p - 0.28) / 0.57;
+          offsetRot -= 5 * Math.sin(k * Math.PI);
+        }
+      }
     } else if (identity === "boxy") {
-      // Layer 2: Yellow does an excited micro-bob
-      const bob = Math.sin(p * Math.PI * 2) * 10 * env;
-      offsetY += bob;
-    }
-  }
-
-  // =========================================================================
-  // 7. LAYER 3: THE ONE SINGLE MOMENTUM SWIRL (Frames 1020 to 1065)
-  // STRICTLY THE ONLY SWIRL IN THE ENTIRE VIDEO:
-  // Pink catches Blue -> soft collision squash -> 220° shared spiral rotation -> peel apart
-  // =========================================================================
-  const SWIRL_START = TIMING.SWIRL_START;
-  const SWIRL_DURATION = TIMING.SWIRL_DURATION;
-  if (frame >= SWIRL_START && frame < SWIRL_START + SWIRL_DURATION) {
-    const p = (frame - SWIRL_START) / SWIRL_DURATION;
-    const env = Math.sin(p * Math.PI);
-    const easeProgress = 0.5 - 0.5 * Math.cos(p * Math.PI);
-
-    const swirlRadius = 75 * env;
-    const angle = easeProgress * Math.PI * 1.22; // 220° smooth spiral
-
-    if (identity === "rolly") {
-      offsetX += Math.cos(angle) * swirlRadius - 40 * env;
-      offsetY += Math.sin(angle) * (swirlRadius * 0.6) + 120 * env;
-      offsetRot += Math.sin(angle) * 12 * env;
-
-      if (p < 0.25) {
-        squashX *= 0.94;
-        squashY *= 1.06;
-      }
-    } else if (identity === "ghosty") {
-      offsetX += Math.cos(angle + Math.PI) * swirlRadius - 40 * env;
-      offsetY += Math.sin(angle + Math.PI) * (swirlRadius * 0.6) + 120 * env;
-      offsetRot += Math.sin(angle + Math.PI) * 12 * env;
-
-      if (p < 0.25) {
-        squashX *= 0.94;
-        squashY *= 1.06;
+      // Yellow (Boxy): Cheerful bob watching the swirl & boop
+      if (frame < BLUE_PINK_START + F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR) {
+        const p = (frame - BLUE_PINK_START) / (F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR);
+        if (p >= 0.28 && p < 0.85) {
+          const k = (p - 0.28) / 0.57;
+          offsetY -= 14 * Math.sin(k * Math.PI);
+          squashY *= 1 + 0.03 * Math.sin(k * Math.PI);
+        }
       }
     }
   }
 
   // =========================================================================
-  // 8. LAYER 3: YELLOW & GREEN COZY SQUEEZE (Frames 1080 to 1145)
-  // Yellow snuggles next to Green under the URL; both compress 4.5%, Green yields 20px left
+  // 5. LAYER 3: YELLOW & GREEN COZY SQUEEZE (Frames 916 to 966)
+  // Yellow gently cuddles into Green under the right side of the URL
   // =========================================================================
   const SQUEEZE_START = TIMING.SQUEEZE_START;
   const SQUEEZE_DURATION = TIMING.SQUEEZE_DURATION;
@@ -365,67 +507,11 @@ export function getAllyPlayfulOffset(
   }
 
   // =========================================================================
-  // 9. LAYER 3: BLUE GAP-THREADING (Frames 1150 to 1220)
-  // Blue curves smoothly diagonally down-right through gap between Pink & Green
-  // Green and Yellow shift apart (+28px / -25px) asynchronously to make space
+  // 6. LAYER 2: GREEN FINAL LINGER & LOOK-BACK (Frames 980 to 1020)
+  // Green hesitates before departing and gives an affectionate look-back
   // =========================================================================
-  const THREAD_START = TIMING.GAP_THREAD_START;
-  const THREAD_DURATION = TIMING.GAP_THREAD_DURATION;
-  if (frame >= THREAD_START && frame < THREAD_START + THREAD_DURATION) {
-    const p = (frame - THREAD_START) / THREAD_DURATION;
-    const env = Math.sin(p * Math.PI);
-
-    if (identity === "rolly") {
-      const threadX = Math.sin(p * Math.PI) * 520 * env;
-      const threadY = Math.sin(p * Math.PI) * -85 * env;
-      offsetX += threadX;
-      offsetY += threadY;
-      offsetRot += Math.sin(p * Math.PI * 2) * 14 * env;
-      squashX *= 1 + 0.045 * env;
-      squashY *= 1 - 0.04 * env;
-    } else if (identity === "ghosty") {
-      offsetY -= Math.sin(p * Math.PI) * 28 * env;
-      offsetRot += 5 * env;
-    } else if (identity === "rocky") {
-      offsetY += Math.sin(p * Math.PI) * 25 * env;
-      offsetRot -= 5 * env;
-    }
-  }
-
-  // =========================================================================
-  // 10. LAYER 3: FOLLOW-AND-PEEL (Frames 1225 to 1300)
-  // Yellow leads a gentle curved drift; Pink follows in train then peels upward
-  // =========================================================================
-  const FOLLOW_START = TIMING.FOLLOW_PEEL_START;
-  const FOLLOW_DURATION = TIMING.FOLLOW_PEEL_DURATION;
-  if (frame >= FOLLOW_START && frame < FOLLOW_START + FOLLOW_DURATION) {
-    const p = (frame - FOLLOW_START) / FOLLOW_DURATION;
-    const env = Math.sin(p * Math.PI);
-
-    if (identity === "boxy") {
-      offsetX += Math.sin(p * Math.PI) * -110 * env;
-      offsetY += Math.sin(p * Math.PI) * 45 * env;
-      offsetRot -= Math.sin(p * Math.PI) * 6 * env;
-    } else if (identity === "ghosty") {
-      const delayedP = Math.max(0, p - 0.12) / 0.88;
-      const delayedEnv = Math.sin(delayedP * Math.PI);
-      const followX = Math.sin(delayedP * Math.PI) * -95 * delayedEnv;
-      const peelY =
-        delayedP > 0.5
-          ? -((delayedP - 0.5) / 0.5) * 55 * delayedEnv
-          : Math.sin(delayedP * Math.PI) * 35 * delayedEnv;
-      offsetX += followX;
-      offsetY += peelY;
-      offsetRot += Math.sin(delayedP * Math.PI) * 10 * delayedEnv;
-    }
-  }
-
-  // =========================================================================
-  // 11. LAYER 2: GREEN FINAL LINGER & LOOK-BACK (Frames 1400 to 1445)
-  // Green hesitates before departing and gives a subtle look back toward the URL
-  // =========================================================================
-  const LINGER_START = 1400;
-  const LINGER_DURATION = 45;
+  const LINGER_START = TIMING.PINK_DEPART_START;
+  const LINGER_DURATION = TIMING.GREEN_DEPART_START - TIMING.PINK_DEPART_START;
   if (frame >= LINGER_START && frame < LINGER_START + LINGER_DURATION && identity === "rocky") {
     const p = (frame - LINGER_START) / LINGER_DURATION;
     const env = Math.sin(p * Math.PI);

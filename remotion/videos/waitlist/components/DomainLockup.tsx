@@ -136,17 +136,83 @@ export function DomainLockup({ frame }: { frame: number }) {
     return piece === "allies" ? COLORS.brandOrange : COLORS.headlineText;
   };
 
-  // Micro-scale completion celebration pulse
+  // Micro-scale completion celebration pulse (smooth half-sine over orange celebration window)
   let completionScale = 1.0;
   if (
     frame >= TIMING.COMPLETION_ORANGE_HOLD_START &&
-    frame < TIMING.COMPLETION_BLACK_TRANSITION_START + 15
+    frame < TIMING.COMPLETION_BLACK_TRANSITION_START + 14
   ) {
-    const pulseProgress =
-      (frame - TIMING.COMPLETION_ORANGE_HOLD_START) / 35;
-    const pulseEnv = Math.sin(Math.min(1, pulseProgress) * Math.PI);
+    const pulseDuration =
+      TIMING.COMPLETION_BLACK_TRANSITION_START -
+      TIMING.COMPLETION_ORANGE_HOLD_START +
+      14;
+    const pulseProgress = Math.max(
+      0,
+      Math.min(1, (frame - TIMING.COMPLETION_ORANGE_HOLD_START) / pulseDuration),
+    );
+    const pulseEnv = Math.sin(pulseProgress * Math.PI);
     completionScale = 1.0 + pulseEnv * 0.015;
   }
+
+  // =========================================================================
+  // DETERMINISTIC SHINY TEXT SHEEN PASS (Frames 1315 to 1370)
+  // Single smooth diagonal highlight pass across black 'yourallies.io'
+  // =========================================================================
+  const isSheenActive =
+    frame >= TIMING.SHEEN_START && frame < TIMING.SHEEN_END;
+
+  const sheenProgress = interpolate(
+    frame,
+    [TIMING.SHEEN_START, TIMING.SHEEN_END],
+    [0, 1],
+    {
+      easing: Easing.bezier(0.35, 0.0, 0.25, 1.0),
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+
+  // Sheen center traverses from -25% to 125% of total lockup width
+  const sheenPercent = interpolate(sheenProgress, [0, 1], [-25, 125]);
+  const sheenGradient = `linear-gradient(115deg, transparent 0%, transparent calc(${sheenPercent.toFixed(
+    2,
+  )}% - 130px), rgba(255, 255, 255, 0.65) ${sheenPercent.toFixed(
+    2,
+  )}%, transparent calc(${sheenPercent.toFixed(2)}% + 130px), transparent 100%)`;
+
+  const PIECE_LEFT_OFFSETS: Record<DomainPiece, number> = {
+    your: 0,
+    allies: DOMAIN_LAYOUT.pieces.your.width + DOMAIN_LAYOUT.yourAlliesGap,
+    dot:
+      DOMAIN_LAYOUT.pieces.your.width +
+      DOMAIN_LAYOUT.yourAlliesGap +
+      DOMAIN_LAYOUT.pieces.allies.width +
+      DOMAIN_LAYOUT.gap,
+    i:
+      DOMAIN_LAYOUT.pieces.your.width +
+      DOMAIN_LAYOUT.yourAlliesGap +
+      DOMAIN_LAYOUT.pieces.allies.width +
+      DOMAIN_LAYOUT.gap +
+      DOMAIN_LAYOUT.pieces.dot.width +
+      DOMAIN_LAYOUT.gap,
+    o:
+      DOMAIN_LAYOUT.pieces.your.width +
+      DOMAIN_LAYOUT.yourAlliesGap +
+      DOMAIN_LAYOUT.pieces.allies.width +
+      DOMAIN_LAYOUT.gap +
+      DOMAIN_LAYOUT.pieces.dot.width +
+      DOMAIN_LAYOUT.gap +
+      DOMAIN_LAYOUT.pieces.i.width +
+      DOMAIN_LAYOUT.gap,
+  };
+
+  const ALL_DOMAIN_PIECES: readonly DomainPiece[] = [
+    "your",
+    "allies",
+    "dot",
+    "i",
+    "o",
+  ];
 
   return (
     <div
@@ -217,6 +283,58 @@ export function DomainLockup({ frame }: { frame: number }) {
           </div>
         );
       })}
+
+      {/* 3. DETERMINISTIC SHINY TEXT SHEEN OVERLAY (Active strictly during f1315-f1370) */}
+      {isSheenActive &&
+        ALL_DOMAIN_PIECES.map((piece) => {
+          const slot = DOMAIN_LAYOUT.pieces[piece];
+          const pieceLeft = PIECE_LEFT_OFFSETS[piece];
+
+          return (
+            <div
+              key={`sheen-${piece}`}
+              style={{
+                position: "absolute",
+                left: slot.centerX - DOMAIN_LAYOUT.centerX,
+                top: -DOMAIN_LAYOUT.rowHeight / 2,
+                width: slot.width,
+                height: DOMAIN_LAYOUT.rowHeight,
+                transform: "translateX(-50%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                pointerEvents: "none",
+                zIndex: 4,
+              }}
+            >
+              <span
+                style={{
+                  ...getPieceStyle(piece, "transparent"),
+                  backgroundImage: sheenGradient,
+                  backgroundSize: `${
+                    DOMAIN_LAYOUT.pieces.your.width +
+                    DOMAIN_LAYOUT.yourAlliesGap +
+                    DOMAIN_LAYOUT.pieces.allies.width +
+                    DOMAIN_LAYOUT.gap +
+                    DOMAIN_LAYOUT.pieces.dot.width +
+                    DOMAIN_LAYOUT.gap +
+                    DOMAIN_LAYOUT.pieces.i.width +
+                    DOMAIN_LAYOUT.gap +
+                    DOMAIN_LAYOUT.pieces.o.width
+                  }px 100%`,
+                  backgroundPosition: `-${pieceLeft}px 0px`,
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  mixBlendMode: "screen",
+                  userSelect: "none",
+                }}
+              >
+                {DOMAIN_LAYOUT.pieces[piece].text}
+              </span>
+            </div>
+          );
+        })}
     </div>
   );
 }

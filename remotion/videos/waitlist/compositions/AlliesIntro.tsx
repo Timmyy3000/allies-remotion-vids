@@ -33,7 +33,8 @@ import { FONT_STYLE } from "../styles/font";
 import { getCameraState } from "../motion/cameraSystem";
 import { getTextBoopReaction } from "../motion/allyBehavior";
 
-// Brand Recenter curve: [0.22, 1, 0.36, 1] (confident initial movement, long smooth deceleration to 0)
+// Exact exit curve from more-motion: [0.22, 1, 0.36, 1]
+const meetYourExitEase = Easing.bezier(0.22, 1, 0.36, 1);
 const brandRecenterEase = Easing.bezier(0.22, 1, 0.36, 1);
 
 export function AlliesIntro() {
@@ -104,8 +105,37 @@ export function AlliesIntro() {
     ? interpolate(logoSpring, [0, 1], [30.93, 0])
     : 30.93;
 
-  // Brand Group ("[LOGO] allies") Recenter Glide
-  // Starts strictly at frame 508 after a full 48-frame (0.8s) hold following word departures
+  // --- 3. BRAND CONDENSATION / "MEET YOUR" EXIT & RECENTER TRANSITION (Exact more-motion port) ---
+
+  // A. "Meet your" Reverse Focus Exit Progress & Pull Translation
+  const meetYourExitProgress = interpolate(
+    frame,
+    [TIMING.MEET_YOUR_EXIT_START, TIMING.MEET_YOUR_EXIT_END],
+    [0, 1],
+    {
+      easing: meetYourExitEase,
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+
+  const meetYourExitX = interpolate(
+    meetYourExitProgress,
+    [0, 1],
+    [0, HEADLINE_LAYOUT.meetYourPullDistance],
+  );
+
+  const meetYourOverallOpacity = interpolate(
+    meetYourExitProgress,
+    [0, 0.72, 0.94, 1.0],
+    [1, 0.88, 0.05, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+
+  // B. Brand Group ("[LOGO] allies") Recenter Glide (begins at f328 while Meet your dissolves)
   const brandRecenterProgress = interpolate(
     frame,
     [TIMING.BRAND_RECENTER_START, TIMING.BRAND_RECENTER_END],
@@ -123,7 +153,7 @@ export function AlliesIntro() {
     [0, HEADLINE_LAYOUT.brandShiftDistance],
   );
 
-  // --- 3. LOGO INWARD COLLAPSE (Leaves 'allies' standing) ---
+  // --- 4. LOGO INWARD COLLAPSE (Leaves 'allies' standing for domain puzzle) ---
   const isLogoCollapseStarted = frame >= TIMING.LOGO_COLLAPSE_START;
   const logoCollapseProgress = isLogoCollapseStarted
     ? interpolate(
@@ -159,12 +189,8 @@ export function AlliesIntro() {
   const isLogoVisible = isLogoStarted && frame < TIMING.LOGO_COLLAPSE_END;
   const isBrandGroupVisible = frame < TIMING.LOGO_COLLAPSE_END;
 
-  // --- 4. PHYSICAL 'allies' TEXT REACTION (WHEN BOOPED BY PINK) ---
+  // --- 5. PHYSICAL 'allies' TEXT REACTION (WHEN BOOPED BY PINK) ---
   const textBoop = getTextBoopReaction(frame);
-
-  // Words remain rendered in the headline lockup until physically reached & picked up
-  const isMeetInHeadline = frame < TIMING.GREEN_MEET_PICKUP_START;
-  const isYourInHeadline = frame < TIMING.YELLOW_YOUR_PICKUP_START;
 
   return (
     <AbsoluteFill
@@ -212,18 +238,22 @@ export function AlliesIntro() {
               lineHeight: TYPOGRAPHY.lineHeight,
               color: COLORS.headlineText,
               userSelect: "none",
+              opacity: frame < TIMING.TEXT_GENERATION_START ? 0 : 1,
             }}
           >
             {/* ========================================================================= */}
-            {/* GROUP 1: INITIAL WORDS ("Meet your") */}
+            {/* GROUP 1: EXIT GROUP ("Meet your" - Dissolves toward logo with reverse focus) */}
             {/* ========================================================================= */}
             <div
-              className="meet-your-wrapper"
+              className="meet-your-exit-wrapper"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 height: "100%",
+                transform: `translateX(${meetYourExitX.toFixed(3)}px)`,
+                opacity: meetYourOverallOpacity,
                 pointerEvents: "none",
+                willChange: "transform, opacity",
               }}
             >
               {/* WORD 1: "Meet" */}
@@ -233,7 +263,6 @@ export function AlliesIntro() {
                   display: "inline-flex",
                   alignItems: "center",
                   position: "relative",
-                  visibility: isMeetInHeadline ? "visible" : "hidden",
                 }}
               >
                 <FocusWord
@@ -241,7 +270,7 @@ export function AlliesIntro() {
                   startFrame={TIMING.MEET_FOCUS_START}
                   currentFrame={frame}
                   color={COLORS.headlineText}
-                  exitProgress={0}
+                  exitProgress={meetYourExitProgress}
                   wordIndex={0}
                 />
               </div>
@@ -252,7 +281,6 @@ export function AlliesIntro() {
                   display: "inline-block",
                   width: HEADLINE_LAYOUT.wordGap,
                   userSelect: "none",
-                  visibility: isMeetInHeadline && isYourInHeadline ? "visible" : "hidden",
                 }}
               >
                 &nbsp;
@@ -265,7 +293,6 @@ export function AlliesIntro() {
                   display: "inline-flex",
                   alignItems: "center",
                   position: "relative",
-                  visibility: isYourInHeadline ? "visible" : "hidden",
                 }}
               >
                 <FocusWord
@@ -273,7 +300,7 @@ export function AlliesIntro() {
                   startFrame={TIMING.YOUR_FOCUS_START}
                   currentFrame={frame}
                   color={COLORS.headlineText}
-                  exitProgress={0}
+                  exitProgress={meetYourExitProgress}
                   wordIndex={1}
                 />
               </div>
@@ -285,7 +312,7 @@ export function AlliesIntro() {
                 display: "inline-block",
                 width: HEADLINE_LAYOUT.wordGap,
                 userSelect: "none",
-                visibility: isYourInHeadline ? "visible" : "hidden",
+                opacity: meetYourOverallOpacity,
               }}
             >
               &nbsp;
@@ -382,14 +409,14 @@ export function AlliesIntro() {
           </div>
         )}
 
-        {/* DOMAIN LOCKUP & PUZZLE COMPLETION (From f710 onwards) */}
+        {/* DOMAIN LOCKUP & PUZZLE COMPLETION (From f580 onwards) */}
         {frame >= TIMING.LOGO_COLLAPSE_END && <DomainLockup frame={frame} />}
 
         {/* ========================================================================= */}
         {/* REUSABLE ALLY ACTORS (PERMANENT IDENTITIES: ROLLY, ROCKY, GHOSTY, BOXY) */}
         {/* ========================================================================= */}
 
-        {/* 1. Blue Ally (Rolly): Enters clean, races around yourallies.io, swirls, fetches 'your', threads gap, departs */}
+        {/* 1. Blue Ally (Rolly): Enters, jiggles during inspection, fetches 'your', races, swirls, departs */}
         <AllyActor
           identity="rolly"
           config={ALLIES.blue}
@@ -407,7 +434,7 @@ export function AlliesIntro() {
           }}
         />
 
-        {/* 2. Green Ally (Rocky): Enters, travels to 'Meet' from ABOVE, carries 'Meet' offscreen, returns, fetches 'i', snuggles Yellow, departs */}
+        {/* 2. Green Ally (Rocky): Enters, 360-turn during inspection, fetches 'i', near-miss, snuggles Yellow, departs */}
         <AllyActor
           identity="rocky"
           config={ALLIES.green}
@@ -417,23 +444,6 @@ export function AlliesIntro() {
           clearance={ALLY_ACTORS.clearance}
           entryTiltDeg={8}
           cargoMap={{
-            "meet-carry": {
-              node: (
-                <span
-                  style={{
-                    display: "inline-block",
-                    lineHeight: 1,
-                    color: COLORS.headlineText,
-                    userSelect: "none",
-                  }}
-                >
-                  Meet
-                </span>
-              ),
-              width: HEADLINE_LAYOUT.meetWidth,
-              offset: { x: 0, y: 300 },
-              inertiaWeight: 0.04,
-            },
             "domain-drag": {
               node: <DomainPieceText piece={DOMAIN_DRAG_TARGETS.green.piece} />,
               width: DOMAIN_LAYOUT.pieces.i.width,
@@ -442,7 +452,7 @@ export function AlliesIntro() {
           }}
         />
 
-        {/* 3. Pink Ally (Ghosty): Enters, boops 'allies', chases Blue, swirls, fetches '.', peeks behind Blue, follows Yellow, departs */}
+        {/* 3. Pink Ally (Ghosty): Enters, boops 'allies' & recoils to new anchor, fetches '.', chases Blue, swirls, departs */}
         <AllyActor
           identity="ghosty"
           config={ALLIES.pink}
@@ -460,7 +470,7 @@ export function AlliesIntro() {
           }}
         />
 
-        {/* 4. Yellow Ally (Boxy): Double-hop, travels to 'your' from UNDERNEATH, carries 'your' offscreen, returns, fetches 'o', snuggles Green, departs */}
+        {/* 4. Yellow Ally (Boxy): Enters, double-hops, fetches 'o', near-miss, snuggles Green, departs */}
         <AllyActor
           identity="boxy"
           config={ALLIES.yellow}
@@ -470,23 +480,6 @@ export function AlliesIntro() {
           clearance={ALLY_ACTORS.clearance}
           entryTiltDeg={8}
           cargoMap={{
-            "your-carry": {
-              node: (
-                <span
-                  style={{
-                    display: "inline-block",
-                    lineHeight: 1,
-                    color: COLORS.headlineText,
-                    userSelect: "none",
-                  }}
-                >
-                  your
-                </span>
-              ),
-              width: HEADLINE_LAYOUT.yourWidth,
-              offset: { x: 0, y: -300 },
-              inertiaWeight: 0.04,
-            },
             "domain-drag": {
               node: <DomainPieceText piece={DOMAIN_DRAG_TARGETS.yellow.piece} />,
               width: DOMAIN_LAYOUT.pieces.o.width,

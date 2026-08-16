@@ -39,7 +39,7 @@ export interface AllyActorProps {
 }
 
 /**
- * Reusable Ally Actor (State & Motion Engine V6)
+ * Reusable Ally Actor (State & Motion Engine V7)
  *
  * Geometric & State Rules:
  * - Rule 1: Permanent character identity (Rocky, Rolly, Ghosty, Boxy) NEVER changes.
@@ -107,7 +107,7 @@ export function AllyActor({
     : 0;
   const characterTilt = entryTiltDeg * (1 - travel.progress) + bankingTilt;
 
-  // 5. Ambient Idle Floating & Spontaneous Playful Actions
+  // 5. Ambient Idle Floating & Spontaneous Playful Actions (World-space continuous state)
   const playful = getAllyPlayfulOffset(identity, currentFrame, travel.x, travel.y);
 
   const idle = config.idle;
@@ -133,8 +133,6 @@ export function AllyActor({
   let activeCargoNode: React.ReactNode = null;
   let activeCargoWidth = cargoWidth;
   let activeCargoTipPad = cargoTipPadding;
-  let activeCargoOffset: { x: number; y: number } | undefined = undefined;
-  let activeCargoInertia = 0.04;
 
   if (cargoMap && travel.activeSegmentId && cargoMap[travel.activeSegmentId]) {
     const activeSegConfig = config.segments?.find(
@@ -146,8 +144,6 @@ export function AllyActor({
       activeCargoNode = item.node;
       if (item.width != null) activeCargoWidth = item.width;
       if (item.tipPadding != null) activeCargoTipPad = item.tipPadding;
-      if (item.offset != null) activeCargoOffset = item.offset;
-      if (item.inertiaWeight != null) activeCargoInertia = item.inertiaWeight;
     }
   } else if (cargo && travel.activeSegmentId === cargoSegmentId) {
     const activeSegConfig = config.segments?.find((s) => s.id === cargoSegmentId);
@@ -157,26 +153,15 @@ export function AllyActor({
     }
   }
 
-  let cargoX: number;
-  let cargoY: number;
-
-  if (activeCargoOffset) {
-    // Subtle secondary inertia lag (a few pixels deterministic lag during acceleration/turning)
-    const lagX = -travel.velocityX * activeCargoInertia * 6;
-    const lagY = -travel.velocityY * activeCargoInertia * 6;
-    cargoX = activeCargoOffset.x + lagX;
-    cargoY = activeCargoOffset.y + lagY;
-  } else {
-    const cursorX = travel.cursorX;
-    const cursorY = travel.cursorY;
-    const cargoAngleRad = (travel.directionDeg * Math.PI) / 180;
-    const cargoLeadDistance =
-      activeCargoWidth == null
-        ? 0
-        : pointerSize / 2 + activeCargoTipPad + activeCargoWidth / 2;
-    cargoX = cursorX + Math.cos(cargoAngleRad) * cargoLeadDistance;
-    cargoY = cursorY + Math.sin(cargoAngleRad) * cargoLeadDistance;
-  }
+  const cursorX = travel.cursorX;
+  const cursorY = travel.cursorY;
+  const cargoAngleRad = (travel.directionDeg * Math.PI) / 180;
+  const cargoLeadDistance =
+    activeCargoWidth == null
+      ? 0
+      : pointerSize / 2 + activeCargoTipPad + activeCargoWidth / 2;
+  const cargoX = cursorX + Math.cos(cargoAngleRad) * cargoLeadDistance;
+  const cargoY = cursorY + Math.sin(cargoAngleRad) * cargoLeadDistance;
 
   // 7. Handle optional playful cursor override
   const isCursorOverridden = playful.cursorOverride?.active;
@@ -213,7 +198,7 @@ export function AllyActor({
         willChange: "transform",
       }}
     >
-      {/* CARGO: Attached in world translation space without banking tilt distortion */}
+      {/* CARGO: Attached in world translation space */}
       {activeCargoNode && (
         <div
           style={{

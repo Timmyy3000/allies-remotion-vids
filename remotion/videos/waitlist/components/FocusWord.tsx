@@ -56,6 +56,7 @@ export function FocusWord({
                 display: "inline-block",
                 lineHeight: 1,
                 visibility: "hidden",
+                opacity: 0,
               }}
             >
               {char}

@@ -15,7 +15,8 @@ import {
   DOMAIN_DRAG_TARGETS,
   DOMAIN_EDGE_POSITIONS,
   DOMAIN_EXIT_POSITIONS,
-  WORD_CARRIAGE_LAYOUT,
+  POST_ACTION_ANCHORS,
+  POST_SWIRL_POSITIONS,
 } from "./layout";
 import { TIMING } from "./timing";
 
@@ -56,7 +57,7 @@ export interface AllyMotionConfig {
 }
 
 // -----------------------------------------------------------------------------
-// 1. Blue (Rolly): Alert, crisp, decisive trajectories (No Logo Carriage on Entrance)
+// 1. Blue (Rolly): Alert, crisp, decisive trajectories
 // -----------------------------------------------------------------------------
 const blueEntrance = generateCurvedMotionPath(
   "rolly",
@@ -67,7 +68,7 @@ const blueEntrance = generateCurvedMotionPath(
 );
 const blueDomainEdge = generateCurvedMotionPath(
   "rolly",
-  BRAND_GATHER_POSITIONS.blue,
+  POST_ACTION_ANCHORS.blue,
   DOMAIN_EDGE_POSITIONS.blue,
   1,
   "domainEdge",
@@ -88,14 +89,14 @@ const blueDomainExit = generateCurvedMotionPath(
 );
 const blueDeparture = generateCurvedMotionPath(
   "rolly",
-  DOMAIN_EXIT_POSITIONS.blue,
+  POST_SWIRL_POSITIONS.blue,
   DEPARTURE_TARGETS.blue,
   4,
   "departure",
 );
 
 // -----------------------------------------------------------------------------
-// 2. Green (Rocky): Soft, calm, relaxed, approaches "Meet" from ABOVE
+// 2. Green (Rocky): Soft, calm, relaxed trajectories
 // -----------------------------------------------------------------------------
 const greenEntrance = generateCurvedMotionPath(
   "rocky",
@@ -104,53 +105,32 @@ const greenEntrance = generateCurvedMotionPath(
   0,
   "entrance",
 );
-const greenMeetApproach = generateCurvedMotionPath(
-  "rocky",
-  BRAND_GATHER_POSITIONS.green,
-  WORD_CARRIAGE_LAYOUT.meetPickup.actorBody,
-  1,
-  "meetApproach",
-);
-const greenMeetCarry = generateCurvedMotionPath(
-  "rocky",
-  WORD_CARRIAGE_LAYOUT.meetPickup.actorBody,
-  WORD_CARRIAGE_LAYOUT.greenMeetExit,
-  2,
-  "meetCarry",
-);
-const greenReturn = generateCurvedMotionPath(
-  "rocky",
-  WORD_CARRIAGE_LAYOUT.greenMeetExit,
-  WORD_CARRIAGE_LAYOUT.greenReturnTarget,
-  3,
-  "greenReturn",
-);
 const greenDomainEdge = generateCurvedMotionPath(
   "rocky",
-  WORD_CARRIAGE_LAYOUT.greenReturnTarget,
+  POST_ACTION_ANCHORS.green,
   DOMAIN_EDGE_POSITIONS.green,
-  4,
+  1,
   "domainEdge",
 );
 const greenDomainDrag = generateCurvedMotionPath(
   "rocky",
   DOMAIN_EDGE_POSITIONS.green,
   DOMAIN_DRAG_TARGETS.green.actor,
-  5,
+  2,
   "domainDrag",
 );
 const greenDomainExit = generateCurvedMotionPath(
   "rocky",
   DOMAIN_DRAG_TARGETS.green.actor,
   DOMAIN_EXIT_POSITIONS.green,
-  6,
+  3,
   "domainExit",
 );
 const greenDeparture = generateCurvedMotionPath(
   "rocky",
   DOMAIN_EXIT_POSITIONS.green,
   DEPARTURE_TARGETS.green,
-  7,
+  4,
   "departure",
 );
 
@@ -166,7 +146,7 @@ const pinkEntrance = generateCurvedMotionPath(
 );
 const pinkDomainEdge = generateCurvedMotionPath(
   "ghosty",
-  BRAND_GATHER_POSITIONS.pink,
+  POST_ACTION_ANCHORS.pink,
   DOMAIN_EDGE_POSITIONS.pink,
   1,
   "domainEdge",
@@ -187,14 +167,14 @@ const pinkDomainExit = generateCurvedMotionPath(
 );
 const pinkDeparture = generateCurvedMotionPath(
   "ghosty",
-  DOMAIN_EXIT_POSITIONS.pink,
+  POST_SWIRL_POSITIONS.pink,
   DEPARTURE_TARGETS.pink,
   4,
   "departure",
 );
 
 // -----------------------------------------------------------------------------
-// 4. Yellow (Boxy): Playful, buoyant, approaches "your" from UNDERNEATH
+// 4. Yellow (Boxy): Playful, buoyant trajectories
 // -----------------------------------------------------------------------------
 const yellowEntrance = generateCurvedMotionPath(
   "boxy",
@@ -203,53 +183,32 @@ const yellowEntrance = generateCurvedMotionPath(
   0,
   "entrance",
 );
-const yellowYourApproach = generateCurvedMotionPath(
-  "boxy",
-  BRAND_GATHER_POSITIONS.yellow,
-  WORD_CARRIAGE_LAYOUT.yourPickup.actorBody,
-  1,
-  "yourApproach",
-);
-const yellowYourCarry = generateCurvedMotionPath(
-  "boxy",
-  WORD_CARRIAGE_LAYOUT.yourPickup.actorBody,
-  WORD_CARRIAGE_LAYOUT.yellowYourExit,
-  2,
-  "yourCarry",
-);
-const yellowReturn = generateCurvedMotionPath(
-  "boxy",
-  WORD_CARRIAGE_LAYOUT.yellowYourExit,
-  WORD_CARRIAGE_LAYOUT.yellowReturnTarget,
-  3,
-  "yellowReturn",
-);
 const yellowDomainEdge = generateCurvedMotionPath(
   "boxy",
-  WORD_CARRIAGE_LAYOUT.yellowReturnTarget,
+  POST_ACTION_ANCHORS.yellow,
   DOMAIN_EDGE_POSITIONS.yellow,
-  4,
+  1,
   "domainEdge",
 );
 const yellowDomainDrag = generateCurvedMotionPath(
   "boxy",
   DOMAIN_EDGE_POSITIONS.yellow,
   DOMAIN_DRAG_TARGETS.yellow.actor,
-  5,
+  2,
   "domainDrag",
 );
 const yellowDomainExit = generateCurvedMotionPath(
   "boxy",
   DOMAIN_DRAG_TARGETS.yellow.actor,
   DOMAIN_EXIT_POSITIONS.yellow,
-  6,
+  3,
   "domainExit",
 );
 const yellowDeparture = generateCurvedMotionPath(
   "boxy",
   DOMAIN_EXIT_POSITIONS.yellow,
   DEPARTURE_TARGETS.yellow,
-  7,
+  4,
   "departure",
 );
 
@@ -297,7 +256,7 @@ export const ALLIES = {
         id: "departure",
         path: blueDeparture.svgPath,
         startFrame: TIMING.BLUE_DEPART_START,
-        durationInFrames: 65,
+        durationInFrames: 75,
         timingEase: motionEasing.travelIn,
       },
     ],
@@ -338,29 +297,6 @@ export const ALLIES = {
         timingEase: motionEasing.softTravelIn,
       },
       {
-        id: "meet-approach",
-        path: greenMeetApproach.svgPath,
-        startFrame: TIMING.GREEN_MEET_APPROACH_START,
-        durationInFrames: 28,
-        timingEase: motionEasing.softTravelIn,
-        cursorEndDirectionDeg: 90,
-      },
-      {
-        id: "meet-carry",
-        path: greenMeetCarry.svgPath,
-        startFrame: TIMING.GREEN_MEET_PICKUP_START,
-        durationInFrames: TIMING.GREEN_MEET_CARRY_DURATION,
-        timingEase: motionEasing.wordCarryHeavy,
-        cursorEndDirectionDeg: 90,
-      },
-      {
-        id: "green-return",
-        path: greenReturn.svgPath,
-        startFrame: TIMING.GREEN_RETURN_START,
-        durationInFrames: TIMING.GREEN_RETURN_DURATION,
-        timingEase: motionEasing.softTravelIn,
-      },
-      {
         id: "domain-edge",
         path: greenDomainEdge.svgPath,
         startFrame: TIMING.GREEN_DOMAIN_EDGE_START,
@@ -386,15 +322,12 @@ export const ALLIES = {
         id: "departure",
         path: greenDeparture.svgPath,
         startFrame: TIMING.GREEN_DEPART_START,
-        durationInFrames: 65,
+        durationInFrames: 75,
         timingEase: motionEasing.softTravelIn,
       },
     ],
     allBeziers: {
       entrance: greenEntrance,
-      meetApproach: greenMeetApproach,
-      meetCarry: greenMeetCarry,
-      greenReturn: greenReturn,
       domainEdge: greenDomainEdge,
       domainDrag: greenDomainDrag,
       domainExit: greenDomainExit,
@@ -455,7 +388,7 @@ export const ALLIES = {
         id: "departure",
         path: pinkDeparture.svgPath,
         startFrame: TIMING.PINK_DEPART_START,
-        durationInFrames: 65,
+        durationInFrames: 75,
         timingEase: motionEasing.travelIn,
       },
     ],
@@ -496,29 +429,6 @@ export const ALLIES = {
         timingEase: motionEasing.travelIn,
       },
       {
-        id: "your-approach",
-        path: yellowYourApproach.svgPath,
-        startFrame: TIMING.YELLOW_YOUR_APPROACH_START,
-        durationInFrames: 30,
-        timingEase: motionEasing.travelIn,
-        cursorEndDirectionDeg: -90,
-      },
-      {
-        id: "your-carry",
-        path: yellowYourCarry.svgPath,
-        startFrame: TIMING.YELLOW_YOUR_PICKUP_START,
-        durationInFrames: TIMING.YELLOW_YOUR_CARRY_DURATION,
-        timingEase: motionEasing.wordCarryBuoyant,
-        cursorEndDirectionDeg: -90,
-      },
-      {
-        id: "yellow-return",
-        path: yellowReturn.svgPath,
-        startFrame: TIMING.YELLOW_RETURN_START,
-        durationInFrames: TIMING.YELLOW_RETURN_DURATION,
-        timingEase: motionEasing.travelIn,
-      },
-      {
         id: "domain-edge",
         path: yellowDomainEdge.svgPath,
         startFrame: TIMING.YELLOW_DOMAIN_EDGE_START,
@@ -544,15 +454,12 @@ export const ALLIES = {
         id: "departure",
         path: yellowDeparture.svgPath,
         startFrame: TIMING.YELLOW_DEPART_START,
-        durationInFrames: 65,
+        durationInFrames: 75,
         timingEase: motionEasing.travelIn,
       },
     ],
     allBeziers: {
       entrance: yellowEntrance,
-      yourApproach: yellowYourApproach,
-      yourCarry: yellowYourCarry,
-      yellowReturn: yellowReturn,
       domainEdge: yellowDomainEdge,
       domainDrag: yellowDomainDrag,
       domainExit: yellowDomainExit,

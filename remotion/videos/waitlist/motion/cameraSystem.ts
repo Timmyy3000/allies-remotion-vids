@@ -65,37 +65,40 @@ export function getCameraState(frame: number): CameraState {
     );
     scale = Math.max(scale, 1.0 + pushProgress * 0.035);
 
-    // Dynamic camera centroid focus during race around yourallies.io
-    if (frame >= TIMING.RACE_START && frame < TIMING.RACE_START + TIMING.RACE_DURATION + 40) {
-      const p = (frame - TIMING.RACE_START) / (TIMING.RACE_DURATION + 40);
-      const raceEnv = Math.sin(p * Math.PI);
-      scale += raceEnv * 0.025;
-      offsetX -= raceEnv * 12;
-      offsetY -= raceEnv * 6;
-    } else if (frame >= TIMING.GAP_THREAD_START && frame < TIMING.GAP_THREAD_START + TIMING.GAP_THREAD_DURATION) {
-      const p = (frame - TIMING.GAP_THREAD_START) / TIMING.GAP_THREAD_DURATION;
-      const threadEnv = Math.sin(p * Math.PI);
-      offsetX += threadEnv * 8;
+    // Gentle centroid framing during Blue & Pink playful moment above 'allies'
+    if (frame >= TIMING.BLUE_PINK_SWIRL_START && frame < TIMING.BLUE_PINK_SWIRL_START + TIMING.BLUE_PINK_SWIRL_DURATION) {
+      const p = (frame - TIMING.BLUE_PINK_SWIRL_START) / TIMING.BLUE_PINK_SWIRL_DURATION;
+      const playEnv = Math.sin(p * Math.PI);
+      offsetY -= playEnv * 6;
+    } else if (frame >= TIMING.SQUEEZE_START && frame < TIMING.SQUEEZE_START + TIMING.SQUEEZE_DURATION) {
+      const p = (frame - TIMING.SQUEEZE_START) / TIMING.SQUEEZE_DURATION;
+      const squeezeEnv = Math.sin(p * Math.PI);
+      offsetX += squeezeEnv * 6;
     }
   }
 
   // =========================================================================
-  // 4. FINAL CAMERA PUSH & CENTERING ON URL (Frames 1370 to 1470)
-  // Smooth transition from celebration scale (~1.035) to final hero scale (1.08x)
+  // 4. FINAL CAMERA PUSH & CENTERING ON URL (Frames 1045 to 1215)
+  // Smooth transition from departure scale (S0 = 1.035) to final hero scale
+  // (S_final = S0 * 1.25 = 1.29375), centering dead on yourallies.io
   // =========================================================================
   if (frame >= TIMING.FINAL_CAMERA_PUSH_START) {
     const finalPushProgress = interpolate(
       frame,
       [TIMING.FINAL_CAMERA_PUSH_START, TIMING.FINAL_HOLD_START],
       [0, 1],
-      { easing: smoothStepEase, extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+      {
+        easing: Easing.inOut(Easing.cubic),
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      }
     );
 
-    scale = interpolate(finalPushProgress, [0, 1], [1.035, 1.08]);
+    scale = interpolate(finalPushProgress, [0, 1], [1.035, 1.29375]);
 
-    // Centering directly on the completed URL center
-    offsetX = interpolate(finalPushProgress, [0, 1], [offsetX, 0]);
-    offsetY = interpolate(finalPushProgress, [0, 1], [offsetY, 0]);
+    // Centering directly on the completed URL geometric center (1920, 1080)
+    offsetX = 0;
+    offsetY = 0;
   }
 
   return {
