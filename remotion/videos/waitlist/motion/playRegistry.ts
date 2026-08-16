@@ -37,14 +37,7 @@ export const PLAY_EVENTS: PlayEvent[] = [
     durationInFrames: 65,
     description: "Boxy (Yellow) executes an excited double-hop with bounce during entrance life.",
   },
-  {
-    id: "sweep-meet-your",
-    type: "sweep-meet-your",
-    participants: ["ghosty"],
-    startFrame: 320,
-    durationInFrames: 56,
-    description: "Ghosty (Pink) sweeps across 'Meet your' creating a traveling optical focus dissolution wake.",
-  },
+
   {
     id: "gather-rocky-make-space",
     type: "make-space",

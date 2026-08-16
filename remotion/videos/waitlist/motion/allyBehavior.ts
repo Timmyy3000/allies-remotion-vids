@@ -134,36 +134,7 @@ export function getAllyPlayfulOffset(
     }
   }
 
-  // =========================================================================
-  // LAYER C2. GHOSTY (PINK) CHARACTER-DRIVEN SWEEP ACROSS "Meet your" (Frames 320 to 376)
-  // Pink sweeps across the phrase right-to-left, brushing the words away into reverse focus
-  // =========================================================================
-  const SWEEP_START = 320;
-  const SWEEP_DURATION = 56;
-  if (frame >= SWEEP_START && frame < SWEEP_START + SWEEP_DURATION) {
-    const p = (frame - SWEEP_START) / SWEEP_DURATION;
-    const env = Math.sin(p * Math.PI);
 
-    if (identity === "ghosty") {
-      // Pink sweeps from right (around x=3380) across center (x=1600) to lower-left (x=1200)
-      const sweepEase = 0.5 - 0.5 * Math.cos(p * Math.PI);
-      const sweepX = -sweepEase * 1850 * env;
-      const sweepY = Math.sin(p * Math.PI) * 180 * env;
-      offsetX += sweepX;
-      offsetY += sweepY;
-      offsetRot -= Math.sin(p * Math.PI) * 18 * env;
-
-      // Extend cursor pointing forward along the sweep path (pointing down-left ~215°)
-      cursorOverride = {
-        active: true,
-        angleDeg: 215 + Math.sin(p * Math.PI * 2) * 10,
-      };
-
-      // Elongation along travel direction
-      squashX += 0.05 * env;
-      squashY -= 0.04 * env;
-    }
-  }
 
   // =========================================================================
   // LAYER B1. GATHER INSPECTION: ROCKY MAKE-SPACE SIDE-STEP (Frames 465 to 505)

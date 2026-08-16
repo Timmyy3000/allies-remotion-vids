@@ -12,8 +12,6 @@ interface FocusWordProps {
   speed?: number; // default 1.15 matching onboarding speed
   blurScale?: number; // default 5.33 for 4K (2px at 72px * 2.6667)
   exitProgress?: number; // 0 (fully visible & focused) -> 1 (fully unresolved & dissolved)
-  sweepX?: number; // Pink's current horizontal sweep position for optical wake
-  wordBaseX?: number; // Approximate horizontal screen X of word center
   wordIndex?: number; // 0 for "Meet", 1 for "your", 2 for "allies"
   style?: React.CSSProperties;
 }
@@ -26,8 +24,6 @@ export function FocusWord({
   speed = 1.15,
   blurScale = 5.33,
   exitProgress = 0,
-  sweepX,
-  wordBaseX,
   wordIndex = 0,
   style = {},
 }: FocusWordProps) {
@@ -87,21 +83,8 @@ export function FocusWord({
         let charBlur = interpolate(enterProgress, [0, 1], [blurScale, 0]);
         let charScale = 1;
 
-        // --- 2. REVERSE FOCUS EXIT DEGRADATION & OPTICAL SWEEP WAKE (1 -> 0) ---
-        let effectiveExit = exitProgress;
-
-        // If Pink is sweeping across the headline, calculate optical wake falloff
-        if (sweepX !== undefined && wordBaseX !== undefined) {
-          // Approximate character X on 4K canvas (each char ~130px width)
-          const charScreenX = wordBaseX + (index - characters.length / 2) * 130;
-          // Pink sweeps right-to-left: if charScreenX > sweepX, Pink has already passed it
-          const wakeDistance = charScreenX - sweepX;
-          const wakeFalloffWidth = 220; // Soft 220px transition band behind Pink
-          if (wakeDistance > 0) {
-            const wakeProgress = Math.min(1, wakeDistance / wakeFalloffWidth);
-            effectiveExit = Math.max(effectiveExit, wakeProgress);
-          }
-        }
+        // --- 2. REVERSE FOCUS EXIT DEGRADATION (1 -> 0) ---
+        const effectiveExit = exitProgress;
 
         if (effectiveExit > 0) {
           const totalCharsInWord = characters.length;

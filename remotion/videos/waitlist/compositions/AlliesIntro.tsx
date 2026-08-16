@@ -105,21 +105,9 @@ export function AlliesIntro() {
   const logoScale = interpolate(logoProgress, [0, 1], [0.84, 1.0]);
   const logoY = interpolate(logoProgress, [0, 1], [14, 0]);
 
-  // --- 4. BRAND CONDENSATION / "MEET YOUR" CHARACTER-DRIVEN SWEEP & RECENTER ---
+  // --- 4. BRAND CONDENSATION / "MEET YOUR" EXIT & RECENTER ---
 
-  // Pink sweeps across 'Meet your' starting at frame 320 to 376
-  const SWEEP_START = 320;
-  const SWEEP_DURATION = 56;
-  const isSweepActive = frame >= SWEEP_START;
-  const sweepP = Math.max(0, Math.min(1, (frame - SWEEP_START) / SWEEP_DURATION));
-  // Pink sweeps right-to-left: from X=3380 down to X=1200 across the headline
-  const pinkSweepX = interpolate(
-    0.5 - 0.5 * Math.cos(sweepP * Math.PI),
-    [0, 1],
-    [3380, 1100]
-  );
-
-  // Individual exit progress for Meet & your (fallback + baseline pull)
+  // Individual exit progress for Meet & your (smooth high-damping pull and opacity dissolution)
   const MEET_EXIT_START = TIMING.MEET_YOUR_EXIT_START;
   const YOUR_EXIT_START = TIMING.MEET_YOUR_EXIT_START + 6;
   const WORD_EXIT_DURATION = 48;
@@ -313,8 +301,6 @@ export function AlliesIntro() {
                   currentFrame={frame}
                   color={COLORS.headlineText}
                   exitProgress={meetExitProgress}
-                  sweepX={isSweepActive ? pinkSweepX : undefined}
-                  wordBaseX={1320}
                   wordIndex={0}
                 />
               </div>
@@ -348,8 +334,6 @@ export function AlliesIntro() {
                   currentFrame={frame}
                   color={COLORS.headlineText}
                   exitProgress={yourExitProgress}
-                  sweepX={isSweepActive ? pinkSweepX : undefined}
-                  wordBaseX={1980}
                   wordIndex={1}
                 />
               </div>
