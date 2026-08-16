@@ -10,14 +10,37 @@ export interface PlayfulBehaviorOffset {
 }
 
 /**
- * Evaluates smooth interactive behaviors and spontaneous playful choreography.
- * All offsets seamlessly return 0 outside of active interaction windows.
+ * Calculates directional 2D squash & stretch given a contact angle and compression magnitude.
+ * Compresses along the collision normal and expands orthogonally to preserve visual volume.
+ */
+function getContactSquish(
+  angleRad: number,
+  compression: number,
+): { squashX: number; squashY: number } {
+  const cos2 = Math.cos(angleRad) * Math.cos(angleRad);
+  const sin2 = Math.sin(angleRad) * Math.sin(angleRad);
+  // Compression along normal (c), expansion orthogonal (+ c/2)
+  const sx = 1 - compression * cos2 + (compression * 0.5) * sin2;
+  const sy = 1 - compression * sin2 + (compression * 0.5) * cos2;
+  return { squashX: sx, squashY: sy };
+}
+
+/**
+ * Social Autonomy & Physicality Engine
+ *
+ * Implements non-repetitive, organic, physics-informed interactions:
+ * - 1. Soft boop + recoil with directional contact squish
+ * - 2. Make-space yielding side-step
+ * - 3. Curiosity hover and alert typography inspection
+ * - 4. Max ONE single gentle half-orbit greeting in the entire video
+ * - 5. Non-repeating celebratory hop-and-peel
+ * - 6. No magnet snap-backs: all motions ease into natural new drift positions
  */
 export function getAllyPlayfulOffset(
   identity: AllyIdentity,
   frame: number,
   baseX: number,
-  baseY: number
+  baseY: number,
 ): PlayfulBehaviorOffset {
   let offsetX = 0;
   let offsetY = 0;
@@ -26,148 +49,203 @@ export function getAllyPlayfulOffset(
   let squashY = 1;
 
   // =========================================================================
-  // 1. GATHER HOLD SWIRL DANCE (Frames 500 to 575)
-  // Blue (Rolly) & Pink (Ghosty) meet above [LOGO] allies and swirl around each other
-  // Green (Rocky) & Yellow (Boxy) eagerly watch and bounce
+  // 1. ENTRANCE HOLD INTERACTIONS (Frames 270 to 350)
+  // - Yellow (Boxy): Cheerful double-hop with physical bounce
+  // - Blue (Rolly): Curiosity Hover leaning toward center headline
+  // - Green (Rocky) & Pink (Ghosty): Delayed copycat micro-bobs
   // =========================================================================
-  const SWIRL_1_START = 500;
-  const SWIRL_1_DURATION = 75;
-  if (frame >= SWIRL_1_START && frame < SWIRL_1_START + SWIRL_1_DURATION) {
-    const p = (frame - SWIRL_1_START) / SWIRL_1_DURATION;
-    const env = Math.sin(p * Math.PI); // Smooth 0 -> 1 -> 0 bell envelope
+  const ENTRANCE_ACT_START = 270;
+  const ENTRANCE_ACT_DURATION = 65;
+  if (frame >= ENTRANCE_ACT_START && frame < ENTRANCE_ACT_START + ENTRANCE_ACT_DURATION) {
+    const p = (frame - ENTRANCE_ACT_START) / ENTRANCE_ACT_DURATION;
+    const env = Math.sin(p * Math.PI);
+
+    if (identity === "boxy") {
+      // Cheerful double-hop with bounce
+      const hopCycle = Math.sin(p * Math.PI * 4);
+      const hop = Math.max(0, hopCycle) * 26 * env;
+      offsetY -= hop;
+      offsetRot += Math.sin(p * Math.PI * 2) * 5 * env;
+      squashX += (hop > 2 ? -0.06 : 0.05) * env;
+      squashY += (hop > 2 ? 0.06 : -0.05) * env;
+    } else if (identity === "rolly") {
+      // Curiosity Hover: leans inward to inspect the headline
+      const leanX = Math.sin(p * Math.PI) * 32 * env;
+      const leanY = Math.sin(p * Math.PI) * 14 * env;
+      offsetX += leanX;
+      offsetY += leanY;
+      offsetRot += Math.sin(p * Math.PI) * 10 * env;
+    } else if (identity === "rocky" || identity === "ghosty") {
+      // Gentle delayed copycat bob
+      const delayedP = Math.max(0, p - 0.15) / 0.85;
+      const delayedEnv = Math.sin(delayedP * Math.PI);
+      const bob = Math.sin(delayedP * Math.PI * 2) * 8 * delayedEnv;
+      offsetY += bob;
+      offsetRot += (identity === "rocky" ? 3 : -3) * delayedEnv;
+    }
+  }
+
+  // =========================================================================
+  // 2. GATHER INSPECTION: MAKE-SPACE SIDE-STEP (Frames 465 to 515)
+  // Green (Rocky) notices Yellow (Boxy) approaching and yields space with a smooth side-step
+  // =========================================================================
+  const MAKE_SPACE_START = 465;
+  const MAKE_SPACE_DURATION = 50;
+  if (frame >= MAKE_SPACE_START && frame < MAKE_SPACE_START + MAKE_SPACE_DURATION) {
+    const p = (frame - MAKE_SPACE_START) / MAKE_SPACE_DURATION;
+    const env = Math.sin(p * Math.PI);
+    if (identity === "rocky") {
+      // Smooth side-step to the left and slight tilt
+      const shiftX = -Math.sin(p * Math.PI) * 38 * env;
+      const shiftY = Math.sin(p * Math.PI) * 12 * env;
+      offsetX += shiftX;
+      offsetY += shiftY;
+      offsetRot -= Math.sin(p * Math.PI) * 6 * env;
+    }
+  }
+
+  // =========================================================================
+  // 3. GATHER INSPECTION: SOFT BOOP + RECOIL & CONTACT SQUISH (Frames 515 to 575)
+  // Pink (Ghosty) and Blue (Rolly) meet near logo top; Pink gives Blue a soft boop.
+  // Both compress 6.5% along collision axis, recoil, and drift to new positions.
+  // =========================================================================
+  const BOOP_START = 515;
+  const BOOP_DURATION = 60;
+  if (frame >= BOOP_START && frame < BOOP_START + BOOP_DURATION) {
+    const p = (frame - BOOP_START) / BOOP_DURATION;
+    const env = Math.sin(p * Math.PI);
+
+    // Contact peak happens around p = 0.35 (frame 536)
+    const contactP = Math.max(0, 1 - Math.abs(p - 0.35) / 0.25);
+    const contactEnv = Math.sin(contactP * Math.PI * 0.5);
+
+    if (identity === "ghosty") {
+      // Pink moves toward Blue (dx = -50), boops, recoils (+25)
+      const approach = p < 0.35
+        ? (p / 0.35) * -45
+        : -45 + ((p - 0.35) / 0.65) * 65;
+      offsetX += approach * env;
+      offsetRot += Math.sin(p * Math.PI) * 12 * env;
+
+      if (contactEnv > 0) {
+        const squish = getContactSquish(0, 0.065 * contactEnv);
+        squashX *= squish.squashX;
+        squashY *= squish.squashY;
+      }
+    } else if (identity === "rolly") {
+      // Blue absorbs the boop at p = 0.35 and recoils left (-35px)
+      const recoil = p > 0.35
+        ? Math.sin(((p - 0.35) / 0.65) * Math.PI) * -38
+        : 0;
+      offsetX += recoil * env;
+      offsetRot -= Math.sin(p * Math.PI) * 10 * env;
+
+      if (contactEnv > 0) {
+        const squish = getContactSquish(0, 0.065 * contactEnv);
+        squashX *= squish.squashX;
+        squashY *= squish.squashY;
+      }
+    } else if (identity === "rocky" || identity === "boxy") {
+      // Green and Yellow watch the boop and give small attentive tilts
+      offsetRot += (identity === "rocky" ? 4 : -4) * env;
+    }
+  }
+
+  // =========================================================================
+  // 4. GATHER INSPECTION: SINGLE GENTLE HALF-ORBIT GREETING (Frames 575 to 620)
+  // Ghosty and Rolly do a subtle, relaxed 180° passing greeting (ONLY orbit in video)
+  // =========================================================================
+  const GREET_START = 575;
+  const GREET_DURATION = 45;
+  if (frame >= GREET_START && frame < GREET_START + GREET_DURATION) {
+    const p = (frame - GREET_START) / GREET_DURATION;
+    const env = Math.sin(p * Math.PI);
     const easeProgress = 0.5 - 0.5 * Math.cos(p * Math.PI);
 
-    // Mutual swirl center above the central logo
-    const swirlCenterX = (BRAND_GATHER_POSITIONS.blue.x + BRAND_GATHER_POSITIONS.pink.x) / 2;
-    const swirlCenterY = 700;
-    const swirlRadius = 140 * env;
-    const revolutions = 2.25;
-    const angle = easeProgress * revolutions * Math.PI * 2;
+    const greetRadius = 70 * env;
+    const angle = easeProgress * Math.PI; // Exact 180° half-turn
 
     if (identity === "rolly") {
-      // Blue orbits clockwise starting from top-left
-      const targetX = swirlCenterX + Math.cos(angle + Math.PI * 0.8) * swirlRadius;
-      const targetY = swirlCenterY + Math.sin(angle + Math.PI * 0.8) * (swirlRadius * 0.75);
-      offsetX += (targetX - baseX) * env;
-      offsetY += (targetY - baseY) * env;
-      offsetRot += Math.sin(angle) * 22 * env;
-      squashX += Math.sin(p * Math.PI * 4) * 0.08 * env;
-      squashY -= Math.sin(p * Math.PI * 4) * 0.08 * env;
+      offsetX += Math.cos(angle) * greetRadius;
+      offsetY += Math.sin(angle) * (greetRadius * 0.5);
+      offsetRot += Math.sin(angle) * 8 * env;
     } else if (identity === "ghosty") {
-      // Pink orbits opposite to Blue
-      const targetX = swirlCenterX + Math.cos(angle + Math.PI * 1.8) * swirlRadius;
-      const targetY = swirlCenterY + Math.sin(angle + Math.PI * 1.8) * (swirlRadius * 0.75);
-      offsetX += (targetX - baseX) * env;
-      offsetY += (targetY - baseY) * env;
-      offsetRot += Math.sin(angle + Math.PI) * 24 * env;
-      squashX += Math.sin(p * Math.PI * 4) * 0.08 * env;
-      squashY -= Math.sin(p * Math.PI * 4) * 0.08 * env;
-    } else if (identity === "rocky" || identity === "boxy") {
-      // Green and Yellow watch the swirl above them and do excited hops
-      const hop = Math.abs(Math.sin(p * Math.PI * 3.5)) * 26 * env;
-      offsetY -= hop;
-      offsetRot += (identity === "rocky" ? 7 : -7) * Math.sin(p * Math.PI * 2) * env;
-      squashX -= Math.sin(p * Math.PI * 7) * 0.06 * env;
-      squashY += Math.sin(p * Math.PI * 7) * 0.06 * env;
+      offsetX += Math.cos(angle + Math.PI) * greetRadius;
+      offsetY += Math.sin(angle + Math.PI) * (greetRadius * 0.5);
+      offsetRot += Math.sin(angle + Math.PI) * 8 * env;
     }
   }
 
   // =========================================================================
-  // 2. ENTRANCE HOLD PLAYFUL MICRO-ACTIONS (Frames 270 to 320)
-  // Yellow does an excited double-hop; Blue does a curious alert tilt
-  // =========================================================================
-  const HOP_START = 270;
-  const HOP_DURATION = 35;
-  if (frame >= HOP_START && frame < HOP_START + HOP_DURATION) {
-    const p = (frame - HOP_START) / HOP_DURATION;
-    const env = Math.sin(p * Math.PI);
-    if (identity === "boxy") {
-      const hop = Math.abs(Math.sin(p * Math.PI * 2.5)) * 24 * env;
-      offsetY -= hop;
-      offsetRot += Math.sin(p * Math.PI * 3) * 6 * env;
-      squashX -= Math.sin(p * Math.PI * 5) * 0.07 * env;
-      squashY += Math.sin(p * Math.PI * 5) * 0.07 * env;
-    } else if (identity === "rolly") {
-      offsetRot += Math.sin(p * Math.PI * 2) * 8 * env;
-    }
-  }
-
-  // =========================================================================
-  // 3. POST-DOMAIN ASSEMBLY CELEBRATION 1 (Frames 960 to 1040)
-  // Rocky (Green) & Boxy (Yellow) do a playful swirl loop on the right side of .io
+  // 5. POST-DOMAIN ASSEMBLY CELEBRATION (Frames 960 to 1050)
+  // Rocky (Green) & Boxy (Yellow): Cheerful follow-and-peel hop & drift (NO SWIRLS)
   // =========================================================================
   const CELEB_1_START = 960;
   const CELEB_1_DURATION = 80;
   if (frame >= CELEB_1_START && frame < CELEB_1_START + CELEB_1_DURATION) {
     const p = (frame - CELEB_1_START) / CELEB_1_DURATION;
     const env = Math.sin(p * Math.PI);
-    const easeProgress = 0.5 - 0.5 * Math.cos(p * Math.PI);
 
-    const celebCenterX = DOMAIN_LAYOUT.pieces.o.centerX + 260;
-    const celebCenterY = DOMAIN_LAYOUT.centerY + 140;
-    const swirlRadius = 110 * env;
-    const angle = easeProgress * 2.0 * Math.PI * 2;
-
-    if (identity === "rocky") {
-      const targetX = celebCenterX + Math.cos(angle) * swirlRadius;
-      const targetY = celebCenterY + Math.sin(angle) * (swirlRadius * 0.7);
-      offsetX += (targetX - baseX) * env;
-      offsetY += (targetY - baseY) * env;
-      offsetRot += Math.sin(angle) * 18 * env;
-      squashX += Math.sin(p * Math.PI * 4) * 0.06 * env;
-      squashY -= Math.sin(p * Math.PI * 4) * 0.06 * env;
-    } else if (identity === "boxy") {
-      const targetX = celebCenterX + Math.cos(angle + Math.PI) * swirlRadius;
-      const targetY = celebCenterY + Math.sin(angle + Math.PI) * (swirlRadius * 0.7);
-      offsetX += (targetX - baseX) * env;
-      offsetY += (targetY - baseY) * env;
-      offsetRot += Math.sin(angle + Math.PI) * 18 * env;
-      squashX += Math.sin(p * Math.PI * 4) * 0.06 * env;
-      squashY -= Math.sin(p * Math.PI * 4) * 0.06 * env;
-    } else if (identity === "rolly" || identity === "ghosty") {
-      // Blue and Pink cheer with gentle bobs
-      const hop = Math.abs(Math.sin(p * Math.PI * 2)) * 14 * env;
+    if (identity === "boxy") {
+      // Boxy leads with an excited double-hop and outward glide
+      const hop = Math.max(0, Math.sin(p * Math.PI * 3)) * 28 * env;
       offsetY -= hop;
-      offsetRot += (identity === "rolly" ? -5 : 5) * env;
+      offsetX += Math.sin(p * Math.PI) * 22 * env;
+      offsetRot += Math.sin(p * Math.PI * 2) * 10 * env;
+      squashX += (hop > 2 ? -0.06 : 0.05) * env;
+      squashY += (hop > 2 ? 0.06 : -0.05) * env;
+    } else if (identity === "rocky") {
+      // Rocky follows in a soft peel arc
+      const delayedP = Math.max(0, p - 0.12) / 0.88;
+      const delayedEnv = Math.sin(delayedP * Math.PI);
+      const hop = Math.max(0, Math.sin(delayedP * Math.PI * 3)) * 22 * delayedEnv;
+      offsetY -= hop;
+      offsetX -= Math.sin(delayedP * Math.PI) * 18 * delayedEnv;
+      offsetRot -= Math.sin(delayedP * Math.PI * 2) * 8 * delayedEnv;
+      squashX += (hop > 2 ? -0.05 : 0.04) * delayedEnv;
+      squashY += (hop > 2 ? 0.05 : -0.05) * delayedEnv;
+    } else if (identity === "rolly" || identity === "ghosty") {
+      // Blue and Pink give synchronized gentle bobs of approval
+      const bob = Math.sin(p * Math.PI * 2) * 10 * env;
+      offsetY -= Math.max(0, bob);
+      offsetRot += (identity === "rolly" ? -4 : 4) * env;
     }
   }
 
   // =========================================================================
-  // 4. POST-DOMAIN ASSEMBLY CELEBRATION 2 (Frames 1090 to 1180)
-  // Rolly (Blue) & Ghosty (Pink) do a celebratory arc over yourallies
+  // 6. POST-DOMAIN ASSEMBLY: ELEVATED VICTORY ARC (Frames 1080 to 1170)
+  // Rolly (Blue) & Ghosty (Pink) perform an elegant elevated arching glide over "your"
+  // with generous text clearance (NO SWIRLS)
   // =========================================================================
-  const CELEB_2_START = 1090;
+  const CELEB_2_START = 1080;
   const CELEB_2_DURATION = 85;
   if (frame >= CELEB_2_START && frame < CELEB_2_START + CELEB_2_DURATION) {
     const p = (frame - CELEB_2_START) / CELEB_2_DURATION;
     const env = Math.sin(p * Math.PI);
-    const easeProgress = 0.5 - 0.5 * Math.cos(p * Math.PI);
-
-    const celebCenterX = DOMAIN_LAYOUT.pieces.allies.centerX;
-    const celebCenterY = DOMAIN_LAYOUT.centerY - 320;
-    const swirlRadius = 160 * env;
-    const angle = easeProgress * 2.0 * Math.PI * 2;
 
     if (identity === "rolly") {
-      const targetX = celebCenterX + Math.cos(angle + Math.PI * 0.5) * swirlRadius;
-      const targetY = celebCenterY + Math.sin(angle + Math.PI * 0.5) * (swirlRadius * 0.65);
-      offsetX += (targetX - baseX) * env;
-      offsetY += (targetY - baseY) * env;
-      offsetRot += Math.sin(angle) * 20 * env;
-      squashX += Math.sin(p * Math.PI * 4) * 0.07 * env;
-      squashY -= Math.sin(p * Math.PI * 4) * 0.07 * env;
+      // Blue arches gracefully upward and to the right, then eases back
+      const arcY = Math.sin(p * Math.PI) * -50 * env;
+      const arcX = Math.sin(p * Math.PI * 2) * 35 * env;
+      offsetY += arcY;
+      offsetX += arcX;
+      offsetRot += Math.sin(p * Math.PI * 2) * 12 * env;
+      squashX += Math.sin(p * Math.PI * 4) * 0.04 * env;
+      squashY -= Math.sin(p * Math.PI * 4) * 0.04 * env;
     } else if (identity === "ghosty") {
-      const targetX = celebCenterX + Math.cos(angle + Math.PI * 1.5) * swirlRadius;
-      const targetY = celebCenterY + Math.sin(angle + Math.PI * 1.5) * (swirlRadius * 0.65);
-      offsetX += (targetX - baseX) * env;
-      offsetY += (targetY - baseY) * env;
-      offsetRot += Math.sin(angle + Math.PI) * 22 * env;
-      squashX += Math.sin(p * Math.PI * 4) * 0.07 * env;
-      squashY -= Math.sin(p * Math.PI * 4) * 0.07 * env;
+      // Pink accompanies with a mirrored buoyant glide
+      const arcY = Math.sin(p * Math.PI) * -45 * env;
+      const arcX = Math.sin(p * Math.PI * 2) * -30 * env;
+      offsetY += arcY;
+      offsetX += arcX;
+      offsetRot += Math.sin(p * Math.PI * 2) * 12 * env;
+      squashX += Math.sin(p * Math.PI * 4) * 0.04 * env;
+      squashY -= Math.sin(p * Math.PI * 4) * 0.04 * env;
     } else if (identity === "rocky" || identity === "boxy") {
-      const hop = Math.abs(Math.sin(p * Math.PI * 3)) * 18 * env;
+      // Green and Yellow hop together from below
+      const hop = Math.max(0, Math.sin(p * Math.PI * 3)) * 14 * env;
       offsetY -= hop;
-      offsetRot += (identity === "rocky" ? 6 : -6) * Math.sin(p * Math.PI * 2) * env;
+      offsetRot += (identity === "rocky" ? 4 : -4) * Math.sin(p * Math.PI * 2) * env;
     }
   }
 

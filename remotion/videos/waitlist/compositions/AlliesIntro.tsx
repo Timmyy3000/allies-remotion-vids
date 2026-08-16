@@ -60,22 +60,24 @@ export function AlliesIntro() {
 
   // --- 2. BRAND TRANSFORMATION CALCULATIONS ---
   const isTransformStarted = frame >= TIMING.BRAND_TRANSFORM_START;
+  const brandEntranceEase = Easing.bezier(0.22, 1, 0.36, 1);
 
-  // "allies" Translation Spring (moves from -logoShiftDistance to 0 during entrance)
-  const alliesShiftSpring = isTransformStarted
-    ? spring({
-        frame: frame - TIMING.BRAND_TRANSFORM_START,
-        fps,
-        config: {
-          damping: 20,
-          stiffness: 200,
-          mass: 0.8,
+  // Smooth jitter-free "allies" Translation (moves from -logoShiftDistance to 0 during entrance)
+  const alliesShiftProgress = isTransformStarted
+    ? interpolate(
+        frame,
+        [TIMING.BRAND_TRANSFORM_START, TIMING.BRAND_TRANSFORM_START + 24],
+        [0, 1],
+        {
+          easing: brandEntranceEase,
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
         },
-      })
+      )
     : 0;
 
   const alliesX = interpolate(
-    alliesShiftSpring,
+    alliesShiftProgress,
     [0, 1],
     [-HEADLINE_LAYOUT.logoShiftDistance, 0],
   );
@@ -89,42 +91,41 @@ export function AlliesIntro() {
       )
     : COLORS.headlineText;
 
-  // --- 3. LOGO SPRING ENTRANCE ---
+  // --- 3. LOGO SMOOTH JITTER-FREE ENTRANCE ---
   const isLogoStarted = frame >= TIMING.LOGO_START;
-  const logoFrameOffset = Math.max(0, frame - TIMING.LOGO_START);
-  const logoSpring = isLogoStarted
-    ? spring({
-        frame: logoFrameOffset,
-        fps,
-        config: {
-          damping: 17,
-          stiffness: 220,
-          mass: 0.8,
+  const logoProgress = isLogoStarted
+    ? interpolate(
+        frame,
+        [TIMING.LOGO_START, TIMING.LOGO_START + 28],
+        [0, 1],
+        {
+          easing: brandEntranceEase,
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
         },
-      })
+      )
     : 0;
 
   const logoOpacity = isLogoStarted
-    ? interpolate(logoFrameOffset, [0, 8], [0, 1], {
+    ? interpolate(frame, [TIMING.LOGO_START, TIMING.LOGO_START + 8], [0, 1], {
         extrapolateLeft: "clamp",
         extrapolateRight: "clamp",
       })
     : 0;
 
-  const logoScale = isLogoStarted
-    ? interpolate(logoSpring, [0, 1], [0.72, 1])
-    : 0.72;
+  const logoScale = interpolate(logoProgress, [0, 1], [0.72, 1.0]);
+  const logoY = interpolate(logoProgress, [0, 1], [24, 0]);
 
-  const logoY = isLogoStarted
-    ? interpolate(logoSpring, [0, 1], [30.93, 0])
-    : 30.93;
+  // --- 4. BRAND CONDENSATION / "MEET YOUR" STAGGERED EXIT & RECENTER TRANSITION ---
 
-  // --- 4. BRAND CONDENSATION / "MEET YOUR" EXIT & RECENTER TRANSITION ---
+  // A. Staggered "Meet" and "your" individual exit calculations
+  const MEET_EXIT_START = TIMING.MEET_YOUR_EXIT_START;
+  const YOUR_EXIT_START = TIMING.MEET_YOUR_EXIT_START + 6;
+  const WORD_EXIT_DURATION = 48;
 
-  // A. "Meet your" Exit Progress & Pull Translation
-  const meetYourExitProgress = interpolate(
+  const meetExitProgress = interpolate(
     frame,
-    [TIMING.MEET_YOUR_EXIT_START, TIMING.MEET_YOUR_EXIT_END],
+    [MEET_EXIT_START, MEET_EXIT_START + WORD_EXIT_DURATION],
     [0, 1],
     {
       easing: meetYourExitEase,
@@ -133,14 +134,41 @@ export function AlliesIntro() {
     },
   );
 
-  const meetYourExitX = interpolate(
-    meetYourExitProgress,
+  const meetExitX = interpolate(
+    meetExitProgress,
     [0, 1],
-    [0, HEADLINE_LAYOUT.meetYourPullDistance],
+    [0, HEADLINE_LAYOUT.meetYourPullDistance * 1.06],
   );
 
-  const meetYourOverallOpacity = interpolate(
-    meetYourExitProgress,
+  const meetOpacity = interpolate(
+    meetExitProgress,
+    [0, 0.72, 0.94, 1.0],
+    [1, 0.88, 0.05, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+
+  const yourExitProgress = interpolate(
+    frame,
+    [YOUR_EXIT_START, YOUR_EXIT_START + WORD_EXIT_DURATION],
+    [0, 1],
+    {
+      easing: meetYourExitEase,
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+
+  const yourExitX = interpolate(
+    yourExitProgress,
+    [0, 1],
+    [0, HEADLINE_LAYOUT.meetYourPullDistance * 0.94],
+  );
+
+  const yourOpacity = interpolate(
+    yourExitProgress,
     [0, 0.72, 0.94, 1.0],
     [1, 0.88, 0.05, 0],
     {
@@ -258,7 +286,7 @@ export function AlliesIntro() {
             }}
           >
             {/* ========================================================================= */}
-            {/* GROUP 1: EXIT GROUP ("Meet your") - Translates & Reverse-Focuses into Logo */}
+            {/* GROUP 1: EXIT GROUP ("Meet your") - Staggered Per-Word Pull & Reverse Focus */}
             {/* ========================================================================= */}
             <div
               className="meet-your-exit-wrapper"
@@ -266,10 +294,7 @@ export function AlliesIntro() {
                 display: "inline-flex",
                 alignItems: "center",
                 height: "100%",
-                transform: `translateX(${meetYourExitX.toFixed(3)}px)`,
-                opacity: meetYourOverallOpacity,
                 pointerEvents: "none",
-                willChange: "transform, opacity",
               }}
             >
               {/* WORD 1: "Meet" */}
@@ -279,6 +304,9 @@ export function AlliesIntro() {
                   display: "inline-flex",
                   alignItems: "center",
                   position: "relative",
+                  transform: `translateX(${meetExitX.toFixed(3)}px)`,
+                  opacity: meetOpacity,
+                  willChange: "transform, opacity",
                 }}
               >
                 <FocusWord
@@ -286,7 +314,7 @@ export function AlliesIntro() {
                   startFrame={TIMING.MEET_FOCUS_START}
                   currentFrame={frame}
                   color={COLORS.headlineText}
-                  exitProgress={meetYourExitProgress}
+                  exitProgress={meetExitProgress}
                   wordIndex={0}
                 />
               </div>
@@ -309,6 +337,9 @@ export function AlliesIntro() {
                   display: "inline-flex",
                   alignItems: "center",
                   position: "relative",
+                  transform: `translateX(${yourExitX.toFixed(3)}px)`,
+                  opacity: yourOpacity,
+                  willChange: "transform, opacity",
                 }}
               >
                 <FocusWord
@@ -316,7 +347,7 @@ export function AlliesIntro() {
                   startFrame={TIMING.YOUR_FOCUS_START}
                   currentFrame={frame}
                   color={COLORS.headlineText}
-                  exitProgress={meetYourExitProgress}
+                  exitProgress={yourExitProgress}
                   wordIndex={1}
                 />
               </div>
