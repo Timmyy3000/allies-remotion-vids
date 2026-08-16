@@ -76,33 +76,34 @@ export function DomainLockup({ frame }: { frame: number }) {
   );
 
   // =========================================================================
-  // PUZZLE COMPLETION ENERGY WAVE & COLOR TIMING
-  // Propagation right-to-left: o -> i -> . -> allies -> your
+  // SIMULTANEOUS URL COMPLETION ORANGE TRANSITION
+  // All glyphs share urlCompletionColorProgress and transition together
   // =========================================================================
-  const isCompletionStarted = frame >= TIMING.COMPLETION_WAVE_START;
+  const isCompletionStarted = frame >= TIMING.COMPLETION_ORANGE_START;
   const isFullOrangeHold =
     frame >= TIMING.COMPLETION_ORANGE_HOLD_START &&
     frame < TIMING.COMPLETION_BLACK_TRANSITION_START;
   const isTransitioningToBlack =
     frame >= TIMING.COMPLETION_BLACK_TRANSITION_START;
 
-  // Staggered propagation delays (frames after COMPLETION_WAVE_START)
-  const pieceWaveOffsets: Record<DomainPiece, number> = {
-    o: 0,
-    i: 3,
-    dot: 6,
-    allies: 9,
-    your: 13,
-  };
+  // Unified color progress across the entire 'yourallies.io' lockup (0 -> 1 simultaneously)
+  const urlCompletionColorProgress = interpolate(
+    frame,
+    [
+      TIMING.COMPLETION_ORANGE_START,
+      TIMING.COMPLETION_ORANGE_START + TIMING.COMPLETION_ORANGE_DURATION,
+    ],
+    [0, 1],
+    {
+      easing: Easing.bezier(0.25, 1, 0.5, 1),
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
 
   // Helper to compute color for a specific piece
   const getPieceColor = (piece: DomainPiece): string => {
-    // 1. Before completion starts: 'allies' is orange, others are black
-    if (!isCompletionStarted) {
-      return piece === "allies" ? COLORS.brandOrange : COLORS.headlineText;
-    }
-
-    // 2. Transitioning to all black (final hero state)
+    // 1. Final Hero State: Transitioning to solid all-black #121212
     if (isTransitioningToBlack) {
       return interpolateColors(
         frame,
@@ -114,28 +115,35 @@ export function DomainLockup({ frame }: { frame: number }) {
       );
     }
 
-    // 3. Full orange celebration hold
+    // 2. Full Orange Celebration Hold (#FF5800)
     if (isFullOrangeHold) {
       return COLORS.brandOrange;
     }
 
-    // 4. Wave propagation phase (turning each piece to orange)
-    const waveStart = TIMING.COMPLETION_WAVE_START + pieceWaveOffsets[piece];
-    if (frame < waveStart) {
-      return piece === "allies" ? COLORS.brandOrange : COLORS.headlineText;
+    // 3. Simultaneous Orange Fade Phase (all pieces fade to #FF5800 simultaneously)
+    if (isCompletionStarted) {
+      if (piece === "allies") {
+        return COLORS.brandOrange;
+      }
+      return interpolateColors(
+        urlCompletionColorProgress,
+        [0, 1],
+        [COLORS.headlineText, COLORS.brandOrange],
+      );
     }
 
-    return interpolateColors(
-      frame,
-      [waveStart, waveStart + 5],
-      [COLORS.headlineText, COLORS.brandOrange],
-    );
+    // 4. Pre-completion: 'allies' is orange, incoming dragged pieces are black
+    return piece === "allies" ? COLORS.brandOrange : COLORS.headlineText;
   };
 
-  // Micro-scale completion pulse
+  // Micro-scale completion celebration pulse
   let completionScale = 1.0;
-  if (frame >= TIMING.COMPLETION_ORANGE_HOLD_START && frame < TIMING.COMPLETION_BLACK_TRANSITION_START + 15) {
-    const pulseProgress = (frame - TIMING.COMPLETION_ORANGE_HOLD_START) / 35;
+  if (
+    frame >= TIMING.COMPLETION_ORANGE_HOLD_START &&
+    frame < TIMING.COMPLETION_BLACK_TRANSITION_START + 15
+  ) {
+    const pulseProgress =
+      (frame - TIMING.COMPLETION_ORANGE_HOLD_START) / 35;
     const pulseEnv = Math.sin(Math.min(1, pulseProgress) * Math.PI);
     completionScale = 1.0 + pulseEnv * 0.015;
   }

@@ -1,18 +1,19 @@
 /**
- * 3-Layer Character Motion Model & Physical Playfulness Engine (V5)
+ * 3-Layer Character Motion Model & Physical Playfulness Engine (V6)
  *
  * Architecture:
  * - Layer 1: Ambient Life (continuous organic Lissajous drift, gentle breathing, eyeball gaze)
  * - Layer 2: Reactive Motion (startles, side-steps, leans, yielding, curiosity bobs)
- * - Layer 3: Intentional Hero Actions (Double-Hop, Physical Text Boop, Brand Race,
- *             Single Momentum Swirl, Near-Miss, Peek-Behind, Squeeze-In, Gap-Thread,
+ * - Layer 3: Intentional Hero Actions (Double-Hop, Physical Text Boop, Blue Peek, Green Lean,
+ *             Race around 'yourallies.io', The ONE Momentum Swirl, Cozy Squeeze, Gap-Thread,
  *             Follow-and-Peel, Final Linger)
  *
  * Invariants Guaranteed:
- * - Single-Swirl Count = 1 in entire video (strictly as consequence of race contact)
- * - Single-Race Count = 1 in entire video
- * - Single Double-Hop Count = 1 in entire video
- * - Continuous velocity blending & smooth area-preserving soft-body deformations
+ * - Strictly ONE Swirl in entire video (after race contact around yourallies.io)
+ * - Strictly ONE Race in entire video (around completed yourallies.io lockup)
+ * - Strictly ONE Double-Hop in entire video (Yellow entrance)
+ * - Social play is 100% cursor-free
+ * - No robotic magnetic-home out-and-back motions: every drift settles into a new local position
  */
 
 import { AllyIdentity } from "../constants/allyStates";
@@ -42,7 +43,7 @@ export interface TextBoopReaction {
 
 /**
  * Evaluates the physical reaction of the 'allies' text when booped by Pink.
- * Impact frame is f500 (10 frames into PINK_BOOP_START).
+ * Impact frame is f600 (10 frames into PINK_BOOP_START at f590).
  */
 export function getTextBoopReaction(frame: number): TextBoopReaction {
   const BOOP_START = TIMING.PINK_BOOP_START;
@@ -108,7 +109,7 @@ export function getAllyPlayfulOffset(
 
   // =========================================================================
   // 1. LAYER 3: YELLOW ENTRANCE DOUBLE-HOP (Frames 240 to 305)
-  // Yellow executes its signature double-hop with landing squash and stretch
+  // Yellow executes its unique signature double-hop with landing squash and stretch
   // =========================================================================
   const HOP_START = TIMING.YELLOW_DOUBLE_HOP_START;
   const HOP_DURATION = TIMING.YELLOW_DOUBLE_HOP_DURATION;
@@ -116,7 +117,7 @@ export function getAllyPlayfulOffset(
     const p = (frame - HOP_START) / HOP_DURATION;
     const env = Math.sin(p * Math.PI);
 
-    // Double-hop cycle: 2 peaks
+    // Double-hop cycle: 2 buoyant peaks
     const hopCycle = Math.sin(p * Math.PI * 4);
     const hopHeight = Math.max(0, hopCycle) * 34 * env;
     offsetY -= hopHeight;
@@ -133,9 +134,9 @@ export function getAllyPlayfulOffset(
   }
 
   // =========================================================================
-  // 2. LAYER 3: PINK'S PHYSICAL TEXT BOOP (Frames 490 to 530)
+  // 2. LAYER 3: PINK'S PHYSICAL TEXT BOOP (Frames 590 to 630)
   // Pink approaches from base (2660, 1020) and physically impacts right edge
-  // of centered "allies" text (rendered right edge at x=2439.2) at frame 500
+  // of centered "allies" text (rendered right edge at x=2439.2) at frame 600
   // =========================================================================
   const BOOP_START = TIMING.PINK_BOOP_START;
   const BOOP_DURATION = TIMING.PINK_BOOP_DURATION;
@@ -151,7 +152,7 @@ export function getAllyPlayfulOffset(
       offsetRot = -10 * easeIn;
 
       if (age === 10) {
-        // Peak impact compression at f500
+        // Peak impact compression at f600
         squashX *= 0.94;
         squashY *= 1.06;
       }
@@ -178,49 +179,112 @@ export function getAllyPlayfulOffset(
   }
 
   // =========================================================================
-  // 3. LAYER 3: BLUE & PINK RACE AROUND 'allies' (Frames 515 to 595)
-  // Blue notices Pink's bump (f515-f535), squashes in anticipation, then darts off at f535!
-  // Pink notices Blue and gives chase at f542!
+  // 3. LAYER 3: BLUE SOLO CURIOSITY PEEK & GREEN CALM CURIOSITY LEAN (Frames 625 to 675)
+  // - Blue: drifts closer to inspect, leans/tilts +12°, overshoots, curves away to new position
+  // - Green: gentle curiosity dip/lean, holds a beat, drifts into new nearby spot
+  // =========================================================================
+  const BLUE_PEEK_START = TIMING.BLUE_SOLO_PEEK_START;
+  const BLUE_PEEK_DURATION = TIMING.BLUE_SOLO_PEEK_DURATION;
+  if (frame >= BLUE_PEEK_START && frame < BLUE_PEEK_START + BLUE_PEEK_DURATION && identity === "rolly") {
+    const p = (frame - BLUE_PEEK_START) / BLUE_PEEK_DURATION;
+    const env = Math.sin(p * Math.PI);
+    // Blue drifts down-right toward brand center (+45px X, +35px Y), tilts +12°, overshoots slightly
+    const peekX = Math.sin(p * Math.PI * 0.8) * 45;
+    const peekY = Math.sin(p * Math.PI * 0.8) * 35;
+    offsetX += peekX * env;
+    offsetY += peekY * env;
+    offsetRot += Math.sin(p * Math.PI) * 12;
+    squashX *= 1 + 0.04 * env;
+    squashY *= 1 - 0.035 * env;
+  }
+
+  const GREEN_LEAN_START = TIMING.GREEN_SOLO_LEAN_START;
+  const GREEN_LEAN_DURATION = TIMING.GREEN_SOLO_LEAN_DURATION;
+  if (frame >= GREEN_LEAN_START && frame < GREEN_LEAN_START + GREEN_LEAN_DURATION && identity === "rocky") {
+    const p = (frame - GREEN_LEAN_START) / GREEN_LEAN_DURATION;
+    const env = Math.sin(p * Math.PI);
+    // Green gently dips up-right to observe, holds for a beat, settles into new position
+    const leanX = Math.sin(p * Math.PI * 0.7) * 30;
+    const leanY = -Math.sin(p * Math.PI * 0.7) * 25;
+    offsetX += leanX * env;
+    offsetY += leanY * env;
+    offsetRot += Math.sin(p * Math.PI) * 6;
+  }
+
+  // =========================================================================
+  // 4. LAYER 2: GREEN & YELLOW NEAR-MISS (Frames 785 to 830)
+  // Green banks +8° to yield space to Yellow returning with domain pieces
+  // =========================================================================
+  const NEAR_MISS_START = TIMING.NEAR_MISS_START;
+  const NEAR_MISS_DURATION = TIMING.NEAR_MISS_DURATION;
+  if (frame >= NEAR_MISS_START && frame < NEAR_MISS_START + NEAR_MISS_DURATION) {
+    const p = (frame - NEAR_MISS_START) / NEAR_MISS_DURATION;
+    const env = Math.sin(p * Math.PI);
+
+    if (identity === "rocky") {
+      offsetX -= Math.sin(p * Math.PI) * 18 * env;
+      offsetY -= Math.sin(p * Math.PI) * 14 * env;
+      offsetRot += Math.sin(p * Math.PI) * 8 * env;
+    } else if (identity === "boxy") {
+      offsetY += Math.sin(p * Math.PI) * 10 * env;
+      offsetRot -= Math.sin(p * Math.PI) * 5 * env;
+    }
+  }
+
+  // =========================================================================
+  // 5. LAYER 2: PUZZLE COMPLETION IMPULSE (Frames 906 to 935)
+  // Shared micro-reaction when the URL flashes orange simultaneously
+  // =========================================================================
+  const PULSE_START = TIMING.COMPLETION_ORANGE_HOLD_START;
+  const PULSE_DURATION = 30;
+  if (frame >= PULSE_START && frame < PULSE_START + PULSE_DURATION) {
+    const p = (frame - PULSE_START) / PULSE_DURATION;
+    const env = Math.sin(p * Math.PI);
+    if (identity === "rolly") {
+      offsetY -= env * 12;
+      squashY *= 1 + env * 0.035;
+    } else if (identity === "ghosty") {
+      offsetX += env * 10;
+      squashX *= 1 + env * 0.035;
+    } else if (identity === "boxy") {
+      offsetY += env * 8;
+      squashY *= 1 - env * 0.04;
+    } else if (identity === "rocky") {
+      offsetRot -= env * 4;
+    }
+  }
+
+  // =========================================================================
+  // 6. LAYER 3: RACE AROUND COMPLETED 'yourallies.io' (Frames 960 to 1025)
+  // Blue initiates race around completed URL obstacle; Pink gives chase on tighter cut!
+  // Safe clearance around URL safeBounds [800..3040, 750..1410]
   // =========================================================================
   const RACE_START = TIMING.RACE_START;
   const RACE_DURATION = TIMING.RACE_DURATION;
 
-  // A. Blue Notice Phase (Frames 515 to 535)
-  if (frame >= 515 && frame < 535 && identity === "rolly") {
-    const p = (frame - 515) / 20;
-    const env = Math.sin(p * Math.PI);
-    // Blue tilts toward Pink (down-right), bobs in curiously, squashes in anticipation
-    offsetX += env * 25;
-    offsetY += env * 15;
-    offsetRot += env * 14;
-    squashX *= 1 + env * 0.05;
-    squashY *= 1 - env * 0.045;
-  }
-
-  // B. Active Race Phase (Frames 535 to 595)
   if (frame >= RACE_START && frame < RACE_START + RACE_DURATION) {
     const p = (frame - RACE_START) / RACE_DURATION;
     const env = Math.sin(p * Math.PI);
 
     if (identity === "rolly") {
-      // Blue takes wide outer route around the top and right of the brand lockup
+      // Blue takes wide outer route around the top and right of yourallies.io
       const raceAngle = p * Math.PI * 1.55 - Math.PI * 0.45;
-      const rx = 380;
-      const ry = 220;
-      offsetX += (Math.cos(raceAngle) * rx + 60) * env;
-      offsetY += (Math.sin(raceAngle) * ry + 180) * env;
+      const rx = 440;
+      const ry = 260;
+      offsetX += (Math.cos(raceAngle) * rx + 80) * env;
+      offsetY += (Math.sin(raceAngle) * ry + 160) * env;
       offsetRot += Math.sin(p * Math.PI * 2) * 16 * env;
       squashX *= 1 + 0.05 * env;
       squashY *= 1 - 0.045 * env;
     } else if (identity === "ghosty") {
-      // Pink starts chase 7 frames delayed on tighter inside line, catching up to Blue!
+      // Pink starts chase 8 frames delayed on tighter inside line, catching up to Blue!
       const delayedP = Math.max(0, p - 0.12) / 0.88;
       const delayedEnv = Math.sin(delayedP * Math.PI);
       const raceAngle = delayedP * Math.PI * 1.65 - Math.PI * 0.55;
-      const rx = 310;
-      const ry = 175;
-      offsetX += (Math.cos(raceAngle) * rx - 100) * delayedEnv;
-      offsetY += (Math.sin(raceAngle) * ry + 120) * delayedEnv;
+      const rx = 360;
+      const ry = 210;
+      offsetX += (Math.cos(raceAngle) * rx - 80) * delayedEnv;
+      offsetY += (Math.sin(raceAngle) * ry + 110) * delayedEnv;
       offsetRot += Math.sin(delayedP * Math.PI * 2) * 15 * delayedEnv;
       squashX *= 1 + 0.055 * delayedEnv;
       squashY *= 1 - 0.05 * delayedEnv;
@@ -239,7 +303,7 @@ export function getAllyPlayfulOffset(
   }
 
   // =========================================================================
-  // 4. LAYER 3: THE ONE SINGLE MOMENTUM SWIRL (Frames 595 to 640)
+  // 7. LAYER 3: THE ONE SINGLE MOMENTUM SWIRL (Frames 1020 to 1065)
   // STRICTLY THE ONLY SWIRL IN THE ENTIRE VIDEO:
   // Pink catches Blue -> soft collision squash -> 220° shared spiral rotation -> peel apart
   // =========================================================================
@@ -275,83 +339,8 @@ export function getAllyPlayfulOffset(
   }
 
   // =========================================================================
-  // 5. LAYER 2: GREEN & YELLOW NEAR-MISS (Frames 755 to 800)
-  // Green banks +8° to avoid Yellow returning with domain pieces
-  // =========================================================================
-  const NEAR_MISS_START = TIMING.NEAR_MISS_START;
-  const NEAR_MISS_DURATION = TIMING.NEAR_MISS_DURATION;
-  if (frame >= NEAR_MISS_START && frame < NEAR_MISS_START + NEAR_MISS_DURATION) {
-    const p = (frame - NEAR_MISS_START) / NEAR_MISS_DURATION;
-    const env = Math.sin(p * Math.PI);
-
-    if (identity === "rocky") {
-      offsetX -= Math.sin(p * Math.PI) * 18 * env;
-      offsetY -= Math.sin(p * Math.PI) * 14 * env;
-      offsetRot += Math.sin(p * Math.PI) * 8 * env;
-    } else if (identity === "boxy") {
-      offsetY += Math.sin(p * Math.PI) * 10 * env;
-      offsetRot -= Math.sin(p * Math.PI) * 5 * env;
-    }
-  }
-
-  // =========================================================================
-  // 6. LAYER 2: PUZZLE COMPLETION IMPULSE (Frames 885 to 925)
-  // Shared micro-reaction when the URL flashes orange
-  // =========================================================================
-  const PULSE_START = TIMING.COMPLETION_ORANGE_HOLD_START;
-  const PULSE_DURATION = 30;
-  if (frame >= PULSE_START && frame < PULSE_START + PULSE_DURATION) {
-    const p = (frame - PULSE_START) / PULSE_DURATION;
-    const env = Math.sin(p * Math.PI);
-    if (identity === "rolly") {
-      offsetY -= env * 12;
-      squashY *= 1 + env * 0.035;
-    } else if (identity === "ghosty") {
-      offsetX += env * 10;
-      squashX *= 1 + env * 0.035;
-    } else if (identity === "boxy") {
-      offsetY += env * 8;
-      squashY *= 1 - env * 0.04;
-    } else if (identity === "rocky") {
-      offsetRot -= env * 4;
-    }
-  }
-
-  // =========================================================================
-  // 7. LAYER 3: PINK PEEKS BEHIND BLUE + BLUE STARTLE (Frames 980 to 1055)
-  // Pink sweeps across to Blue (z-index), peeks behind; Blue startles, compresses, jumps 25px
-  // =========================================================================
-  const PEEK_START = TIMING.PEEK_BEHIND_START;
-  const PEEK_DURATION = TIMING.PEEK_BEHIND_DURATION;
-  if (frame >= PEEK_START && frame < PEEK_START + PEEK_DURATION) {
-    const p = (frame - PEEK_START) / PEEK_DURATION;
-    const env = Math.sin(p * Math.PI);
-
-    if (identity === "ghosty") {
-      // Pink sweeps from right side across to Blue's vicinity and back
-      const peekX = -650 * env;
-      const peekY = Math.sin(p * Math.PI * 1.5) * 50 * env;
-      offsetX += peekX;
-      offsetY += peekY;
-      offsetRot += Math.sin(p * Math.PI) * 12;
-      zIndexOffset = p < 0.5 ? -2 : 2; // Behind Blue during first half, emerges in front
-    } else if (identity === "rolly" && p > 0.35) {
-      // Blue startles when Pink pops out (p > 0.35)
-      const startleP = (p - 0.35) / 0.65;
-      const decay = Math.exp(-startleP * 3.8);
-      const startleX = -35 * decay * Math.sin(startleP * Math.PI);
-      const startleY = -25 * decay * Math.sin(startleP * Math.PI);
-      offsetX += startleX;
-      offsetY += startleY;
-      offsetRot -= decay * 8;
-      squashX *= 1 - 0.06 * decay;
-      squashY *= 1 + 0.06 * decay;
-    }
-  }
-
-  // =========================================================================
-  // 8. LAYER 3: YELLOW & GREEN COZY SQUEEZE (Frames 1060 to 1125)
-  // Yellow snuggles next to Green; both compress 4.5%, Green yields 20px left
+  // 8. LAYER 3: YELLOW & GREEN COZY SQUEEZE (Frames 1080 to 1145)
+  // Yellow snuggles next to Green under the URL; both compress 4.5%, Green yields 20px left
   // =========================================================================
   const SQUEEZE_START = TIMING.SQUEEZE_START;
   const SQUEEZE_DURATION = TIMING.SQUEEZE_DURATION;
@@ -376,8 +365,9 @@ export function getAllyPlayfulOffset(
   }
 
   // =========================================================================
-  // 9. LAYER 3: BLUE GAP-THREADING (Frames 1130 to 1200)
+  // 9. LAYER 3: BLUE GAP-THREADING (Frames 1150 to 1220)
   // Blue curves smoothly diagonally down-right through gap between Pink & Green
+  // Green and Yellow shift apart (+28px / -25px) asynchronously to make space
   // =========================================================================
   const THREAD_START = TIMING.GAP_THREAD_START;
   const THREAD_DURATION = TIMING.GAP_THREAD_DURATION;
@@ -403,7 +393,7 @@ export function getAllyPlayfulOffset(
   }
 
   // =========================================================================
-  // 10. LAYER 3: FOLLOW-AND-PEEL (Frames 1210 to 1290)
+  // 10. LAYER 3: FOLLOW-AND-PEEL (Frames 1225 to 1300)
   // Yellow leads a gentle curved drift; Pink follows in train then peels upward
   // =========================================================================
   const FOLLOW_START = TIMING.FOLLOW_PEEL_START;
@@ -420,7 +410,10 @@ export function getAllyPlayfulOffset(
       const delayedP = Math.max(0, p - 0.12) / 0.88;
       const delayedEnv = Math.sin(delayedP * Math.PI);
       const followX = Math.sin(delayedP * Math.PI) * -95 * delayedEnv;
-      const peelY = delayedP > 0.5 ? -((delayedP - 0.5) / 0.5) * 55 * delayedEnv : Math.sin(delayedP * Math.PI) * 35 * delayedEnv;
+      const peelY =
+        delayedP > 0.5
+          ? -((delayedP - 0.5) / 0.5) * 55 * delayedEnv
+          : Math.sin(delayedP * Math.PI) * 35 * delayedEnv;
       offsetX += followX;
       offsetY += peelY;
       offsetRot += Math.sin(delayedP * Math.PI) * 10 * delayedEnv;

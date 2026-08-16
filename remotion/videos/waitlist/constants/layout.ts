@@ -2,7 +2,7 @@ export const CANVAS = {
   width: 3840,
   height: 2160,
   fps: 60,
-  durationInFrames: 1560,
+  durationInFrames: 1580,
 } as const;
 
 export const TYPOGRAPHY = {
@@ -48,16 +48,18 @@ export const BRAND_GATHER_PADDING = 80.0;
 export const WORD_CARRIAGE_LAYOUT = {
   meetPickup: {
     textCenter: { x: 1034.01, y: 1080.0 },
-    actorBody: { x: 1034.0, y: 840.0 },
-    cursorTip: { x: 1034.0, y: 980.0 },
+    actorBody: { x: 1034.0, y: 780.0 },
+    cursorTip: { x: 1034.0, y: 940.0 },
+    carryOffset: { x: 0, y: 140 }, // Word sits below Green during carry from above
   },
   yourPickup: {
     textCenter: { x: 1734.94, y: 1080.0 },
-    actorBody: { x: 1735.0, y: 840.0 },
-    cursorTip: { x: 1735.0, y: 980.0 },
+    actorBody: { x: 1735.0, y: 1380.0 },
+    cursorTip: { x: 1735.0, y: 1220.0 },
+    carryOffset: { x: 0, y: -140 }, // Word sits above Yellow during carry from underneath
   },
-  greenMeetExit: { x: -480, y: 780 },
-  yellowYourExit: { x: -480, y: 1650 },
+  greenMeetExit: { x: -550, y: 750 },
+  yellowYourExit: { x: -550, y: 1850 },
   greenReturnTarget: { x: 1220, y: 1360 },
   yellowReturnTarget: { x: 2060, y: 1440 },
 } as const;
@@ -116,9 +118,7 @@ const DOMAIN_TOTAL_WIDTH =
   DOMAIN_GAP * 3;
 const DOMAIN_LEFT = 1920 - DOMAIN_TOTAL_WIDTH / 2;
 
-// The cursor's center sits on this orbit around a 153px ally orb. The extra
-// pointer half-size and padding below keep a carried word attached to the
-// cursor tip instead of letting the ally body cover its first letters.
+// The cursor's center sits on this orbit around a 153px ally orb.
 export const DOMAIN_CURSOR_ORBIT_RADIUS = 140.965;
 export const DOMAIN_CARGO_TIP_PADDING = 18;
 const DOMAIN_POINTER_HALF_SIZE = 110.5 / 2;
@@ -138,6 +138,14 @@ export const DOMAIN_LAYOUT = {
   rowHeight: HEADLINE_LAYOUT.rowHeight,
   gap: DOMAIN_GAP,
   yourAlliesGap: DOMAIN_YOUR_ALLIES_GAP,
+  totalWidth: DOMAIN_TOTAL_WIDTH,
+  // Inflated safe clearance boundary box around completed URL for race routing
+  safeBounds: {
+    left: DOMAIN_LEFT - 120,
+    right: DOMAIN_LEFT + DOMAIN_TOTAL_WIDTH + 120,
+    top: 1080 - HEADLINE_LAYOUT.rowHeight / 2 - 140,
+    bottom: 1080 + HEADLINE_LAYOUT.rowHeight / 2 + 140,
+  },
   pieces: {
     your: {
       text: "your",

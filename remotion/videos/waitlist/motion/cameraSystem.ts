@@ -1,5 +1,5 @@
 /**
- * Central Deterministic Camera Motion System (V4)
+ * Central Deterministic Camera Motion System (V5)
  *
  * Implements subtle, tasteful camera scale and centroid framing adjustments
  * driven strictly by narrative and physical events (zero shake or random noise).
@@ -37,7 +37,7 @@ export function getCameraState(frame: number): CameraState {
   }
 
   // =========================================================================
-  // 2. PINK TEXT BUMP MICRO-EMPHASIS (Frames 490 to 525)
+  // 2. PINK TEXT BUMP MICRO-EMPHASIS (Frames 590 to 625)
   // Subtle 1.0 -> 1.012 -> 1.0 reinforcement when Pink boops 'allies'
   // =========================================================================
   const BUMP_START = TIMING.PINK_BOOP_START;
@@ -50,29 +50,11 @@ export function getCameraState(frame: number): CameraState {
   }
 
   // =========================================================================
-  // 3. BLUE & PINK RACE PUSH-IN & ACTION CENTROID (Frames 530 to 630)
-  // Camera gently pushes in (1.0 -> 1.032) and biases toward the race centroid
-  // then breathes smoothly back toward 1.01 after the single swirl peels apart
-  // =========================================================================
-  const RACE_CAM_START = TIMING.RACE_START;
-  const RACE_CAM_DURATION = 100;
-  if (frame >= RACE_CAM_START && frame < RACE_CAM_START + RACE_CAM_DURATION) {
-    const p = (frame - RACE_CAM_START) / RACE_CAM_DURATION;
-    const raceEnv = p < 0.55
-      ? interpolate(p, [0, 0.55], [0, 1], { easing: cameraEase })
-      : interpolate(p, [0.55, 1.0], [1, 0.25], { easing: cameraEase });
-
-    scale += raceEnv * 0.032;
-    offsetX -= raceEnv * 12;
-    offsetY -= raceEnv * 8;
-  }
-
-  // =========================================================================
-  // 4. URL PUZZLE COMPLETION PUSH (Frames 855 to 945)
+  // 3. URL PUZZLE COMPLETION PUSH (Frames 890 to 950)
   // Camera pushes in (1.0 -> 1.035) during completion flash and stays closer
   // for the post-completion celebration window
   // =========================================================================
-  const COMPLETION_CAM_START = TIMING.COMPLETION_WAVE_START;
+  const COMPLETION_CAM_START = TIMING.COMPLETION_ORANGE_START;
   const COMPLETION_CAM_END = TIMING.COMPLETION_FULL_BLACK_FRAME + 20;
   if (frame >= COMPLETION_CAM_START && frame < TIMING.FINAL_CAMERA_PUSH_START) {
     const pushProgress = interpolate(
@@ -83,21 +65,22 @@ export function getCameraState(frame: number): CameraState {
     );
     scale = Math.max(scale, 1.0 + pushProgress * 0.035);
 
-    // Micro centroid shifts during post-completion play events
-    if (frame >= TIMING.PEEK_BEHIND_START && frame < TIMING.PEEK_BEHIND_START + TIMING.PEEK_BEHIND_DURATION) {
-      const p = (frame - TIMING.PEEK_BEHIND_START) / TIMING.PEEK_BEHIND_DURATION;
-      const peekEnv = Math.sin(p * Math.PI);
-      offsetX -= peekEnv * 8;
-      offsetY -= peekEnv * 6;
+    // Dynamic camera centroid focus during race around yourallies.io
+    if (frame >= TIMING.RACE_START && frame < TIMING.RACE_START + TIMING.RACE_DURATION + 40) {
+      const p = (frame - TIMING.RACE_START) / (TIMING.RACE_DURATION + 40);
+      const raceEnv = Math.sin(p * Math.PI);
+      scale += raceEnv * 0.025;
+      offsetX -= raceEnv * 12;
+      offsetY -= raceEnv * 6;
     } else if (frame >= TIMING.GAP_THREAD_START && frame < TIMING.GAP_THREAD_START + TIMING.GAP_THREAD_DURATION) {
       const p = (frame - TIMING.GAP_THREAD_START) / TIMING.GAP_THREAD_DURATION;
       const threadEnv = Math.sin(p * Math.PI);
-      offsetX += threadEnv * 10;
+      offsetX += threadEnv * 8;
     }
   }
 
   // =========================================================================
-  // 5. FINAL CAMERA PUSH & CENTERING ON URL (Frames 1360 to 1460)
+  // 4. FINAL CAMERA PUSH & CENTERING ON URL (Frames 1370 to 1470)
   // Smooth transition from celebration scale (~1.035) to final hero scale (1.08x)
   // =========================================================================
   if (frame >= TIMING.FINAL_CAMERA_PUSH_START) {

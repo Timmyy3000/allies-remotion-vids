@@ -95,7 +95,7 @@ const blueDeparture = generateCurvedMotionPath(
 );
 
 // -----------------------------------------------------------------------------
-// 2. Green (Rocky): Soft, calm, relaxed, wide parabolic arcs
+// 2. Green (Rocky): Soft, calm, relaxed, approaches "Meet" from ABOVE
 // -----------------------------------------------------------------------------
 const greenEntrance = generateCurvedMotionPath(
   "rocky",
@@ -194,7 +194,7 @@ const pinkDeparture = generateCurvedMotionPath(
 );
 
 // -----------------------------------------------------------------------------
-// 4. Yellow (Boxy): Playful, buoyant, looping arcs
+// 4. Yellow (Boxy): Playful, buoyant, approaches "your" from UNDERNEATH
 // -----------------------------------------------------------------------------
 const yellowEntrance = generateCurvedMotionPath(
   "boxy",
@@ -289,7 +289,7 @@ export const ALLIES = {
       {
         id: "domain-exit",
         path: blueDomainExit.svgPath,
-        startFrame: 845,
+        startFrame: TIMING.DOMAIN_PIECES_SETTLED,
         durationInFrames: 50,
         timingEase: motionEasing.travelIn,
       },
@@ -297,7 +297,7 @@ export const ALLIES = {
         id: "departure",
         path: blueDeparture.svgPath,
         startFrame: TIMING.BLUE_DEPART_START,
-        durationInFrames: 60,
+        durationInFrames: 65,
         timingEase: motionEasing.travelIn,
       },
     ],
@@ -341,7 +341,7 @@ export const ALLIES = {
         id: "meet-approach",
         path: greenMeetApproach.svgPath,
         startFrame: TIMING.GREEN_MEET_APPROACH_START,
-        durationInFrames: TIMING.GREEN_MEET_PICKUP_START - TIMING.GREEN_MEET_APPROACH_START,
+        durationInFrames: 28,
         timingEase: motionEasing.softTravelIn,
         cursorEndDirectionDeg: 90,
       },
@@ -350,8 +350,8 @@ export const ALLIES = {
         path: greenMeetCarry.svgPath,
         startFrame: TIMING.GREEN_MEET_PICKUP_START,
         durationInFrames: TIMING.GREEN_MEET_CARRY_DURATION,
-        timingEase: motionEasing.softTravelIn,
-        cursorEndDirectionDeg: -180,
+        timingEase: motionEasing.wordCarryHeavy,
+        cursorEndDirectionDeg: 90,
       },
       {
         id: "green-return",
@@ -378,7 +378,7 @@ export const ALLIES = {
       {
         id: "domain-exit",
         path: greenDomainExit.svgPath,
-        startFrame: 845,
+        startFrame: TIMING.DOMAIN_PIECES_SETTLED,
         durationInFrames: 50,
         timingEase: motionEasing.softTravelIn,
       },
@@ -447,7 +447,7 @@ export const ALLIES = {
       {
         id: "domain-exit",
         path: pinkDomainExit.svgPath,
-        startFrame: 845,
+        startFrame: TIMING.DOMAIN_PIECES_SETTLED,
         durationInFrames: 50,
         timingEase: motionEasing.travelIn,
       },
@@ -455,7 +455,7 @@ export const ALLIES = {
         id: "departure",
         path: pinkDeparture.svgPath,
         startFrame: TIMING.PINK_DEPART_START,
-        durationInFrames: 60,
+        durationInFrames: 65,
         timingEase: motionEasing.travelIn,
       },
     ],
@@ -499,17 +499,17 @@ export const ALLIES = {
         id: "your-approach",
         path: yellowYourApproach.svgPath,
         startFrame: TIMING.YELLOW_YOUR_APPROACH_START,
-        durationInFrames: TIMING.YELLOW_YOUR_PICKUP_START - TIMING.YELLOW_YOUR_APPROACH_START,
+        durationInFrames: 30,
         timingEase: motionEasing.travelIn,
-        cursorEndDirectionDeg: 90,
+        cursorEndDirectionDeg: -90,
       },
       {
         id: "your-carry",
         path: yellowYourCarry.svgPath,
         startFrame: TIMING.YELLOW_YOUR_PICKUP_START,
         durationInFrames: TIMING.YELLOW_YOUR_CARRY_DURATION,
-        timingEase: motionEasing.travelIn,
-        cursorEndDirectionDeg: -160,
+        timingEase: motionEasing.wordCarryBuoyant,
+        cursorEndDirectionDeg: -90,
       },
       {
         id: "yellow-return",
@@ -536,7 +536,7 @@ export const ALLIES = {
       {
         id: "domain-exit",
         path: yellowDomainExit.svgPath,
-        startFrame: 845,
+        startFrame: TIMING.DOMAIN_PIECES_SETTLED,
         durationInFrames: 50,
         timingEase: motionEasing.travelIn,
       },
@@ -544,7 +544,7 @@ export const ALLIES = {
         id: "departure",
         path: yellowDeparture.svgPath,
         startFrame: TIMING.YELLOW_DEPART_START,
-        durationInFrames: 60,
+        durationInFrames: 65,
         timingEase: motionEasing.travelIn,
       },
     ],

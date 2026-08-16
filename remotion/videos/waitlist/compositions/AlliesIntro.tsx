@@ -104,7 +104,8 @@ export function AlliesIntro() {
     ? interpolate(logoSpring, [0, 1], [30.93, 0])
     : 30.93;
 
-  // Brand Group ("[LOGO] allies") Recenter Glide as Green and Yellow carry words away
+  // Brand Group ("[LOGO] allies") Recenter Glide
+  // Starts strictly at frame 508 after a full 48-frame (0.8s) hold following word departures
   const brandRecenterProgress = interpolate(
     frame,
     [TIMING.BRAND_RECENTER_START, TIMING.BRAND_RECENTER_END],
@@ -349,7 +350,7 @@ export function AlliesIntro() {
                 </div>
               </div>
 
-              {/* WORD 3: "allies" WITH PHYSICAL TEXT REACTION WRAPPER */}
+              {/* WORD 3: "allies" WITH PHYSICAL TEXT REACTION WRAPPER & FOCUSWORD GATING */}
               <div
                 className="physical-allies-wrapper"
                 style={{
@@ -368,31 +369,27 @@ export function AlliesIntro() {
                   willChange: "transform",
                 }}
               >
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    height: "100%",
-                    lineHeight: 1,
-                    color: alliesColor,
-                    userSelect: "none",
-                  }}
-                >
-                  allies
-                </span>
+                <FocusWord
+                  text="allies"
+                  startFrame={TIMING.ALLIES_FOCUS_START}
+                  currentFrame={frame}
+                  color={alliesColor}
+                  exitProgress={0}
+                  wordIndex={2}
+                />
               </div>
             </div>
           </div>
         )}
 
-        {/* DOMAIN LOCKUP & PUZZLE COMPLETION (From f680 onwards) */}
+        {/* DOMAIN LOCKUP & PUZZLE COMPLETION (From f710 onwards) */}
         {frame >= TIMING.LOGO_COLLAPSE_END && <DomainLockup frame={frame} />}
 
         {/* ========================================================================= */}
         {/* REUSABLE ALLY ACTORS (PERMANENT IDENTITIES: ROLLY, ROCKY, GHOSTY, BOXY) */}
         {/* ========================================================================= */}
 
-        {/* 1. Blue Ally (Rolly): Enters clean, races around brand, swirls, fetches 'your', threads gap, departs */}
+        {/* 1. Blue Ally (Rolly): Enters clean, races around yourallies.io, swirls, fetches 'your', threads gap, departs */}
         <AllyActor
           identity="rolly"
           config={ALLIES.blue}
@@ -410,7 +407,7 @@ export function AlliesIntro() {
           }}
         />
 
-        {/* 2. Green Ally (Rocky): Enters, travels to 'Meet', carries 'Meet' offscreen, returns, fetches 'i', snuggles Yellow, departs */}
+        {/* 2. Green Ally (Rocky): Enters, travels to 'Meet' from ABOVE, carries 'Meet' offscreen, returns, fetches 'i', snuggles Yellow, departs */}
         <AllyActor
           identity="rocky"
           config={ALLIES.green}
@@ -424,10 +421,8 @@ export function AlliesIntro() {
               node: (
                 <span
                   style={{
-                    fontFamily: TYPOGRAPHY.fontFamily,
-                    fontSize: TYPOGRAPHY.fontSize,
-                    fontWeight: TYPOGRAPHY.fontWeight,
-                    letterSpacing: `${TYPOGRAPHY.letterSpacing}px`,
+                    display: "inline-block",
+                    lineHeight: 1,
                     color: COLORS.headlineText,
                     userSelect: "none",
                   }}
@@ -436,7 +431,8 @@ export function AlliesIntro() {
                 </span>
               ),
               width: HEADLINE_LAYOUT.meetWidth,
-              tipPadding: 20,
+              offset: { x: 0, y: 300 },
+              inertiaWeight: 0.04,
             },
             "domain-drag": {
               node: <DomainPieceText piece={DOMAIN_DRAG_TARGETS.green.piece} />,
@@ -464,7 +460,7 @@ export function AlliesIntro() {
           }}
         />
 
-        {/* 4. Yellow Ally (Boxy): Double-hop, travels to 'your', carries 'your' offscreen, returns, fetches 'o', snuggles Green, departs */}
+        {/* 4. Yellow Ally (Boxy): Double-hop, travels to 'your' from UNDERNEATH, carries 'your' offscreen, returns, fetches 'o', snuggles Green, departs */}
         <AllyActor
           identity="boxy"
           config={ALLIES.yellow}
@@ -478,10 +474,8 @@ export function AlliesIntro() {
               node: (
                 <span
                   style={{
-                    fontFamily: TYPOGRAPHY.fontFamily,
-                    fontSize: TYPOGRAPHY.fontSize,
-                    fontWeight: TYPOGRAPHY.fontWeight,
-                    letterSpacing: `${TYPOGRAPHY.letterSpacing}px`,
+                    display: "inline-block",
+                    lineHeight: 1,
                     color: COLORS.headlineText,
                     userSelect: "none",
                   }}
@@ -490,7 +484,8 @@ export function AlliesIntro() {
                 </span>
               ),
               width: HEADLINE_LAYOUT.yourWidth,
-              tipPadding: 20,
+              offset: { x: 0, y: -300 },
+              inertiaWeight: 0.04,
             },
             "domain-drag": {
               node: <DomainPieceText piece={DOMAIN_DRAG_TARGETS.yellow.piece} />,

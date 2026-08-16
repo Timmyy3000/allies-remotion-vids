@@ -10,11 +10,14 @@ import {
   getAllyVisualState,
 } from "../constants/allyStates";
 import { getAllyPlayfulOffset } from "../motion/allyBehavior";
+import { TYPOGRAPHY } from "../constants/layout";
 
 export interface CargoItem {
   node: React.ReactNode;
   width?: number;
   tipPadding?: number;
+  offset?: { x: number; y: number };
+  inertiaWeight?: number;
 }
 
 export interface AllyActorProps {
@@ -36,7 +39,7 @@ export interface AllyActorProps {
 }
 
 /**
- * Reusable Ally Actor (State & Motion Engine V4)
+ * Reusable Ally Actor (State & Motion Engine V6)
  *
  * Geometric & State Rules:
  * - Rule 1: Permanent character identity (Rocky, Rolly, Ghosty, Boxy) NEVER changes.
@@ -126,29 +129,54 @@ export function AllyActor({
   const totalSquashX = travel.blobSquashX * playful.squashX;
   const totalSquashY = travel.blobSquashY * playful.squashY;
 
-  // 6. Active Cargo Resolution
+  // 6. Active Cargo Resolution (strictly mounts only once pickup frame arrives)
   let activeCargoNode: React.ReactNode = null;
   let activeCargoWidth = cargoWidth;
   let activeCargoTipPad = cargoTipPadding;
+  let activeCargoOffset: { x: number; y: number } | undefined = undefined;
+  let activeCargoInertia = 0.04;
 
   if (cargoMap && travel.activeSegmentId && cargoMap[travel.activeSegmentId]) {
-    const item = cargoMap[travel.activeSegmentId];
-    activeCargoNode = item.node;
-    if (item.width != null) activeCargoWidth = item.width;
-    if (item.tipPadding != null) activeCargoTipPad = item.tipPadding;
+    const activeSegConfig = config.segments?.find(
+      (s) => s.id === travel.activeSegmentId,
+    );
+    const segStart = activeSegConfig?.startFrame ?? config.startFrame;
+    if (currentFrame >= segStart) {
+      const item = cargoMap[travel.activeSegmentId];
+      activeCargoNode = item.node;
+      if (item.width != null) activeCargoWidth = item.width;
+      if (item.tipPadding != null) activeCargoTipPad = item.tipPadding;
+      if (item.offset != null) activeCargoOffset = item.offset;
+      if (item.inertiaWeight != null) activeCargoInertia = item.inertiaWeight;
+    }
   } else if (cargo && travel.activeSegmentId === cargoSegmentId) {
-    activeCargoNode = cargo;
+    const activeSegConfig = config.segments?.find((s) => s.id === cargoSegmentId);
+    const segStart = activeSegConfig?.startFrame ?? config.startFrame;
+    if (currentFrame >= segStart) {
+      activeCargoNode = cargo;
+    }
   }
 
-  const cursorX = travel.cursorX;
-  const cursorY = travel.cursorY;
-  const cargoAngleRad = (travel.directionDeg * Math.PI) / 180;
-  const cargoLeadDistance =
-    activeCargoWidth == null
-      ? 0
-      : pointerSize / 2 + activeCargoTipPad + activeCargoWidth / 2;
-  const cargoX = cursorX + Math.cos(cargoAngleRad) * cargoLeadDistance;
-  const cargoY = cursorY + Math.sin(cargoAngleRad) * cargoLeadDistance;
+  let cargoX: number;
+  let cargoY: number;
+
+  if (activeCargoOffset) {
+    // Subtle secondary inertia lag (a few pixels deterministic lag during acceleration/turning)
+    const lagX = -travel.velocityX * activeCargoInertia * 6;
+    const lagY = -travel.velocityY * activeCargoInertia * 6;
+    cargoX = activeCargoOffset.x + lagX;
+    cargoY = activeCargoOffset.y + lagY;
+  } else {
+    const cursorX = travel.cursorX;
+    const cursorY = travel.cursorY;
+    const cargoAngleRad = (travel.directionDeg * Math.PI) / 180;
+    const cargoLeadDistance =
+      activeCargoWidth == null
+        ? 0
+        : pointerSize / 2 + activeCargoTipPad + activeCargoWidth / 2;
+    cargoX = cursorX + Math.cos(cargoAngleRad) * cargoLeadDistance;
+    cargoY = cursorY + Math.sin(cargoAngleRad) * cargoLeadDistance;
+  }
 
   // 7. Handle optional playful cursor override
   const isCursorOverridden = playful.cursorOverride?.active;
@@ -166,24 +194,56 @@ export function AllyActor({
     activeCursorY = Math.sin(rad) * travel.cursorOrbitRadius;
   }
 
+  const halfCargoWidth = (activeCargoWidth ?? 0) / 2;
+
   return (
-    // Layer 1: Hardware-Accelerated Travel Transform (Subpixel Precision)
+    // Layer 1: Hardware-Accelerated Travel Transform (Subpixel Zero-Width Anchor)
     <div
       style={{
         position: "absolute",
         left: 0,
         top: 0,
+        width: 0,
+        height: 0,
         transform: `translate3d(${travel.x.toFixed(3)}px, ${travel.y.toFixed(
           3,
-        )}px, 0px) translate(-50%, -50%)`,
+        )}px, 0px)`,
         pointerEvents: "none",
         zIndex: 10 + (playful.zIndexOffset ?? 0),
         willChange: "transform",
       }}
     >
+      {/* CARGO: Attached in world translation space without banking tilt distortion */}
+      {activeCargoNode && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            transform: `translate3d(${(cargoX - halfCargoWidth).toFixed(
+              3,
+            )}px, ${cargoY.toFixed(3)}px, 0px) translateY(-50%)`,
+            zIndex: 3,
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+            display: "inline-block",
+            fontFamily: TYPOGRAPHY.fontFamily,
+            fontSize: TYPOGRAPHY.fontSize,
+            fontWeight: TYPOGRAPHY.fontWeight,
+            letterSpacing: `${TYPOGRAPHY.letterSpacing}px`,
+            lineHeight: TYPOGRAPHY.lineHeight,
+          }}
+        >
+          {activeCargoNode}
+        </div>
+      )}
+
       {/* Layer 2: Subtle Character Personality Body Tilt */}
       <div
         style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
           transform: `rotate(${characterTilt.toFixed(3)}deg)`,
           transformOrigin: "center center",
         }}
@@ -191,11 +251,13 @@ export function AllyActor({
         {/* Layer 3: Ambient Idle Floating Layer */}
         <div
           style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
             transform: `translate3d(${floatX.toFixed(3)}px, ${floatY.toFixed(
               3,
             )}px, 0px) rotate(${floatRot.toFixed(3)}deg)`,
             transformOrigin: "center center",
-            position: "relative",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
@@ -206,8 +268,8 @@ export function AllyActor({
             <div
               style={{
                 position: "absolute",
-                left: "50%",
-                top: "50%",
+                left: 0,
+                top: 0,
                 transform: `translate3d(${activeCursorX.toFixed(
                   3,
                 )}px, ${activeCursorY.toFixed(3)}px, 0px) translate(-50%, -50%)`,
@@ -232,30 +294,14 @@ export function AllyActor({
             </div>
           )}
 
-          {activeCargoNode && (
-            <div
-              style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate3d(${cargoX.toFixed(
-                  3,
-                )}px, ${cargoY.toFixed(3)}px, 0px) translate(-50%, -50%)`,
-                zIndex: 3,
-                pointerEvents: "none",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {activeCargoNode}
-            </div>
-          )}
-
           {/* Layer 5: Ally Orb & Permanent Character Identity (State Switcher with Squash & Stretch) */}
           <div
             style={{
               position: "relative",
               zIndex: 1,
-              transform: `scale(${totalSquashX.toFixed(3)}, ${totalSquashY.toFixed(3)})`,
+              transform: `translate(-50%, -50%) scale(${totalSquashX.toFixed(
+                3,
+              )}, ${totalSquashY.toFixed(3)})`,
               transformOrigin: "center center",
               willChange: "transform",
             }}

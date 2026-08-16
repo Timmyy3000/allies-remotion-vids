@@ -912,6 +912,10 @@ export function useBezierTravel(
   // 3. Find active segment or idle pause between segments
   for (let i = 0; i < activeSegments.length; i++) {
     const seg = activeSegments[i];
+    const nextSeg = activeSegments[i + 1];
+    if (nextSeg && frame >= nextSeg.startFrame) {
+      continue;
+    }
     const segEnd = seg.startFrame + seg.durationInFrames;
     if (frame <= segEnd) {
       if (i > 0 && frame < seg.startFrame - anticipateFrames) {

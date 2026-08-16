@@ -1,16 +1,16 @@
 /**
- * Centralized Additive Timeline & Choreography Constants (V5 - 1560 Frames)
+ * Centralized Additive Timeline & Choreography Constants (V6 - 1580 Frames)
  *
- * Master Composition Working Duration: 1560 frames (~26.0 seconds at 60fps)
+ * Master Composition Duration: 1580 frames (~26.33 seconds at 60fps)
  */
 
 export const FPS = 60;
-export const TOTAL_DURATION_FRAMES = 1560;
+export const TOTAL_DURATION_FRAMES = 1580;
 
 // ============================================================================
 // PHASE 1: CLEAN OPENING BLANK CANVAS
 // ============================================================================
-export const OPENING_BLANK_DURATION = 16; // ~0.27s
+export const OPENING_BLANK_DURATION = 16; // 0.27s (Pure empty white canvas)
 
 // ============================================================================
 // PHASE 2: GENERATIVE FOCUS HEADLINE ENTRANCE ("Meet your allies")
@@ -37,7 +37,7 @@ export const FULL_PHRASE_HOLD_END = ALL_WORDS_FOCUSED + FULL_PHRASE_HOLD_DURATIO
 export const BRAND_TRANSFORM_START = FULL_PHRASE_HOLD_END; // Frame 103
 export const BRAND_TRANSFORM_DURATION = 24; // 0.40s
 
-// Official Allies SVG logo springs in (No Blue involvement)
+// Official Allies SVG logo springs into reserved slot
 export const LOGO_START = BRAND_TRANSFORM_START + 6; // Frame 109
 export const LOGO_SETTLED = LOGO_START + 32; // Frame 141
 
@@ -66,64 +66,62 @@ export const PINK_ENTRANCE_DURATION = 55;
 export const YELLOW_ENTRANCE_START = 195;
 export const YELLOW_ENTRANCE_DURATION = 55;
 
-// Yellow's unique signature double-hop (approved)
+// Yellow's unique signature double-hop
 export const YELLOW_DOUBLE_HOP_START = 240;
 export const YELLOW_DOUBLE_HOP_DURATION = 65; // f240 - f305
 
 // ============================================================================
-// PHASE 6: PHYSICAL WORD PICKUP BY GREEN & YELLOW & BRAND RECENTER
+// PHASE 6: DIFFERENTIATED WORD PICKUPS (GREEN FROM ABOVE, YELLOW FROM BELOW)
 // ============================================================================
-// Green travels to "Meet", contacts, tugs, and carries offscreen left
+// Green travels to "Meet" from ABOVE, attaches, tugs, and carries offscreen left
 export const GREEN_MEET_APPROACH_START = 310;
 export const GREEN_MEET_PICKUP_START = 345;
-export const GREEN_MEET_CARRY_DURATION = 80; // f345 - f425
+export const GREEN_MEET_CARRY_DURATION = 95; // Exits past left boundary around f440
 
-// Yellow travels to "your", contacts, tugs, and carries offscreen bottom-left
+// Yellow travels to "your" from UNDERNEATH, attaches, tugs, and carries offscreen bottom-left
 export const YELLOW_YOUR_APPROACH_START = 325;
-export const YELLOW_YOUR_PICKUP_START = 360;
-export const YELLOW_YOUR_CARRY_DURATION = 80; // f360 - f440
+export const YELLOW_YOUR_PICKUP_START = 365;
+export const YELLOW_YOUR_CARRY_DURATION = 95; // Exits past bottom-left boundary around f460
 
-// Central brand mark ("[LOGO] allies") smoothly recenters as one unit
-export const BRAND_RECENTER_START = 345;
-export const BRAND_RECENTER_DURATION = 70;
-export const BRAND_RECENTER_END = BRAND_RECENTER_START + BRAND_RECENTER_DURATION; // Frame 415
+// 48-FRAME (~0.8s) INTENTIONAL HOLD AFTER BOTH WORDS ARE COMPLETELY OFFSCREEN
+export const WORDS_EXITED_FRAME = 460;
+export const POST_EXIT_HOLD_DURATION = 48; // Exactly 48 frames (0.8s) pure hold
+export const BRAND_RECENTER_START = WORDS_EXITED_FRAME + POST_EXIT_HOLD_DURATION; // Frame 508
+export const BRAND_RECENTER_DURATION = 70; // f508 - f578
+export const BRAND_RECENTER_END = BRAND_RECENTER_START + BRAND_RECENTER_DURATION; // Frame 578
 
-// Return paths for Green and Yellow from canvas edges
-export const GREEN_RETURN_START = 425;
-export const GREEN_RETURN_DURATION = 60; // f425 - f485
+// Return paths for Green and Yellow from canvas edges to new local positions
+export const GREEN_RETURN_START = 520;
+export const GREEN_RETURN_DURATION = 65; // f520 - f585
 
-export const YELLOW_RETURN_START = 440;
-export const YELLOW_RETURN_DURATION = 55; // f440 - f495
+export const YELLOW_RETURN_START = 535;
+export const YELLOW_RETURN_DURATION = 65; // f535 - f600
 
 // ============================================================================
-// PHASE 7: INSPECTION, PINK TEXT BOOP, BLUE/PINK RACE & THE ONE SWIRL
+// PHASE 7: INSPECTION, PINK TEXT BOOP & SOLO CURIOSITY BEATS
 // ============================================================================
-export const ALL_GATHERED_FRAME = 485;
+export const ALL_GATHERED_FRAME = 585;
 
 // Pink accidentally bumps the rendered right edge of "allies" text
-export const PINK_BOOP_START = 490;
-export const PINK_BOOP_DURATION = 40; // f490 - f530 (impact at f500)
+export const PINK_BOOP_START = 590;
+export const PINK_BOOP_DURATION = 40; // f590 - f630 (impact at f600)
 
-// Blue notices collision (f515-f535), darts off, Pink gives chase
-export const RACE_START = 535;
-export const RACE_DURATION = 60; // f535 - f595
+// Blue solo curiosity peek & Green calm curiosity lean
+export const BLUE_SOLO_PEEK_START = 625;
+export const BLUE_SOLO_PEEK_DURATION = 45;
 
-// Pink catches Blue -> Contact Squash -> Tangential ONE SWIRL
-export const SWIRL_START = 595;
-export const SWIRL_DURATION = 45; // f595 - f640 (ONE SWIRL ONLY)
-
-// Post-swirl peel-away to new staging coordinates
-export const POST_SWIRL_ROAM_START = 635;
+export const GREEN_SOLO_LEAN_START = 630;
+export const GREEN_SOLO_LEAN_DURATION = 45;
 
 // ============================================================================
 // PHASE 8: LOGO COLLAPSE & DOMAIN FETCH LAUNCHES
 // ============================================================================
-export const LOGO_COLLAPSE_START = 645;
+export const LOGO_COLLAPSE_START = 675;
 export const LOGO_COLLAPSE_DURATION = 35;
-export const LOGO_COLLAPSE_END = LOGO_COLLAPSE_START + LOGO_COLLAPSE_DURATION; // Frame 680
+export const LOGO_COLLAPSE_END = LOGO_COLLAPSE_START + LOGO_COLLAPSE_DURATION; // Frame 710
 
-// Allies launch with quintic acceleration to screen edges to fetch domain pieces
-export const DOMAIN_EDGE_START = 680;
+// Allies launch with speed-ramped acceleration to screen edges to fetch domain pieces
+export const DOMAIN_EDGE_START = 710;
 export const BLUE_DOMAIN_EDGE_START = DOMAIN_EDGE_START;
 export const PINK_DOMAIN_EDGE_START = DOMAIN_EDGE_START + 6;
 export const GREEN_DOMAIN_EDGE_START = DOMAIN_EDGE_START + 12;
@@ -135,10 +133,10 @@ export const GREEN_DOMAIN_EDGE_DURATION = 52;
 export const YELLOW_DOMAIN_EDGE_DURATION = 50;
 
 // Dragging letters back to canvas center
-export const BLUE_DOMAIN_DRAG_START = 730;
-export const PINK_DOMAIN_DRAG_START = 740;
-export const GREEN_DOMAIN_DRAG_START = 748;
-export const YELLOW_DOMAIN_DRAG_START = 752;
+export const BLUE_DOMAIN_DRAG_START = 760;
+export const PINK_DOMAIN_DRAG_START = 770;
+export const GREEN_DOMAIN_DRAG_START = 778;
+export const YELLOW_DOMAIN_DRAG_START = 782;
 
 export const BLUE_DOMAIN_DRAG_DURATION = 76;
 export const PINK_DOMAIN_DRAG_DURATION = 82;
@@ -146,65 +144,72 @@ export const GREEN_DOMAIN_DRAG_DURATION = 88;
 export const YELLOW_DOMAIN_DRAG_DURATION = 92;
 
 // Green & Yellow Near-Miss during return
-export const NEAR_MISS_START = 755;
+export const NEAR_MISS_START = 785;
 export const NEAR_MISS_DURATION = 45;
 
-export const DOMAIN_PIECES_SETTLED = 845; // Final 'o' docks
+export const DOMAIN_PIECES_SETTLED = 875; // Final 'o' docks
 export const DOMAIN_PIECE_SETTLE_DURATION = 12;
 
 // ============================================================================
-// PHASE 9: PUZZLE COMPLETION WAVE & COLOR REACTION
+// PHASE 9: SIMULTANEOUS URL COMPLETION ORANGE TRANSITION
 // ============================================================================
-// Orange completion wave propagates right-to-left (o -> i -> . -> allies -> your)
-export const COMPLETION_WAVE_START = 855;
-export const COMPLETION_WAVE_DURATION = 20;
+// Entire 'yourallies.io' lockup transitions to orange AT THE SAME TIME
+export const COMPLETION_ORANGE_START = 890;
+export const COMPLETION_ORANGE_DURATION = 16; // Smooth simultaneous 16-frame fade to #FF5800
 
 // Full orange lockup celebration hold (#FF5800)
-export const COMPLETION_ORANGE_HOLD_START = 875;
+export const COMPLETION_ORANGE_HOLD_START = COMPLETION_ORANGE_START + COMPLETION_ORANGE_DURATION; // Frame 906
 export const COMPLETION_ORANGE_HOLD_DURATION = 20;
 
 // Smooth transition to solid #121212 black URL
-export const COMPLETION_BLACK_TRANSITION_START = 895;
-export const COMPLETION_BLACK_TRANSITION_DURATION = 25;
-export const COMPLETION_FULL_BLACK_FRAME = 920;
+export const COMPLETION_BLACK_TRANSITION_START = COMPLETION_ORANGE_HOLD_START + COMPLETION_ORANGE_HOLD_DURATION; // Frame 926
+export const COMPLETION_BLACK_TRANSITION_DURATION = 24;
+export const COMPLETION_FULL_BLACK_FRAME = COMPLETION_BLACK_TRANSITION_START + COMPLETION_BLACK_TRANSITION_DURATION; // Frame 950
 
 // ============================================================================
-// PHASE 10: EXTENDED POST-COMPLETION PLAY WINDOW
+// PHASE 10: RACE AROUND COMPLETED 'yourallies.io' & THE ONE MOMENTUM SWIRL
 // ============================================================================
-// Event 1: Pink Peeks Behind Blue + Blue Startle (z-index peek, no cursor)
-export const PEEK_BEHIND_START = 980;
-export const PEEK_BEHIND_DURATION = 75;
+// Blue initiates race around completed URL obstacle; Pink notices and gives chase
+export const RACE_START = 960;
+export const RACE_DURATION = 65; // f960 - f1025 (~1.1s)
 
-// Event 2: Yellow & Green Cozy Squeeze-In (body compression + yield, no cursor)
-export const SQUEEZE_START = 1060;
+// Pink catches Blue -> Soft Body Bump -> Tangential ONE SWIRL
+export const SWIRL_START = 1020;
+export const SWIRL_DURATION = 45; // f1020 - f1065 (Strictly ONE SWIRL in entire video)
+
+// ============================================================================
+// PHASE 11: POST-RACE SOCIAL PLAY INTERACTIONS (CURSOR-FREE)
+// ============================================================================
+// Event 1: Yellow & Green Cozy Squeeze-In under URL
+export const SQUEEZE_START = 1080;
 export const SQUEEZE_DURATION = 65;
 
-// Event 3: Blue Threads Gap between Pink & Green (make-space shift, no cursor)
-export const GAP_THREAD_START = 1130;
+// Event 2: Blue Threads Gap between Green & Yellow (Make-Space Shift)
+export const GAP_THREAD_START = 1150;
 export const GAP_THREAD_DURATION = 70;
 
-// Event 4: Follow-and-Peel (Yellow leads, Pink follows then peels, no cursor)
-export const FOLLOW_PEEL_START = 1210;
-export const FOLLOW_PEEL_DURATION = 80;
+// Event 3: Follow-and-Peel (Yellow leads, Pink follows then peels)
+export const FOLLOW_PEEL_START = 1225;
+export const FOLLOW_PEEL_DURATION = 75;
 
 // ============================================================================
-// PHASE 11: STAGGERED ALLIES DEPARTURE
+// PHASE 12: OVERLAPPING, ORGANIC ALLIES DEPARTURE
 // ============================================================================
 export const DEPARTURE_START = 1330;
-export const PINK_DEPART_START = 1330;
-export const YELLOW_DEPART_START = 1355;
-export const BLUE_DEPART_START = 1385;
-export const GREEN_DEPART_START = 1415; // Green lingers for final look-back beat
+export const PINK_DEPART_START = 1330; // Pink peels offscreen top-right
+export const YELLOW_DEPART_START = 1355; // Yellow peels offscreen bottom-right (25f offset)
+export const BLUE_DEPART_START = 1380; // Blue accelerates offscreen top-left (25f offset)
+export const GREEN_DEPART_START = 1410; // Green lingers for final look-back and exits (30f offset)
 
 export const ALL_ALLIES_DEPARTED = 1475;
 
 // ============================================================================
-// PHASE 12: FINAL CAMERA PUSH & PRISTINE URL HOLD
+// PHASE 13: FINAL CAMERA PUSH & PRISTINE URL HOLD
 // ============================================================================
-export const FINAL_CAMERA_PUSH_START = 1360;
+export const FINAL_CAMERA_PUSH_START = 1370;
 export const FINAL_CAMERA_PUSH_DURATION = 100; // Pushes to 1.08x
-export const FINAL_HOLD_START = 1460;
-export const FINAL_HOLD_END = TOTAL_DURATION_FRAMES; // 1560 (100 frames hold)
+export const FINAL_HOLD_START = 1470;
+export const FINAL_HOLD_END = TOTAL_DURATION_FRAMES; // 1580 (110 frames / 1.83s pure hold)
 
 export const TIMING = {
   FPS,
@@ -244,6 +249,8 @@ export const TIMING = {
   YELLOW_YOUR_APPROACH_START,
   YELLOW_YOUR_PICKUP_START,
   YELLOW_YOUR_CARRY_DURATION,
+  WORDS_EXITED_FRAME,
+  POST_EXIT_HOLD_DURATION,
   BRAND_RECENTER_START,
   BRAND_RECENTER_DURATION,
   BRAND_RECENTER_END,
@@ -254,11 +261,10 @@ export const TIMING = {
   ALL_GATHERED_FRAME,
   PINK_BOOP_START,
   PINK_BOOP_DURATION,
-  RACE_START,
-  RACE_DURATION,
-  SWIRL_START,
-  SWIRL_DURATION,
-  POST_SWIRL_ROAM_START,
+  BLUE_SOLO_PEEK_START,
+  BLUE_SOLO_PEEK_DURATION,
+  GREEN_SOLO_LEAN_START,
+  GREEN_SOLO_LEAN_DURATION,
   LOGO_COLLAPSE_START,
   LOGO_COLLAPSE_DURATION,
   LOGO_COLLAPSE_END,
@@ -283,15 +289,17 @@ export const TIMING = {
   NEAR_MISS_DURATION,
   DOMAIN_PIECES_SETTLED,
   DOMAIN_PIECE_SETTLE_DURATION,
-  COMPLETION_WAVE_START,
-  COMPLETION_WAVE_DURATION,
+  COMPLETION_ORANGE_START,
+  COMPLETION_ORANGE_DURATION,
   COMPLETION_ORANGE_HOLD_START,
   COMPLETION_ORANGE_HOLD_DURATION,
   COMPLETION_BLACK_TRANSITION_START,
   COMPLETION_BLACK_TRANSITION_DURATION,
   COMPLETION_FULL_BLACK_FRAME,
-  PEEK_BEHIND_START,
-  PEEK_BEHIND_DURATION,
+  RACE_START,
+  RACE_DURATION,
+  SWIRL_START,
+  SWIRL_DURATION,
   SQUEEZE_START,
   SQUEEZE_DURATION,
   GAP_THREAD_START,
