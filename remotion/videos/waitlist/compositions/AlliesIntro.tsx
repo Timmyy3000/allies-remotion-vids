@@ -1,10 +1,12 @@
 import React from "react";
+import { Audio } from "@remotion/media";
 import {
   AbsoluteFill,
   Easing,
   interpolate,
   interpolateColors,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -12,6 +14,7 @@ import { COLORS } from "../constants/colors";
 import { TIMING } from "../constants/timing";
 import {
   ALLY_ACTORS,
+  CANVAS,
   DOMAIN_CARGO_TIP_PADDING,
   DOMAIN_DRAG_TARGETS,
   DOMAIN_LAYOUT,
@@ -40,6 +43,11 @@ const brandRecenterEase = Easing.bezier(0.22, 1, 0.36, 1);
 
 // Meet Your exit pull curve: [0.4, 0, 0.6, 1] (gentle start, accelerated pull into logo)
 const meetYourExitEase = Easing.bezier(0.4, 0, 0.6, 1);
+
+const WAITLIST_SOUNDTRACK = "audio/producesplatinum-vlog-hip-hop-483574.mp3";
+const SOUNDTRACK_TARGET_SECONDS = 0.85;
+const SOUNDTRACK_TRIM_BEFORE_SECONDS = 4.32 - SOUNDTRACK_TARGET_SECONDS;
+const SOUNDTRACK_FADE_DURATION_SECONDS = 2;
 
 export function AlliesIntro() {
   const frame = useCurrentFrame();
@@ -220,9 +228,29 @@ export function AlliesIntro() {
         fontFamily: TYPOGRAPHY.fontFamily,
       }}
     >
+      <Audio
+        src={staticFile(WAITLIST_SOUNDTRACK)}
+        trimBefore={SOUNDTRACK_TRIM_BEFORE_SECONDS * fps}
+        trimAfter={
+          CANVAS.durationInFrames + SOUNDTRACK_TRIM_BEFORE_SECONDS * fps
+        }
+        volume={(audioFrame) =>
+          interpolate(
+            audioFrame,
+            [
+              CANVAS.durationInFrames - SOUNDTRACK_FADE_DURATION_SECONDS * fps,
+              CANVAS.durationInFrames,
+            ],
+            [1, 0],
+            {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            },
+          )
+        }
+      />
       {/* Self-contained OpenRunde & SF Pro Rounded Fonts */}
       <style>{FONT_STYLE}</style>
-
       {/* 4K SCENE WORLD WITH SLIGHT PUSH ZOOM OUT */}
       <div
         className="scene-world"

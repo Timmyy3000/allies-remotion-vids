@@ -21,8 +21,12 @@
   "dependencies": {
     "@remotion/cli": "4.0.512",
     "@remotion/gif": "4.0.512",
+    "@remotion/media": "4.0.512",
     "@remotion/paths": "4.0.512",
     "gifenc": "^1.0.3",
     "remotion": "4.0.512"
+  },
+  "devDependencies": {
+    "prettier": "3.8.1"
   }
 }

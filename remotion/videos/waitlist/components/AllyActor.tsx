@@ -203,6 +203,7 @@ export function AllyActor({
                 state={activeState}
                 color={activeColor}
                 size={size}
+                animationPhaseFrames={config.avatarPhaseOffsetFrames}
               />
             )}
           </div>

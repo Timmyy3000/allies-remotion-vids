@@ -34,7 +34,11 @@ export function createRNG(seed: number) {
 /**
  * Deterministic 32-bit FNV-1a hash combining string and numbers
  */
-export function hashSeed(str: string, index: number = 0, extra: number = 0): number {
+export function hashSeed(
+  str: string,
+  index: number = 0,
+  extra: number = 0,
+): number {
   let hash = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) {
     hash ^= str.charCodeAt(i);
@@ -77,15 +81,15 @@ export const PERSONALITY_CONFIGS: Record<AllyIdentity, CurvePersonality> = {
     curvatureIntensity: 0.55,
     asymmetry: -0.1,
     sCurveChance: 0.05,
-    responsiveness: 0.20,
+    responsiveness: 0.2,
     organicDeviation: 2.0,
   },
   ghosty: {
     bendBias: "auto",
-    curvatureIntensity: 0.50,
+    curvatureIntensity: 0.5,
     asymmetry: 0.25,
     sCurveChance: 0.4,
-    responsiveness: 0.30,
+    responsiveness: 0.3,
     organicDeviation: 1.8,
   },
   boxy: {
@@ -110,6 +114,95 @@ export function createCubicBezierSvgPath(b: {
   return `M ${b.start.x} ${b.start.y} C ${b.c1.x} ${b.c1.y}, ${b.c2.x} ${b.c2.y}, ${b.end.x} ${b.end.y}`;
 }
 
+export interface EllipticalOrbitPathOptions {
+  center: Point2D;
+  radiusX: number;
+  radiusY: number;
+  startAngleDeg: number;
+  turns?: number;
+  segmentsPerTurn?: number;
+}
+
+export function getEllipticalOrbitPoint(
+  center: Point2D,
+  radiusX: number,
+  radiusY: number,
+  angleDeg: number,
+): Point2D {
+  const angle = (angleDeg * Math.PI) / 180;
+  return {
+    x: center.x + radiusX * Math.cos(angle),
+    y: center.y + radiusY * Math.sin(angle),
+  };
+}
+
+/**
+ * Builds a frame-scrubbable ellipse from cubic Bézier arc segments. A single
+ * cubic cannot make a convincing loop, so the path is split into smaller
+ * arcs while remaining compatible with the existing path follower.
+ */
+export function createEllipticalOrbitSvgPath({
+  center,
+  radiusX,
+  radiusY,
+  startAngleDeg,
+  turns = 1,
+  segmentsPerTurn = 8,
+}: EllipticalOrbitPathOptions): string {
+  const segmentCount = Math.max(
+    4,
+    Math.ceil(Math.abs(turns) * segmentsPerTurn),
+  );
+  const delta = (Math.PI * 2 * turns) / segmentCount;
+  const direction = Math.sign(delta) || 1;
+  const controlLength = (4 / 3) * Math.tan(Math.abs(delta) / 4);
+  const startAngle = (startAngleDeg * Math.PI) / 180;
+  const firstPoint = getEllipticalOrbitPoint(
+    center,
+    radiusX,
+    radiusY,
+    startAngleDeg,
+  );
+  let path = `M ${firstPoint.x} ${firstPoint.y}`;
+
+  for (let index = 0; index < segmentCount; index += 1) {
+    const angleStart = startAngle + delta * index;
+    const angleEnd = angleStart + delta;
+    const pointStart = getEllipticalOrbitPoint(
+      center,
+      radiusX,
+      radiusY,
+      (angleStart * 180) / Math.PI,
+    );
+    const pointEnd = getEllipticalOrbitPoint(
+      center,
+      radiusX,
+      radiusY,
+      (angleEnd * 180) / Math.PI,
+    );
+    const tangentStart = {
+      x: -radiusX * Math.sin(angleStart),
+      y: radiusY * Math.cos(angleStart),
+    };
+    const tangentEnd = {
+      x: -radiusX * Math.sin(angleEnd),
+      y: radiusY * Math.cos(angleEnd),
+    };
+    const controlOne = {
+      x: pointStart.x + tangentStart.x * controlLength * direction,
+      y: pointStart.y + tangentStart.y * controlLength * direction,
+    };
+    const controlTwo = {
+      x: pointEnd.x - tangentEnd.x * controlLength * direction,
+      y: pointEnd.y - tangentEnd.y * controlLength * direction,
+    };
+
+    path += ` C ${controlOne.x} ${controlOne.y}, ${controlTwo.x} ${controlTwo.y}, ${pointEnd.x} ${pointEnd.y}`;
+  }
+
+  return path;
+}
+
 /**
  * Generates a fresh, art-directed, broad cubic Bézier curve for any movement event.
  * Every intentional movement receives its own unique, deterministic path.
@@ -120,7 +213,7 @@ export function generateCurvedMotionPath(
   end: Point2D,
   moveIndex: number = 0,
   phaseTag: string = "move",
-  options?: Partial<CurvePersonality>
+  options?: Partial<CurvePersonality>,
 ): CubicBezierPathData {
   const personality = { ...PERSONALITY_CONFIGS[identity], ...options };
   const seed = hashSeed(identity + "_" + phaseTag, moveIndex);
@@ -155,18 +248,19 @@ export function generateCurvedMotionPath(
   // Distance-scaled curvature with minimum and maximum bend guarantees:
   const MIN_BEND_PX = 45;
   const MAX_BEND_PX = 480;
-  const rawBend = chordLength * (personality.curvatureIntensity + (rng() - 0.5) * 0.1);
+  const rawBend =
+    chordLength * (personality.curvatureIntensity + (rng() - 0.5) * 0.1);
   const clampedBend = Math.max(MIN_BEND_PX, Math.min(MAX_BEND_PX, rawBend));
   const curveHeight = clampedBend * bendDir;
 
   // Control points along chord
   const t1 = Math.max(
     0.2,
-    Math.min(0.45, 0.32 + personality.asymmetry * 0.1 + (rng() - 0.5) * 0.06)
+    Math.min(0.45, 0.32 + personality.asymmetry * 0.1 + (rng() - 0.5) * 0.06),
   );
   const t2 = Math.max(
     0.55,
-    Math.min(0.85, 0.68 + personality.asymmetry * 0.1 + (rng() - 0.5) * 0.06)
+    Math.min(0.85, 0.68 + personality.asymmetry * 0.1 + (rng() - 0.5) * 0.06),
   );
 
   const isSCurve = rng() < personality.sCurveChance && chordLength > 400;
@@ -191,7 +285,8 @@ export function generateCurvedMotionPath(
   // Derive initial and final path tangents
   const p0 = getPointAtLength(svgPath, 0)!;
   const p1 = getPointAtLength(svgPath, Math.min(totalLength, 1.0))!;
-  const initialTangentDeg = (Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180) / Math.PI;
+  const initialTangentDeg =
+    (Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180) / Math.PI;
 
   const pEnd = getPointAtLength(svgPath, totalLength)!;
   const pPreEnd = getPointAtLength(svgPath, Math.max(0, totalLength - 1.0))!;

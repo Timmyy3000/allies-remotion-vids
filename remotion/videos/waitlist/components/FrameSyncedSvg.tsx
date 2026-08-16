@@ -5,6 +5,7 @@ export interface FrameSyncedSvgProps {
   source: string;
   cycleSeconds: number;
   scopeId?: string;
+  frameOffset?: number;
   style?: React.CSSProperties;
 }
 
@@ -92,6 +93,7 @@ export function FrameSyncedSvg({
   source,
   cycleSeconds,
   scopeId = "standalone",
+  frameOffset = 0,
   style,
 }: FrameSyncedSvgProps) {
   const frame = useCurrentFrame();
@@ -100,13 +102,15 @@ export function FrameSyncedSvg({
     () => namespaceSvg(source, scopeId),
     [scopeId, source],
   );
+  const animationDelay = useMemo(() => {
+    const cycleTime = getCycleTime(frame + frameOffset, fps, cycleSeconds);
+    return `-${cycleTime.toFixed(6)}s`;
+  }, [cycleSeconds, fps, frame, frameOffset]);
   const svgMarkup = useMemo(() => {
-    const cycleTime = getCycleTime(frame, fps, cycleSeconds);
-    const animationDelay = `-${cycleTime.toFixed(6)}s`;
     const scope = sanitizeScopeId(scopeId);
     const syncStyle = `<style data-remotion-frame-sync>
 [data-remotion-svg-scope="${scope}"], [data-remotion-svg-scope="${scope}"] * {
-  animation-delay: ${animationDelay} !important;
+  animation-delay: var(--remotion-frame-animation-delay) !important;
   animation-play-state: paused !important;
 }
 [data-remotion-svg-scope="${scope}"] {
@@ -118,7 +122,12 @@ export function FrameSyncedSvg({
 </style>`;
 
     return scopedSource.replace(/<\/svg>\s*$/i, `${syncStyle}</svg>`);
-  }, [cycleSeconds, fps, frame, scopeId, scopedSource]);
+  }, [scopeId, scopedSource]);
+
+  const frameSyncedStyle = {
+    ...style,
+    "--remotion-frame-animation-delay": animationDelay,
+  } as React.CSSProperties;
 
   return (
     <div
@@ -127,7 +136,7 @@ export function FrameSyncedSvg({
         width: "100%",
         height: "100%",
         display: "block",
-        ...style,
+        ...frameSyncedStyle,
       }}
       dangerouslySetInnerHTML={{ __html: svgMarkup }}
     />

@@ -7,13 +7,19 @@ import {
   generateCurvedMotionPath,
   PERSONALITY_CONFIGS,
   createCubicBezierSvgPath,
+  createEllipticalOrbitSvgPath,
+  getEllipticalOrbitPoint,
 } from "../motion/motionGenerator";
 import { MotionSegment } from "../motion/useBezierTravel";
 import {
   BRAND_GATHER_POSITIONS,
   DOMAIN_DRAG_TARGETS,
   DOMAIN_EDGE_POSITIONS,
-  DOMAIN_EXIT_POSITIONS,
+  DOMAIN_SWIRL_CENTER,
+  DOMAIN_SWIRL_POSITIONS,
+  DOMAIN_SWIRL_RADII,
+  DOMAIN_SWIRL_START_ANGLES,
+  DOMAIN_SWIRL_TURNS,
   WRITING_STAGE_POSITIONS,
 } from "./layout";
 import { TIMING } from "./timing";
@@ -24,6 +30,8 @@ export {
   type MotionSegment,
   generateCurvedMotionPath,
   createCubicBezierSvgPath,
+  createEllipticalOrbitSvgPath,
+  getEllipticalOrbitPoint,
   PERSONALITY_CONFIGS,
 };
 
@@ -48,6 +56,7 @@ export interface AllyMotionConfig {
   responsiveness: number; // Follower physical inertia response (alpha: 0.20 - 0.34)
   organicDeviation: number; // Subtle micro-course variation (pixels: 1.5 - 2.0)
   timingEase: (t: number) => number;
+  avatarPhaseOffsetFrames: number;
   idle: {
     yRange: readonly [number, number];
     xRange: readonly [number, number];
@@ -158,7 +167,8 @@ const yellowSpread = generateCurvedMotionPath(
 );
 
 // -----------------------------------------------------------------------------
-// 5. Domain assembly paths: stage -> directional edge -> dragged text slot -> roam
+// 5. Domain assembly paths: stage -> directional edge -> dragged text slot ->
+// retreat -> elliptical swirl -> dedicated screen-edge exit.
 // -----------------------------------------------------------------------------
 const blueDomainEdge = generateCurvedMotionPath(
   "rolly",
@@ -174,11 +184,31 @@ const blueDomainDrag = generateCurvedMotionPath(
   4,
   "domainDrag",
 );
-const blueDomainExit = generateCurvedMotionPath(
+const blueDomainRetreat = generateCurvedMotionPath(
   "rolly",
   DOMAIN_DRAG_TARGETS.blue.actor,
-  DOMAIN_EXIT_POSITIONS.blue,
+  DOMAIN_SWIRL_POSITIONS.blue,
   5,
+  "domainRetreat",
+);
+const blueDomainSwirl = createEllipticalOrbitSvgPath({
+  center: DOMAIN_SWIRL_CENTER,
+  radiusX: DOMAIN_SWIRL_RADII.x,
+  radiusY: DOMAIN_SWIRL_RADII.y,
+  startAngleDeg: DOMAIN_SWIRL_START_ANGLES.blue,
+  turns: DOMAIN_SWIRL_TURNS,
+});
+const blueDomainSwirlEnd = getEllipticalOrbitPoint(
+  DOMAIN_SWIRL_CENTER,
+  DOMAIN_SWIRL_RADII.x,
+  DOMAIN_SWIRL_RADII.y,
+  DOMAIN_SWIRL_START_ANGLES.blue + DOMAIN_SWIRL_TURNS * 360,
+);
+const blueDomainExit = generateCurvedMotionPath(
+  "rolly",
+  blueDomainSwirlEnd,
+  DOMAIN_EDGE_POSITIONS.blue,
+  6,
   "domainExit",
 );
 
@@ -196,11 +226,31 @@ const greenDomainDrag = generateCurvedMotionPath(
   4,
   "domainDrag",
 );
-const greenDomainExit = generateCurvedMotionPath(
+const greenDomainRetreat = generateCurvedMotionPath(
   "rocky",
   DOMAIN_DRAG_TARGETS.green.actor,
-  DOMAIN_EXIT_POSITIONS.green,
+  DOMAIN_SWIRL_POSITIONS.green,
   5,
+  "domainRetreat",
+);
+const greenDomainSwirl = createEllipticalOrbitSvgPath({
+  center: DOMAIN_SWIRL_CENTER,
+  radiusX: DOMAIN_SWIRL_RADII.x,
+  radiusY: DOMAIN_SWIRL_RADII.y,
+  startAngleDeg: DOMAIN_SWIRL_START_ANGLES.green,
+  turns: DOMAIN_SWIRL_TURNS,
+});
+const greenDomainSwirlEnd = getEllipticalOrbitPoint(
+  DOMAIN_SWIRL_CENTER,
+  DOMAIN_SWIRL_RADII.x,
+  DOMAIN_SWIRL_RADII.y,
+  DOMAIN_SWIRL_START_ANGLES.green + DOMAIN_SWIRL_TURNS * 360,
+);
+const greenDomainExit = generateCurvedMotionPath(
+  "rocky",
+  greenDomainSwirlEnd,
+  DOMAIN_EDGE_POSITIONS.green,
+  6,
   "domainExit",
 );
 
@@ -218,11 +268,31 @@ const pinkDomainDrag = generateCurvedMotionPath(
   4,
   "domainDrag",
 );
-const pinkDomainExit = generateCurvedMotionPath(
+const pinkDomainRetreat = generateCurvedMotionPath(
   "ghosty",
   DOMAIN_DRAG_TARGETS.pink.actor,
-  DOMAIN_EXIT_POSITIONS.pink,
+  DOMAIN_SWIRL_POSITIONS.pink,
   5,
+  "domainRetreat",
+);
+const pinkDomainSwirl = createEllipticalOrbitSvgPath({
+  center: DOMAIN_SWIRL_CENTER,
+  radiusX: DOMAIN_SWIRL_RADII.x,
+  radiusY: DOMAIN_SWIRL_RADII.y,
+  startAngleDeg: DOMAIN_SWIRL_START_ANGLES.pink,
+  turns: DOMAIN_SWIRL_TURNS,
+});
+const pinkDomainSwirlEnd = getEllipticalOrbitPoint(
+  DOMAIN_SWIRL_CENTER,
+  DOMAIN_SWIRL_RADII.x,
+  DOMAIN_SWIRL_RADII.y,
+  DOMAIN_SWIRL_START_ANGLES.pink + DOMAIN_SWIRL_TURNS * 360,
+);
+const pinkDomainExit = generateCurvedMotionPath(
+  "ghosty",
+  pinkDomainSwirlEnd,
+  DOMAIN_EDGE_POSITIONS.pink,
+  6,
   "domainExit",
 );
 
@@ -240,11 +310,31 @@ const yellowDomainDrag = generateCurvedMotionPath(
   4,
   "domainDrag",
 );
-const yellowDomainExit = generateCurvedMotionPath(
+const yellowDomainRetreat = generateCurvedMotionPath(
   "boxy",
   DOMAIN_DRAG_TARGETS.yellow.actor,
-  DOMAIN_EXIT_POSITIONS.yellow,
+  DOMAIN_SWIRL_POSITIONS.yellow,
   5,
+  "domainRetreat",
+);
+const yellowDomainSwirl = createEllipticalOrbitSvgPath({
+  center: DOMAIN_SWIRL_CENTER,
+  radiusX: DOMAIN_SWIRL_RADII.x,
+  radiusY: DOMAIN_SWIRL_RADII.y,
+  startAngleDeg: DOMAIN_SWIRL_START_ANGLES.yellow,
+  turns: DOMAIN_SWIRL_TURNS,
+});
+const yellowDomainSwirlEnd = getEllipticalOrbitPoint(
+  DOMAIN_SWIRL_CENTER,
+  DOMAIN_SWIRL_RADII.x,
+  DOMAIN_SWIRL_RADII.y,
+  DOMAIN_SWIRL_START_ANGLES.yellow + DOMAIN_SWIRL_TURNS * 360,
+);
+const yellowDomainExit = generateCurvedMotionPath(
+  "boxy",
+  yellowDomainSwirlEnd,
+  DOMAIN_EDGE_POSITIONS.yellow,
+  6,
   "domainExit",
 );
 
@@ -304,6 +394,22 @@ export const ALLY_PATHS: Record<
         cursorEndDirectionDeg: 0,
       },
       {
+        id: "domain-retreat",
+        path: blueDomainRetreat.svgPath,
+        startFrame: TIMING.BLUE_DOMAIN_RETREAT_START,
+        durationInFrames: TIMING.BLUE_DOMAIN_RETREAT_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-swirl",
+        path: blueDomainSwirl,
+        startFrame: TIMING.BLUE_DOMAIN_SWIRL_START,
+        durationInFrames: TIMING.BLUE_DOMAIN_SWIRL_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
         id: "domain-exit",
         path: blueDomainExit.svgPath,
         startFrame: TIMING.BLUE_DOMAIN_EXIT_START,
@@ -323,6 +429,7 @@ export const ALLY_PATHS: Record<
     responsiveness: PERSONALITY_CONFIGS.rolly.responsiveness, // 0.32: Crisp, alert
     organicDeviation: PERSONALITY_CONFIGS.rolly.organicDeviation, // 1.5px
     timingEase: motionEasing.travelIn,
+    avatarPhaseOffsetFrames: 0,
     idle: {
       yRange: [-18, 18] as const,
       xRange: [0, 7] as const,
@@ -383,6 +490,22 @@ export const ALLY_PATHS: Record<
         cursorEndDirectionDeg: -90,
       },
       {
+        id: "domain-retreat",
+        path: greenDomainRetreat.svgPath,
+        startFrame: TIMING.GREEN_DOMAIN_RETREAT_START,
+        durationInFrames: TIMING.GREEN_DOMAIN_RETREAT_DURATION,
+        timingEase: motionEasing.softTravelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-swirl",
+        path: greenDomainSwirl,
+        startFrame: TIMING.GREEN_DOMAIN_SWIRL_START,
+        durationInFrames: TIMING.GREEN_DOMAIN_SWIRL_DURATION,
+        timingEase: motionEasing.softTravelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
         id: "domain-exit",
         path: greenDomainExit.svgPath,
         startFrame: TIMING.GREEN_DOMAIN_EXIT_START,
@@ -402,6 +525,7 @@ export const ALLY_PATHS: Record<
     responsiveness: PERSONALITY_CONFIGS.rocky.responsiveness, // 0.20: Soft, calm, gentle
     organicDeviation: PERSONALITY_CONFIGS.rocky.organicDeviation, // 2.0px
     timingEase: motionEasing.softTravelIn,
+    avatarPhaseOffsetFrames: 58,
     idle: {
       yRange: [-15, 15] as const,
       xRange: [-7, 0] as const,
@@ -462,6 +586,22 @@ export const ALLY_PATHS: Record<
         cursorEndDirectionDeg: 90,
       },
       {
+        id: "domain-retreat",
+        path: pinkDomainRetreat.svgPath,
+        startFrame: TIMING.PINK_DOMAIN_RETREAT_START,
+        durationInFrames: TIMING.PINK_DOMAIN_RETREAT_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-swirl",
+        path: pinkDomainSwirl,
+        startFrame: TIMING.PINK_DOMAIN_SWIRL_START,
+        durationInFrames: TIMING.PINK_DOMAIN_SWIRL_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
         id: "domain-exit",
         path: pinkDomainExit.svgPath,
         startFrame: TIMING.PINK_DOMAIN_EXIT_START,
@@ -481,6 +621,7 @@ export const ALLY_PATHS: Record<
     responsiveness: PERSONALITY_CONFIGS.ghosty.responsiveness, // 0.30: Energetic, dynamic
     organicDeviation: PERSONALITY_CONFIGS.ghosty.organicDeviation, // 1.8px
     timingEase: motionEasing.travelIn,
+    avatarPhaseOffsetFrames: 121,
     idle: {
       yRange: [-14, 14] as const,
       xRange: [0, 9] as const,
@@ -541,6 +682,22 @@ export const ALLY_PATHS: Record<
         cursorEndDirectionDeg: 180,
       },
       {
+        id: "domain-retreat",
+        path: yellowDomainRetreat.svgPath,
+        startFrame: TIMING.YELLOW_DOMAIN_RETREAT_START,
+        durationInFrames: TIMING.YELLOW_DOMAIN_RETREAT_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
+        id: "domain-swirl",
+        path: yellowDomainSwirl,
+        startFrame: TIMING.YELLOW_DOMAIN_SWIRL_START,
+        durationInFrames: TIMING.YELLOW_DOMAIN_SWIRL_DURATION,
+        timingEase: motionEasing.travelIn,
+        cursorEndBehavior: "hold",
+      },
+      {
         id: "domain-exit",
         path: yellowDomainExit.svgPath,
         startFrame: TIMING.YELLOW_DOMAIN_EXIT_START,
@@ -560,6 +717,7 @@ export const ALLY_PATHS: Record<
     responsiveness: PERSONALITY_CONFIGS.boxy.responsiveness, // 0.24: Playful, smooth
     organicDeviation: PERSONALITY_CONFIGS.boxy.organicDeviation, // 1.6px
     timingEase: motionEasing.travelIn,
+    avatarPhaseOffsetFrames: 179,
     idle: {
       yRange: [-20, 20] as const,
       xRange: [-5, 5] as const,

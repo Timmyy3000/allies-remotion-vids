@@ -10,7 +10,7 @@ export const TYPOGRAPHY = {
     'OpenRunde, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   fontSize: 278.4,
   fontWeight: 700,
-  letterSpacing: -1.93,
+  letterSpacing: -7,
   lineHeight: 1,
 } as const;
 
@@ -23,18 +23,18 @@ export const HEADLINE_LAYOUT = {
   logoHeight: 332.53,
   logoShiftDistance: 389.76,
 
-  // Exact Measured Geometry Metrics (OpenRunde-Bold at 278.4px / -1.93px tracking)
-  meetWidth: 668.3125,
-  yourWidth: 588.78125,
-  alliesWidth: 648.671875,
-  exitGroupWidth: 1329.47375, // meetWidth + wordGap + yourWidth
-  brandGroupWidth: 1038.431875, // logoShiftDistance + alliesWidth
-  totalContainerWidth: 2440.285625, // exitGroupWidth + wordGap + brandGroupWidth
+  // Exact Measured Geometry Metrics (OpenRunde-Bold at 278.4px / -7px tracking)
+  meetWidth: 653.1025,
+  yourWidth: 573.57125,
+  alliesWidth: 623.321875,
+  exitGroupWidth: 1299.05375, // meetWidth + wordGap + yourWidth
+  brandGroupWidth: 1013.081875, // logoShiftDistance + alliesWidth
+  totalContainerWidth: 2384.515625, // exitGroupWidth + wordGap + brandGroupWidth
 
   // Mathematical Centering Shift:
   // Container is centered at 1920; Brand Group center is at 1920 + (exitGroupWidth + wordGap) / 2
-  // Shift = - (exitGroupWidth + wordGap) / 2 = -1401.85375 / 2 = -700.926875px
-  brandShiftDistance: -700.926875,
+  // Shift = - (exitGroupWidth + wordGap) / 2 = -1371.43375 / 2 = -685.716875px
+  brandShiftDistance: -685.716875,
 
   // Exit Pull Distance into Logo left aperture / center
   meetYourPullDistance: 290.0,
@@ -69,6 +69,7 @@ export const TEXT_STAGE_SAFE_RECT = {
 } as const;
 
 const DOMAIN_GAP = 16;
+const DOMAIN_SUFFIX_GAP = 0;
 const DOMAIN_YOUR_ALLIES_GAP = 56;
 const DOMAIN_PIECE_WIDTHS = {
   your: HEADLINE_LAYOUT.yourWidth,
@@ -84,7 +85,8 @@ const DOMAIN_TOTAL_WIDTH =
   DOMAIN_PIECE_WIDTHS.i +
   DOMAIN_PIECE_WIDTHS.o +
   DOMAIN_YOUR_ALLIES_GAP +
-  DOMAIN_GAP * 3;
+  DOMAIN_GAP +
+  DOMAIN_SUFFIX_GAP * 2;
 const DOMAIN_LEFT = 1920 - DOMAIN_TOTAL_WIDTH / 2;
 
 // The cursor's center sits on this orbit around a 153px ally orb. The extra
@@ -113,6 +115,7 @@ export const DOMAIN_LAYOUT = {
   centerY: 1080,
   rowHeight: HEADLINE_LAYOUT.rowHeight,
   gap: DOMAIN_GAP,
+  suffixGap: DOMAIN_SUFFIX_GAP,
   yourAlliesGap: DOMAIN_YOUR_ALLIES_GAP,
   pieces: {
     your: {
@@ -150,7 +153,7 @@ export const DOMAIN_LAYOUT = {
         DOMAIN_PIECE_WIDTHS.allies +
         DOMAIN_GAP +
         DOMAIN_PIECE_WIDTHS.dot +
-        DOMAIN_GAP +
+        DOMAIN_SUFFIX_GAP +
         DOMAIN_PIECE_WIDTHS.i / 2,
     },
     o: {
@@ -163,9 +166,9 @@ export const DOMAIN_LAYOUT = {
         DOMAIN_PIECE_WIDTHS.allies +
         DOMAIN_GAP +
         DOMAIN_PIECE_WIDTHS.dot +
-        DOMAIN_GAP +
+        DOMAIN_SUFFIX_GAP +
         DOMAIN_PIECE_WIDTHS.i +
-        DOMAIN_GAP +
+        DOMAIN_SUFFIX_GAP +
         DOMAIN_PIECE_WIDTHS.o / 2,
     },
   },
@@ -215,25 +218,40 @@ export const DOMAIN_DRAG_TARGETS = {
   },
 } as const;
 
-export const DOMAIN_EXIT_POSITIONS = {
-  // Keep the finished allies close to the lockup so the final hold reads as
-  // a living wordmark rather than an immediate exit to the corners.
-  blue: {
-    x: DOMAIN_LAYOUT.pieces.your.centerX - 300,
-    y: DOMAIN_LAYOUT.centerY - 300,
-  },
-  pink: {
-    x: DOMAIN_LAYOUT.pieces.dot.centerX + 260,
-    y: DOMAIN_LAYOUT.centerY - 300,
-  },
-  green: {
-    x: DOMAIN_LAYOUT.pieces.i.centerX + 260,
-    y: DOMAIN_LAYOUT.centerY + 300,
-  },
-  yellow: {
-    x: DOMAIN_LAYOUT.pieces.o.centerX + 300,
-    y: DOMAIN_LAYOUT.centerY + 300,
-  },
+export const DOMAIN_SWIRL_CENTER = {
+  x: DOMAIN_LAYOUT.centerX,
+  y: DOMAIN_LAYOUT.centerY,
+} as const;
+
+export const DOMAIN_SWIRL_RADII = {
+  x: 900,
+  y: 650,
+} as const;
+
+// A little more than one full loop keeps the motion feeling like a swirl
+// instead of returning to the exact point where each ally started.
+export const DOMAIN_SWIRL_TURNS = 1.08;
+
+export const DOMAIN_SWIRL_START_ANGLES = {
+  blue: 220,
+  pink: 310,
+  green: 120,
+  yellow: 35,
+} as const;
+
+function domainSwirlPoint(angleDegrees: number) {
+  const angle = (angleDegrees * Math.PI) / 180;
+  return {
+    x: DOMAIN_SWIRL_CENTER.x + DOMAIN_SWIRL_RADII.x * Math.cos(angle),
+    y: DOMAIN_SWIRL_CENTER.y + DOMAIN_SWIRL_RADII.y * Math.sin(angle),
+  };
+}
+
+export const DOMAIN_SWIRL_POSITIONS = {
+  blue: domainSwirlPoint(DOMAIN_SWIRL_START_ANGLES.blue),
+  pink: domainSwirlPoint(DOMAIN_SWIRL_START_ANGLES.pink),
+  green: domainSwirlPoint(DOMAIN_SWIRL_START_ANGLES.green),
+  yellow: domainSwirlPoint(DOMAIN_SWIRL_START_ANGLES.yellow),
 } as const;
 
 export const ALLY_ACTORS = {

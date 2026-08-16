@@ -7,9 +7,13 @@
       "dependencies": {
         "@remotion/cli": "4.0.512",
         "@remotion/gif": "4.0.512",
+        "@remotion/media": "4.0.512",
         "@remotion/paths": "4.0.512",
         "gifenc": "^1.0.3",
         "remotion": "4.0.512",
+      },
+      "devDependencies": {
+        "prettier": "3.8.1",
       },
     },
     "apps/mobile": {
@@ -592,6 +596,8 @@
     "@remotion/gif": ["@remotion/gif@4.0.512", "", { "dependencies": { "remotion": "4.0.512" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-8j9pEsgw24YzNwFkKV328ULGyzbs5sW7GQR7kyXK7ubM578wO2x1+r/fwZ70P4aHS8NEzxWftCTrut5shArXiQ=="],
 
     "@remotion/licensing": ["@remotion/licensing@4.0.512", "", {}, "sha512-TRDcdvgQXOxC12A/hu1VlTzt9CqIQr2RrhlL9kODgbqOEjefK1fS4EJY+PsmpxBcQqTI4+pw3KHbo9NkddPLfg=="],
+
+    "@remotion/media": ["@remotion/media@4.0.512", "", { "dependencies": { "mediabunny": "1.50.8", "remotion": "4.0.512", "zod": "4.4.3" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-/VmCY0D0KiXXqjQGOy2Mh/CtG9gPRpbWsIin/g/oBbosFNpWGYRSAB9gL+6wx4mPHeonSGMCyJMKyXVmm83FeQ=="],
 
     "@remotion/media-parser": ["@remotion/media-parser@4.0.512", "", {}, "sha512-wFK9kJ15o0LfetzRQHb52Uc33JgOZX/ROwSeH5mAwYlBoUY/ditaEwvHghgthHvn0640gicH9UEJIvoIkHvilQ=="],
 

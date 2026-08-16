@@ -92,6 +92,7 @@ export interface AllyAvatarProps {
   state?: AllyState;
   color?: string;
   size?: number;
+  animationPhaseFrames?: number;
   style?: React.CSSProperties;
 }
 
@@ -118,11 +119,12 @@ export function AllyAvatar({
   state = "idle",
   color,
   size = 153,
+  animationPhaseFrames = 0,
   style = {},
 }: AllyAvatarProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const motion = getAvatarMotion(frame, fps);
+  const motion = getAvatarMotion(frame + animationPhaseFrames, fps);
   const artworkLayout = ARTWORK_LAYOUT[shape];
 
   return (
@@ -156,6 +158,7 @@ export function AllyAvatar({
           source={getAllyVisualAsset(shape, state)}
           cycleSeconds={ANIMATION_CYCLE_SECONDS[state]}
           scopeId={`ally-${shape}-${state}`}
+          frameOffset={animationPhaseFrames}
           style={{
             width: "100%",
             height: "100%",

@@ -43,7 +43,7 @@ export interface UseBezierTravelOptions {
   orbSize?: number; // Ally orb diameter (default: 153px)
   pointerSize?: number; // Cursor pointer diameter (default: 110.5px)
   clearance?: number; // Visible edge-to-edge clearance (default: 35.0px)
-  cursorSteerResponsiveness?: number; // Steering catch-up rate (default: 0.22, ~8-10 frames window)
+  cursorSteerResponsiveness?: number; // Steering catch-up rate (default: 0.16, ~12 frames window)
   idle?: IdleConfig;
 }
 
@@ -475,7 +475,7 @@ function evaluateSingleSegmentMotion({
   orbSize = 153,
   pointerSize = 110.5,
   clearance = 35.0,
-  cursorSteerResponsiveness = 0.22,
+  cursorSteerResponsiveness = 0.16,
   idle,
   cursorEndBehavior = "suction",
   cursorEndDirectionDeg,
@@ -718,7 +718,7 @@ export function useBezierTravel(
     orbSize = 153,
     pointerSize = 110.5,
     clearance = 35.0,
-    cursorSteerResponsiveness = 0.22,
+    cursorSteerResponsiveness = 0.16,
     idle = {
       yRange: [-18, 18],
       xRange: [-12, 12],

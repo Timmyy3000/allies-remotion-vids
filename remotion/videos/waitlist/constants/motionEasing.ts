@@ -7,15 +7,16 @@ import { Easing } from "remotion";
 export const motionEasing = {
   /**
    * Primary Travel Curve:
-   * High energy initial departure, long smooth deceleration, zero-velocity settle.
+   * Soft acceleration and deceleration with zero-velocity endpoints. This
+   * avoids the sharp initial kick of the previous ease-out curve.
    */
-  travelIn: Easing.bezier(0.22, 1, 0.36, 1),
+  travelIn: Easing.bezier(0.42, 0, 0.58, 1),
 
   /**
    * Calmer Travel Curve:
-   * Slightly softer departure for gentler character personalities.
+   * A slightly more reserved version of the same smooth ease-in-out.
    */
-  softTravelIn: Easing.bezier(0.16, 1, 0.3, 1),
+  softTravelIn: Easing.bezier(0.48, 0.02, 0.52, 0.98),
 
   /**
    * Gentle Ease Out:
