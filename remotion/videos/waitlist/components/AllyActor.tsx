@@ -61,7 +61,7 @@ export function AllyActor({
 
   // Pre-anticipation guard: 100% absence from DOM before anticipation window begins
   const firstStartFrame = config.segments?.[0]?.startFrame ?? config.startFrame;
-  if (currentFrame < firstStartFrame - 8) {
+  if (currentFrame < firstStartFrame - 12) {
     return null;
   }
 
@@ -102,7 +102,8 @@ export function AllyActor({
   const floatX = rawFloatX * travel.idleWeight;
   const floatY = rawFloatY * travel.idleWeight;
   const floatRot = rawFloatRot * travel.idleWeight;
-  const cursorDistanceScale = 1 - travel.cursorSuctionProgress;
+  const cursorDistanceScale =
+    travel.cursorOrbitScale * (1 - travel.cursorSuctionProgress);
   const cursorX = travel.cursorX * cursorDistanceScale;
   const cursorY = travel.cursorY * cursorDistanceScale;
   const cargoAngleRad = (travel.directionDeg * Math.PI) / 180;

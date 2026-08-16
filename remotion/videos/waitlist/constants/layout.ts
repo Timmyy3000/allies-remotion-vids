@@ -175,7 +175,10 @@ export const DOMAIN_LAYOUT = {
 } as const;
 
 export const DOMAIN_EDGE_POSITIONS = {
-  blue: { x: -220, y: 1080 },
+  // Keep the carried "your" word fully off-canvas when the drag segment
+  // mounts it; otherwise its wide leading edge appears in the first drag
+  // frame instead of being visibly pulled in from the left.
+  blue: { x: -600, y: 1080 },
   pink: { x: 1920, y: -220 },
   green: { x: 1920, y: 2380 },
   yellow: { x: 4060, y: 1080 },

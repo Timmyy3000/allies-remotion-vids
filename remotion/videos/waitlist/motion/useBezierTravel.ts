@@ -37,14 +37,28 @@ export interface UseBezierTravelOptions {
   timingEase?: (t: number) => number;
   responsiveness?: number; // Follower physical inertia response (alpha in (0, 1), default 0.28)
   organicDeviation?: number; // Micro-deviation amplitude in px (default 1.5)
-  anticipateFrames?: number; // Fade-in anticipation window (default: 8 frames)
-  settleFadeLead?: number; // How many frames before duration end suction begins (default: 6 frames)
-  settleFadeDuration?: number; // Maximum duration of the suction settle (default: 10 frames)
+  anticipateFrames?: number; // Fade-in anticipation window (default: 12 frames)
+  settleDelayFrames?: number; // Stationary buffer after arrival before suction (default: 12 frames)
+  settleFadeDuration?: number; // Maximum duration of the suction settle (default: 24 frames)
   orbSize?: number; // Ally orb diameter (default: 153px)
   pointerSize?: number; // Cursor pointer diameter (default: 110.5px)
   clearance?: number; // Visible edge-to-edge clearance (default: 35.0px)
-  cursorSteerResponsiveness?: number; // Steering catch-up rate (default: 0.16, ~12 frames window)
+  cursorSteerResponsiveness?: number; // Steering catch-up rate (default: 0.10, ~22 frames window)
   idle?: IdleConfig;
+}
+
+const smoothstep01 = (value: number) => {
+  const clamped = Math.max(0, Math.min(1, value));
+  return clamped * clamped * (3 - 2 * clamped);
+};
+
+function segmentStartsWithVisibleCursor(
+  segments: MotionSegment[],
+  segmentIndex: number,
+): boolean {
+  return (
+    segmentIndex > 0 && segments[segmentIndex - 1].cursorEndBehavior === "hold"
+  );
 }
 
 export interface BezierTravelResult {
@@ -65,6 +79,7 @@ export interface BezierTravelResult {
   cursorAnchorRadius: number; // Ally radius + clearance (inner anchor distance)
   cursorOpacity: number; // 0 in IDLE, 0->1 in ANTICIPATING, 1 through SETTLING
   cursorScale: number; // Pop-in scale during ANTICIPATING, suction scale during SETTLING
+  cursorOrbitScale: number; // Radial pop-out/settle scale during ANTICIPATING
   cursorSuctionProgress: number; // 0 at orbit, 1 pulled into the ally center
   activeSegmentId?: string;
   motionState: AllyMotionState;
@@ -340,47 +355,49 @@ function getCompleteVisiblePosition(
  *
  * Phases:
  * 1. IDLE (pre-action): Cursor Opacity = 0.
- * 2. ANTICIPATING (6-10 frames before travel): Cursor pops in on the upcoming path tangent.
+ * 2. ANTICIPATING (12 frames before travel): Cursor eases onto the upcoming path tangent.
  * 3. TRAVELING: Cursor Opacity = 1, tracks visible velocity with smooth orbital steering.
- * 4. SETTLING (final frames of travel): Cursor stays opaque and gets sucked into the ally.
+ * 4. SETTLING (stationary after travel): Cursor stays opaque, then gets sucked into the ally.
  * 5. IDLE (resting hover): Cursor Opacity = 0.
  */
 function evaluateMotionState(
   frame: number,
   startFrame: number,
   durationInFrames: number,
-  anticipateFrames: number = 8,
-  settleFadeLead: number = 6,
-  settleFadeDuration: number = 10,
+  anticipateFrames: number = 12,
+  settleDelayFrames: number = 12,
+  settleFadeDuration: number = 24,
   cursorEndBehavior: MotionSegment["cursorEndBehavior"] = "suction",
+  cursorStartsVisible: boolean = false,
 ): {
   motionState: AllyMotionState;
   cursorOpacity: number;
   cursorScale: number;
+  cursorOrbitScale: number;
   cursorSuctionProgress: number;
 } {
   const anticipateStart = startFrame - anticipateFrames;
-  // Finish the suction exactly on the segment boundary. Multi-segment callers
-  // intentionally hide the cursor between segments, so an exit window that
-  // extends beyond the boundary would be truncated before it completes.
-  const suctionDuration = Math.max(
-    1,
-    Math.min(settleFadeLead, settleFadeDuration),
-  );
-  const settleStart = startFrame + durationInFrames - suctionDuration;
-  const settleEnd = startFrame + durationInFrames;
-
-  const smoothstep = (t: number) => {
-    const clamped = Math.max(0, Math.min(1, t));
-    return clamped * clamped * (3 - 2 * clamped);
-  };
+  // Keep the ally stationary for a short buffer after arrival, then run the
+  // full suction window while the cursor is still visible.
+  const suctionDuration = Math.max(1, settleFadeDuration);
+  const travelEnd = startFrame + durationInFrames;
+  const settleStart = travelEnd + Math.max(0, settleDelayFrames);
+  const settleEnd = settleStart + suctionDuration;
 
   const popScale = (t: number) => {
     if (t < 0.72) {
-      return 0.2 + (1.08 - 0.2) * smoothstep(t / 0.72);
+      return 0.2 + (1.12 - 0.2) * smoothstep01(t / 0.72);
     }
 
-    return 1.08 - 0.08 * smoothstep((t - 0.72) / 0.28);
+    return 1.12 - 0.12 * smoothstep01((t - 0.72) / 0.28);
+  };
+
+  const popOrbitScale = (t: number) => {
+    if (t < 0.7) {
+      return 0.72 + (1.12 - 0.72) * smoothstep01(t / 0.7);
+    }
+
+    return 1.12 - 0.12 * smoothstep01((t - 0.7) / 0.3);
   };
 
   // Pre-action IDLE
@@ -389,48 +406,68 @@ function evaluateMotionState(
       motionState: "idle",
       cursorOpacity: 0,
       cursorScale: 0,
+      cursorOrbitScale: 0,
       cursorSuctionProgress: 1,
     };
   }
 
   // ANTICIPATING: A small, overshooting pop-in with a short visibility ramp.
   if (frame < startFrame) {
+    if (cursorStartsVisible) {
+      return {
+        motionState: "anticipating",
+        cursorOpacity: 1,
+        cursorScale: 1,
+        cursorOrbitScale: 1,
+        cursorSuctionProgress: 0,
+      };
+    }
+
     const t = (frame - anticipateStart) / anticipateFrames;
-    const eased = smoothstep(t);
+    const eased = smoothstep01(t);
     return {
       motionState: "anticipating",
       cursorOpacity: Math.max(0, Math.min(1, eased)),
       cursorScale: popScale(Math.max(0, Math.min(1, t))),
+      cursorOrbitScale: popOrbitScale(Math.max(0, Math.min(1, t))),
       cursorSuctionProgress: 0,
     };
   }
 
-  // TRAVELING: Fully active
-  if (frame < settleStart) {
+  // TRAVELING: Fully active. The cursor remains fully visible until the ally
+  // reaches its destination; suction is reserved for the stationary phase.
+  if (frame < travelEnd) {
     return {
       motionState: "traveling",
       cursorOpacity: 1,
       cursorScale: 1,
+      cursorOrbitScale: 1,
+      cursorSuctionProgress: 0,
+    };
+  }
+
+  // SETTLING: A deliberate stationary hold for segments whose cursor remains
+  // visible, or before a suction animation starts.
+  if (cursorEndBehavior === "hold" || frame < settleStart) {
+    return {
+      motionState: "settling",
+      cursorOpacity: 1,
+      cursorScale: 1,
+      cursorOrbitScale: 1,
       cursorSuctionProgress: 0,
     };
   }
 
   // SETTLING: Hold opacity while the cursor contracts and travels into the orb.
   if (frame <= settleEnd) {
-    if (cursorEndBehavior === "hold") {
-      return {
-        motionState: "settling",
-        cursorOpacity: 1,
-        cursorScale: 1,
-        cursorSuctionProgress: 0,
-      };
-    }
-
-    const suctionProgress = smoothstep((frame - settleStart) / suctionDuration);
+    const suctionProgress = smoothstep01(
+      (frame - settleStart) / suctionDuration,
+    );
     return {
       motionState: "settling",
       cursorOpacity: 1,
       cursorScale: 1 - suctionProgress,
+      cursorOrbitScale: 1,
       cursorSuctionProgress: suctionProgress,
     };
   }
@@ -440,6 +477,7 @@ function evaluateMotionState(
     motionState: "idle",
     cursorOpacity: 0,
     cursorScale: 0,
+    cursorOrbitScale: 0,
     cursorSuctionProgress: 1,
   };
 }
@@ -469,34 +507,44 @@ function evaluateSingleSegmentMotion({
   timingEase = motionEasing.travelIn,
   responsiveness = 0.28,
   organicDeviation = 1.5,
-  anticipateFrames = 8,
-  settleFadeLead = 6,
-  settleFadeDuration = 10,
+  anticipateFrames = 12,
+  settleDelayFrames = 12,
+  settleFadeDuration = 24,
   orbSize = 153,
   pointerSize = 110.5,
   clearance = 35.0,
-  cursorSteerResponsiveness = 0.16,
+  cursorSteerResponsiveness = 0.1,
+  initialDirectionDeg,
   idle,
   cursorEndBehavior = "suction",
   cursorEndDirectionDeg,
+  cursorStartsVisible = false,
   segmentId,
 }: Required<Omit<UseBezierTravelOptions, "segments">> &
   Pick<MotionSegment, "cursorEndBehavior" | "cursorEndDirectionDeg"> & {
     segmentId?: string;
+    initialDirectionDeg?: number;
+    cursorStartsVisible?: boolean;
   }): BezierTravelResult {
   const totalLength = getLength(path);
 
   // 1. Motion State & Cursor Opacity
-  const { motionState, cursorOpacity, cursorScale, cursorSuctionProgress } =
-    evaluateMotionState(
-      frame,
-      startFrame,
-      durationInFrames,
-      anticipateFrames,
-      settleFadeLead,
-      settleFadeDuration,
-      cursorEndBehavior,
-    );
+  const {
+    motionState,
+    cursorOpacity,
+    cursorScale,
+    cursorOrbitScale,
+    cursorSuctionProgress,
+  } = evaluateMotionState(
+    frame,
+    startFrame,
+    durationInFrames,
+    anticipateFrames,
+    settleDelayFrames,
+    settleFadeDuration,
+    cursorEndBehavior,
+    cursorStartsVisible,
+  );
 
   // 2. Calculate final visible ally position at the current frame
   const currentPos = getCompleteVisiblePosition(
@@ -516,6 +564,7 @@ function evaluateSingleSegmentMotion({
   const p1 = getPointAtLength(path, Math.min(totalLength, 1.0))!;
   const initialPathAngle =
     (Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180) / Math.PI;
+  const initialDisplayedAngle = initialDirectionDeg ?? initialPathAngle;
 
   // 4. Derive ACTUAL visible ally velocity via central difference
   const dt = 0.25;
@@ -549,9 +598,16 @@ function evaluateSingleSegmentMotion({
   // 5. Continuous Direction Steering Engine with Wrapped Shortest Angular Route
   // Simulates from pre-anticipation to current frame to guarantee deterministic subpixel continuity
   const MIN_TRAVEL_SPEED = 1.0; // px/frame threshold for intentional heading updates
-  const simulationStart = Math.max(0, startFrame - anticipateFrames - 2);
+  // When a previous segment is still holding the cursor, begin the new
+  // segment's steering exactly at the anticipation boundary. Starting earlier
+  // would apply hidden extra steps and create a visible jump on the first
+  // frame of the new segment.
+  const simulationStart = Math.max(
+    0,
+    startFrame - anticipateFrames - (initialDirectionDeg == null ? 2 : 0),
+  );
 
-  let currentDisplayedAngle = initialPathAngle;
+  let currentDisplayedAngle = initialDisplayedAngle;
   let lastStableIntentionalAngle = initialPathAngle;
   let rawTargetAngle = initialPathAngle;
 
@@ -629,12 +685,8 @@ function evaluateSingleSegmentMotion({
   const cursorHeadingBlend =
     cursorEndDirectionDeg == null
       ? 0
-      : Math.max(
-          0,
-          Math.min(
-            1,
-            (frame - cursorHeadingBlendStart) / cursorHeadingBlendFrames,
-          ),
+      : smoothstep01(
+          (frame - cursorHeadingBlendStart) / cursorHeadingBlendFrames,
         );
   const directionDeg =
     cursorEndDirectionDeg == null
@@ -685,6 +737,7 @@ function evaluateSingleSegmentMotion({
     cursorAnchorRadius,
     cursorOpacity,
     cursorScale,
+    cursorOrbitScale,
     cursorSuctionProgress,
     activeSegmentId: segmentId,
     motionState,
@@ -693,6 +746,93 @@ function evaluateSingleSegmentMotion({
     isSettled,
     idleWeight: currentPos.idleWeight,
   };
+}
+
+interface SegmentDirectionEvaluationOptions {
+  identity: AllyIdentity;
+  timingEase: (t: number) => number;
+  responsiveness: number;
+  organicDeviation: number;
+  anticipateFrames: number;
+  settleDelayFrames: number;
+  settleFadeDuration: number;
+  orbSize: number;
+  pointerSize: number;
+  clearance: number;
+  cursorSteerResponsiveness: number;
+  idle: IdleConfig;
+}
+
+const segmentEndDirectionCache = new Map<string, number>();
+
+function getCachedSegmentEndDirection(
+  segment: MotionSegment,
+  initialDirectionDeg: number | undefined,
+  options: SegmentDirectionEvaluationOptions,
+): number {
+  const cacheKey = JSON.stringify({
+    path: segment.path,
+    startFrame: segment.startFrame,
+    durationInFrames: segment.durationInFrames,
+    cursorEndBehavior: segment.cursorEndBehavior,
+    cursorEndDirectionDeg: segment.cursorEndDirectionDeg,
+    initialDirectionDeg,
+    ...options,
+  });
+  const cached = segmentEndDirectionCache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const result = evaluateSingleSegmentMotion({
+    path: segment.path,
+    frame: segment.startFrame + segment.durationInFrames,
+    startFrame: segment.startFrame,
+    durationInFrames: segment.durationInFrames,
+    timingEase: segment.timingEase ?? options.timingEase,
+    identity: options.identity,
+    responsiveness: options.responsiveness,
+    organicDeviation: options.organicDeviation,
+    anticipateFrames: options.anticipateFrames,
+    settleDelayFrames: options.settleDelayFrames,
+    settleFadeDuration: options.settleFadeDuration,
+    orbSize: options.orbSize,
+    pointerSize: options.pointerSize,
+    clearance: options.clearance,
+    cursorSteerResponsiveness: options.cursorSteerResponsiveness,
+    idle: options.idle,
+    cursorEndBehavior: segment.cursorEndBehavior,
+    cursorEndDirectionDeg: segment.cursorEndDirectionDeg,
+    initialDirectionDeg,
+    segmentId: segment.id,
+  });
+
+  segmentEndDirectionCache.set(cacheKey, result.directionDeg);
+  return result.directionDeg;
+}
+
+function resolveSegmentStartDirections(
+  segments: MotionSegment[],
+  lastRequiredIndex: number,
+  options: SegmentDirectionEvaluationOptions,
+): Array<number | undefined> {
+  const startDirections: Array<number | undefined> = [];
+  let previousEndDirection: number | undefined;
+
+  for (let i = 0; i <= lastRequiredIndex; i++) {
+    startDirections[i] = previousEndDirection;
+    if (i === lastRequiredIndex) {
+      break;
+    }
+
+    previousEndDirection = getCachedSegmentEndDirection(
+      segments[i],
+      previousEndDirection,
+      options,
+    );
+  }
+
+  return startDirections;
 }
 
 /**
@@ -712,13 +852,13 @@ export function useBezierTravel(
     timingEase = motionEasing.travelIn,
     responsiveness = 0.28,
     organicDeviation = 1.5,
-    anticipateFrames = 8,
-    settleFadeLead = 6,
-    settleFadeDuration = 10,
+    anticipateFrames = 12,
+    settleDelayFrames = 12,
+    settleFadeDuration = 24,
     orbSize = 153,
     pointerSize = 110.5,
     clearance = 35.0,
-    cursorSteerResponsiveness = 0.16,
+    cursorSteerResponsiveness = 0.1,
     idle = {
       yRange: [-18, 18],
       xRange: [-12, 12],
@@ -770,6 +910,7 @@ export function useBezierTravel(
       cursorAnchorRadius: orbSize / 2 + clearance,
       cursorOpacity: keepCursorVisible ? 1 : 0,
       cursorScale: keepCursorVisible ? 1 : 0,
+      cursorOrbitScale: keepCursorVisible ? 1 : 0,
       cursorSuctionProgress: keepCursorVisible ? 0 : 1,
       motionState: "idle",
       velocity: 0,
@@ -778,6 +919,32 @@ export function useBezierTravel(
       idleWeight: 0,
     };
   }
+
+  const upcomingSegmentIndex = activeSegments.findIndex(
+    (segment) => frame <= segment.startFrame + segment.durationInFrames,
+  );
+  const lastRequiredDirectionIndex =
+    upcomingSegmentIndex === -1
+      ? activeSegments.length - 1
+      : upcomingSegmentIndex;
+  const segmentStartDirections = resolveSegmentStartDirections(
+    activeSegments,
+    lastRequiredDirectionIndex,
+    {
+      identity,
+      timingEase,
+      responsiveness,
+      organicDeviation,
+      anticipateFrames,
+      settleDelayFrames,
+      settleFadeDuration,
+      orbSize,
+      pointerSize,
+      clearance,
+      cursorSteerResponsiveness,
+      idle,
+    },
+  );
 
   // 2. Post-all-segments check
   const lastSegEnd = lastSeg.startFrame + lastSeg.durationInFrames;
@@ -804,7 +971,7 @@ export function useBezierTravel(
       responsiveness,
       organicDeviation,
       anticipateFrames,
-      settleFadeLead,
+      settleDelayFrames,
       settleFadeDuration,
       orbSize,
       pointerSize,
@@ -813,6 +980,11 @@ export function useBezierTravel(
       idle,
       cursorEndBehavior: lastSeg.cursorEndBehavior,
       cursorEndDirectionDeg: lastSeg.cursorEndDirectionDeg,
+      initialDirectionDeg: segmentStartDirections[activeSegments.length - 1],
+      cursorStartsVisible: segmentStartsWithVisibleCursor(
+        activeSegments,
+        activeSegments.length - 1,
+      ),
       segmentId: lastSeg.id,
     });
     const cursorOrbitRadius = calculateCursorOrbitRadius(
@@ -838,6 +1010,7 @@ export function useBezierTravel(
       cursorAnchorRadius: orbSize / 2 + clearance,
       cursorOpacity: 0,
       cursorScale: 0,
+      cursorOrbitScale: 0,
       cursorSuctionProgress: 1,
       motionState: "idle",
       velocity: 0,
@@ -856,10 +1029,9 @@ export function useBezierTravel(
         // Idle resting between previous segment arrival and current segment anticipation
         const prevSeg = activeSegments[i - 1];
         const prevLen = getLength(prevSeg.path);
-        const prevSegEnd = prevSeg.startFrame + prevSeg.durationInFrames;
-        const previousArrival = evaluateSingleSegmentMotion({
+        const previousState = evaluateSingleSegmentMotion({
           path: prevSeg.path,
-          frame: prevSegEnd,
+          frame,
           startFrame: prevSeg.startFrame,
           durationInFrames: prevSeg.durationInFrames,
           timingEase: prevSeg.timingEase ?? timingEase,
@@ -867,7 +1039,7 @@ export function useBezierTravel(
           responsiveness,
           organicDeviation,
           anticipateFrames,
-          settleFadeLead,
+          settleDelayFrames,
           settleFadeDuration,
           orbSize,
           pointerSize,
@@ -876,6 +1048,11 @@ export function useBezierTravel(
           idle,
           cursorEndBehavior: prevSeg.cursorEndBehavior,
           cursorEndDirectionDeg: prevSeg.cursorEndDirectionDeg,
+          initialDirectionDeg: segmentStartDirections[i - 1],
+          cursorStartsVisible: segmentStartsWithVisibleCursor(
+            activeSegments,
+            i - 1,
+          ),
         });
         const restingPosition = getCompleteVisiblePosition(
           prevSeg.path,
@@ -901,22 +1078,23 @@ export function useBezierTravel(
           progress: restingPosition.progress,
           distance: prevLen,
           totalLength: prevLen,
-          directionDeg: previousArrival.directionDeg,
-          targetDirectionDeg: previousArrival.targetDirectionDeg,
-          cursorX: previousArrival.cursorX,
-          cursorY: previousArrival.cursorY,
-          rawTargetCursorX: previousArrival.rawTargetCursorX,
-          rawTargetCursorY: previousArrival.rawTargetCursorY,
+          directionDeg: previousState.directionDeg,
+          targetDirectionDeg: previousState.targetDirectionDeg,
+          cursorX: previousState.cursorX,
+          cursorY: previousState.cursorY,
+          rawTargetCursorX: previousState.rawTargetCursorX,
+          rawTargetCursorY: previousState.rawTargetCursorY,
           cursorOrbitRadius,
           cursorAnchorRadius: orbSize / 2 + clearance,
-          cursorOpacity: prevSeg.cursorEndBehavior === "hold" ? 1 : 0,
-          cursorScale: prevSeg.cursorEndBehavior === "hold" ? 1 : 0,
-          cursorSuctionProgress: prevSeg.cursorEndBehavior === "hold" ? 0 : 1,
+          cursorOpacity: previousState.cursorOpacity,
+          cursorScale: previousState.cursorScale,
+          cursorOrbitScale: previousState.cursorOrbitScale,
+          cursorSuctionProgress: previousState.cursorSuctionProgress,
           activeSegmentId: undefined,
-          motionState: "idle",
+          motionState: previousState.motionState,
           velocity: 0,
-          isTraveling: false,
-          isSettled: true,
+          isTraveling: previousState.isTraveling,
+          isSettled: previousState.isSettled,
           idleWeight: restingPosition.idleWeight,
         };
       }
@@ -932,7 +1110,7 @@ export function useBezierTravel(
         responsiveness,
         organicDeviation,
         anticipateFrames,
-        settleFadeLead,
+        settleDelayFrames,
         settleFadeDuration,
         orbSize,
         pointerSize,
@@ -941,6 +1119,8 @@ export function useBezierTravel(
         idle,
         cursorEndBehavior: seg.cursorEndBehavior,
         cursorEndDirectionDeg: seg.cursorEndDirectionDeg,
+        initialDirectionDeg: segmentStartDirections[i],
+        cursorStartsVisible: segmentStartsWithVisibleCursor(activeSegments, i),
         segmentId: seg.id,
       });
     }
@@ -957,7 +1137,7 @@ export function useBezierTravel(
     responsiveness,
     organicDeviation,
     anticipateFrames,
-    settleFadeLead,
+    settleDelayFrames,
     settleFadeDuration,
     orbSize,
     pointerSize,
@@ -966,6 +1146,11 @@ export function useBezierTravel(
     idle,
     cursorEndBehavior: lastSeg.cursorEndBehavior,
     cursorEndDirectionDeg: lastSeg.cursorEndDirectionDeg,
+    initialDirectionDeg: segmentStartDirections[activeSegments.length - 1],
+    cursorStartsVisible: segmentStartsWithVisibleCursor(
+      activeSegments,
+      activeSegments.length - 1,
+    ),
     segmentId: lastSeg.id,
   });
 }
