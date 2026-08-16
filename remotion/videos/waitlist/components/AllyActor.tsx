@@ -125,6 +125,23 @@ export function AllyActor({
   const cargoX = cursorX + Math.cos(cargoAngleRad) * cargoLeadDistance;
   const cargoY = cursorY + Math.sin(cargoAngleRad) * cargoLeadDistance;
 
+  // 6. Handle optional playful cursor override (such as Pink's character-driven sweep)
+  const isCursorOverridden = playful.cursorOverride?.active;
+  const activeCursorOpacity = isCursorOverridden ? 1 : travel.cursorOpacity;
+  const activeCursorScale = isCursorOverridden ? 1 : travel.cursorScale;
+  const activePointerRotation = isCursorOverridden
+    ? playful.cursorOverride!.angleDeg
+    : travel.directionDeg;
+
+  // Calculate overridden cursor position on the orbital track if overridden
+  let activeCursorX = travel.cursorX;
+  let activeCursorY = travel.cursorY;
+  if (isCursorOverridden) {
+    const rad = (activePointerRotation * Math.PI) / 180;
+    activeCursorX = Math.cos(rad) * travel.cursorOrbitRadius;
+    activeCursorY = Math.sin(rad) * travel.cursorOrbitRadius;
+  }
+
   return (
     // Layer 1: Hardware-Accelerated Travel Transform (Subpixel Precision)
     <div
@@ -161,31 +178,31 @@ export function AllyActor({
           }}
         >
           {/* Layer 4: Dynamic Direction-of-Travel Cursor Accessory (pop-in + inward suction) */}
-          {travel.cursorOpacity > 0 && (
+          {activeCursorOpacity > 0 && (
             <div
               style={{
                 position: "absolute",
                 left: "50%",
                 top: "50%",
-                transform: `translate3d(${cursorX.toFixed(
+                transform: `translate3d(${activeCursorX.toFixed(
                   3,
-                )}px, ${cursorY.toFixed(3)}px, 0px) translate(-50%, -50%)`,
+                )}px, ${activeCursorY.toFixed(3)}px, 0px) translate(-50%, -50%)`,
                 zIndex: 2,
                 pointerEvents: "none",
-                opacity: travel.cursorOpacity,
+                opacity: activeCursorOpacity,
                 willChange: "transform, opacity",
               }}
             >
               <div
                 style={{
-                  transform: `scale(${travel.cursorScale.toFixed(4)})`,
+                  transform: `scale(${activeCursorScale.toFixed(4)})`,
                   transformOrigin: "center center",
                 }}
               >
                 <PointerAccessory
                   color={activeColor}
                   size={pointerSize}
-                  rotation={travel.directionDeg}
+                  rotation={activePointerRotation}
                 />
               </div>
             </div>

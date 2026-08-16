@@ -4,7 +4,6 @@ import {
   Easing,
   interpolate,
   interpolateColors,
-  spring,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -31,32 +30,21 @@ import { DomainLockup, DomainPieceText } from "../components/DomainLockup";
 import { MotionPathDebug } from "../components/MotionPathDebug";
 import { TimelineDebugOverlay } from "../components/TimelineDebugOverlay";
 import { FONT_STYLE } from "../styles/font";
-
-// Camera push zoom out curve (soft start, gentle deceleration into 1.0)
-const zoomEase = Easing.bezier(0.22, 1, 0.36, 1);
+import { getCameraState } from "../motion/cameraSystem";
+import { getTextBoopReaction } from "../motion/allyBehavior";
 
 // Brand Recenter curve: [0.22, 1, 0.36, 1] (confident initial movement, long smooth deceleration to 0)
 const brandRecenterEase = Easing.bezier(0.22, 1, 0.36, 1);
 
-// Meet Your exit pull curve: [0.4, 0, 0.6, 1] (gentle start, accelerated pull into logo)
+// Meet Your exit pull curve: [0.4, 0, 0.6, 1]
 const meetYourExitEase = Easing.bezier(0.4, 0, 0.6, 1);
 
 export function AlliesIntro() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // --- 1. SLIGHT PUSH ZOOM OUT RIGHT BEFORE ALLIES ENTER ---
-  // Starts in intimate 1.15x framing, breathes out to 1.0x master canvas
-  const cameraScale = interpolate(
-    frame,
-    [TIMING.ZOOM_OUT_START, TIMING.ZOOM_OUT_END],
-    [1.15, 1.0],
-    {
-      easing: zoomEase,
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    },
-  );
+  // --- 1. UNIFIED DETERMINISTIC CAMERA SYSTEM ---
+  const camera = getCameraState(frame);
 
   // --- 2. BRAND TRANSFORMATION CALCULATIONS ---
   const isTransformStarted = frame >= TIMING.BRAND_TRANSFORM_START;
@@ -92,11 +80,12 @@ export function AlliesIntro() {
     : COLORS.headlineText;
 
   // --- 3. LOGO SMOOTH JITTER-FREE ENTRANCE ---
+  // Pre-mounted fixed geometry: scales smoothly from 0.84 to 1.0 with high-damping ease
   const isLogoStarted = frame >= TIMING.LOGO_START;
   const logoProgress = isLogoStarted
     ? interpolate(
         frame,
-        [TIMING.LOGO_START, TIMING.LOGO_START + 28],
+        [TIMING.LOGO_START, TIMING.LOGO_START + 26],
         [0, 1],
         {
           easing: brandEntranceEase,
@@ -113,12 +102,24 @@ export function AlliesIntro() {
       })
     : 0;
 
-  const logoScale = interpolate(logoProgress, [0, 1], [0.72, 1.0]);
-  const logoY = interpolate(logoProgress, [0, 1], [24, 0]);
+  const logoScale = interpolate(logoProgress, [0, 1], [0.84, 1.0]);
+  const logoY = interpolate(logoProgress, [0, 1], [14, 0]);
 
-  // --- 4. BRAND CONDENSATION / "MEET YOUR" STAGGERED EXIT & RECENTER TRANSITION ---
+  // --- 4. BRAND CONDENSATION / "MEET YOUR" CHARACTER-DRIVEN SWEEP & RECENTER ---
 
-  // A. Staggered "Meet" and "your" individual exit calculations
+  // Pink sweeps across 'Meet your' starting at frame 320 to 376
+  const SWEEP_START = 320;
+  const SWEEP_DURATION = 56;
+  const isSweepActive = frame >= SWEEP_START;
+  const sweepP = Math.max(0, Math.min(1, (frame - SWEEP_START) / SWEEP_DURATION));
+  // Pink sweeps right-to-left: from X=3380 down to X=1200 across the headline
+  const pinkSweepX = interpolate(
+    0.5 - 0.5 * Math.cos(sweepP * Math.PI),
+    [0, 1],
+    [3380, 1100]
+  );
+
+  // Individual exit progress for Meet & your (fallback + baseline pull)
   const MEET_EXIT_START = TIMING.MEET_YOUR_EXIT_START;
   const YOUR_EXIT_START = TIMING.MEET_YOUR_EXIT_START + 6;
   const WORD_EXIT_DURATION = 48;
@@ -177,7 +178,7 @@ export function AlliesIntro() {
     },
   );
 
-  // B. Brand Group ("[LOGO] allies") Recenter Glide
+  // Brand Group ("[LOGO] allies") Recenter Glide
   const brandRecenterProgress = interpolate(
     frame,
     [TIMING.BRAND_RECENTER_START, TIMING.BRAND_RECENTER_END],
@@ -195,16 +196,7 @@ export function AlliesIntro() {
     [0, HEADLINE_LAYOUT.brandShiftDistance],
   );
 
-  // --- 5. BRAND LOCKUP CONTINUITY & LOGO INWARD COLLAPSE ---
-
-  // The orange "allies" word is the persistent anchor for the rest of the
-  // scene. Only the introductory logo collapses; the word stays crisp and
-  // visible while the domain pieces arrive around it.
-  const alliesExitProgress = 0;
-  const alliesPullX = 0;
-  const alliesOverallOpacity = 1;
-
-  // B. Official Logo Inward Collapse (Sharp Graphic Mark Shrinkage)
+  // --- 5. LOGO INWARD COLLAPSE ---
   const isLogoCollapseStarted = frame >= TIMING.LOGO_COLLAPSE_START;
   const logoCollapseProgress = isLogoCollapseStarted
     ? interpolate(
@@ -240,6 +232,9 @@ export function AlliesIntro() {
   const isLogoVisible = isLogoStarted && frame < TIMING.LOGO_COLLAPSE_END;
   const isBrandGroupVisible = frame < TIMING.LOGO_COLLAPSE_END;
 
+  // --- 6. PHYSICAL 'allies' TEXT REACTION (WHEN BOOPED BY PINK) ---
+  const textBoop = getTextBoopReaction(frame);
+
   return (
     <AbsoluteFill
       style={{
@@ -251,15 +246,18 @@ export function AlliesIntro() {
       {/* Self-contained OpenRunde & SF Pro Rounded Fonts */}
       <style>{FONT_STYLE}</style>
 
-      {/* 4K SCENE WORLD WITH SLIGHT PUSH ZOOM OUT */}
+      {/* 4K SCENE WORLD WITH UNIFIED DETERMINISTIC CAMERA SYSTEM */}
       <div
         className="scene-world"
         style={{
           position: "relative",
           width: "100%",
           height: "100%",
-          transform: `scale(${cameraScale.toFixed(4)})`,
+          transform: `translate(${camera.x.toFixed(3)}px, ${camera.y.toFixed(
+            3,
+          )}px) scale(${camera.scale.toFixed(4)})`,
           transformOrigin: "center center",
+          willChange: "transform",
         }}
       >
         {/* CENTRAL LARGE HEADLINE LOCKUP (Fixed Mathematically Centered Master Container) */}
@@ -286,7 +284,7 @@ export function AlliesIntro() {
             }}
           >
             {/* ========================================================================= */}
-            {/* GROUP 1: EXIT GROUP ("Meet your") - Staggered Per-Word Pull & Reverse Focus */}
+            {/* GROUP 1: EXIT GROUP ("Meet your") - Character-Driven Sweep Optical Wake */}
             {/* ========================================================================= */}
             <div
               className="meet-your-exit-wrapper"
@@ -315,6 +313,8 @@ export function AlliesIntro() {
                   currentFrame={frame}
                   color={COLORS.headlineText}
                   exitProgress={meetExitProgress}
+                  sweepX={isSweepActive ? pinkSweepX : undefined}
+                  wordBaseX={1320}
                   wordIndex={0}
                 />
               </div>
@@ -348,6 +348,8 @@ export function AlliesIntro() {
                   currentFrame={frame}
                   color={COLORS.headlineText}
                   exitProgress={yourExitProgress}
+                  sweepX={isSweepActive ? pinkSweepX : undefined}
+                  wordBaseX={1980}
                   wordIndex={1}
                 />
               </div>
@@ -399,41 +401,38 @@ export function AlliesIntro() {
                     alignItems: "center",
                     justifyContent: "center",
                     pointerEvents: "none",
+                    opacity: finalLogoOpacity,
+                    transform: `translate3d(0px, ${logoY.toFixed(
+                      3,
+                    )}px, 0px) scale(${finalLogoScale.toFixed(4)})`,
+                    transformOrigin: "center center",
+                    willChange: "transform, opacity",
                   }}
                 >
-                  {isLogoVisible && (
-                    <div
-                      style={{
-                        opacity: finalLogoOpacity,
-                        transform: `translate(0px, ${logoY.toFixed(
-                          3,
-                        )}px) scale(${finalLogoScale.toFixed(4)})`,
-                        transformOrigin: "center center",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <AlliesLogo
-                        width={HEADLINE_LAYOUT.logoWidth}
-                        height={HEADLINE_LAYOUT.logoHeight}
-                      />
-                    </div>
-                  )}
+                  <AlliesLogo
+                    width={HEADLINE_LAYOUT.logoWidth}
+                    height={HEADLINE_LAYOUT.logoHeight}
+                  />
                 </div>
               </div>
 
-              {/* WORD 3: "allies" (Translates from -logoShiftDistance to 0 during entrance, pulls left on exit) */}
+              {/* WORD 3: "allies" WITH PHYSICAL TEXT REACTION WRAPPER */}
               <div
+                className="physical-allies-wrapper"
                 style={{
                   height: "100%",
                   display: "inline-flex",
                   alignItems: "center",
                   position: "relative",
-                  transform: `translateX(${(alliesX - alliesPullX).toFixed(3)}px)`,
-                  opacity: alliesOverallOpacity,
-                  transformOrigin: "left center",
-                  willChange: "transform, opacity",
+                  transform: `translate3d(${(alliesX + textBoop.x).toFixed(
+                    3,
+                  )}px, ${textBoop.y.toFixed(3)}px, 0px) rotate(${textBoop.rotDeg.toFixed(
+                    2,
+                  )}deg) scale(${textBoop.scaleX.toFixed(
+                    4,
+                  )}, ${textBoop.scaleY.toFixed(4)})`,
+                  transformOrigin: "center center",
+                  willChange: "transform",
                 }}
               >
                 <FocusWord
@@ -441,7 +440,7 @@ export function AlliesIntro() {
                   startFrame={TIMING.ALLIES_FOCUS_START}
                   currentFrame={frame}
                   color={alliesColor}
-                  exitProgress={alliesExitProgress}
+                  exitProgress={0}
                   wordIndex={2}
                 />
               </div>
