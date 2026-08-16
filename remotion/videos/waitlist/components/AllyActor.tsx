@@ -11,6 +11,12 @@ import {
 } from "../constants/allyStates";
 import { getAllyPlayfulOffset } from "../motion/allyBehavior";
 
+export interface CargoItem {
+  node: React.ReactNode;
+  width?: number;
+  tipPadding?: number;
+}
+
 export interface AllyActorProps {
   config: AllyMotionConfig;
   currentFrame: number;
@@ -24,12 +30,13 @@ export interface AllyActorProps {
   children?: React.ReactNode; // Optional child override; defaults to AllyAvatar
   cargo?: React.ReactNode;
   cargoSegmentId?: string;
+  cargoMap?: Record<string, CargoItem>;
   cargoWidth?: number;
   cargoTipPadding?: number;
 }
 
 /**
- * Reusable Ally Actor (State & Motion Engine V3)
+ * Reusable Ally Actor (State & Motion Engine V4)
  *
  * Geometric & State Rules:
  * - Rule 1: Permanent character identity (Rocky, Rolly, Ghosty, Boxy) NEVER changes.
@@ -53,6 +60,7 @@ export function AllyActor({
   children,
   cargo,
   cargoSegmentId = "domain-drag",
+  cargoMap,
   cargoWidth,
   cargoTipPadding = 18,
 }: AllyActorProps) {
@@ -117,15 +125,32 @@ export function AllyActor({
   const floatRot = rawFloatRot * travel.idleWeight + playful.rotDeg;
   const totalSquashX = travel.blobSquashX * playful.squashX;
   const totalSquashY = travel.blobSquashY * playful.squashY;
+
+  // 6. Active Cargo Resolution
+  let activeCargoNode: React.ReactNode = null;
+  let activeCargoWidth = cargoWidth;
+  let activeCargoTipPad = cargoTipPadding;
+
+  if (cargoMap && travel.activeSegmentId && cargoMap[travel.activeSegmentId]) {
+    const item = cargoMap[travel.activeSegmentId];
+    activeCargoNode = item.node;
+    if (item.width != null) activeCargoWidth = item.width;
+    if (item.tipPadding != null) activeCargoTipPad = item.tipPadding;
+  } else if (cargo && travel.activeSegmentId === cargoSegmentId) {
+    activeCargoNode = cargo;
+  }
+
   const cursorX = travel.cursorX;
   const cursorY = travel.cursorY;
   const cargoAngleRad = (travel.directionDeg * Math.PI) / 180;
   const cargoLeadDistance =
-    cargoWidth == null ? 0 : pointerSize / 2 + cargoTipPadding + cargoWidth / 2;
+    activeCargoWidth == null
+      ? 0
+      : pointerSize / 2 + activeCargoTipPad + activeCargoWidth / 2;
   const cargoX = cursorX + Math.cos(cargoAngleRad) * cargoLeadDistance;
   const cargoY = cursorY + Math.sin(cargoAngleRad) * cargoLeadDistance;
 
-  // 6. Handle optional playful cursor override (such as Pink's character-driven sweep)
+  // 7. Handle optional playful cursor override
   const isCursorOverridden = playful.cursorOverride?.active;
   const activeCursorOpacity = isCursorOverridden ? 1 : travel.cursorOpacity;
   const activeCursorScale = isCursorOverridden ? 1 : travel.cursorScale;
@@ -133,7 +158,6 @@ export function AllyActor({
     ? playful.cursorOverride!.angleDeg
     : travel.directionDeg;
 
-  // Calculate overridden cursor position on the orbital track if overridden
   let activeCursorX = travel.cursorX;
   let activeCursorY = travel.cursorY;
   if (isCursorOverridden) {
@@ -153,7 +177,7 @@ export function AllyActor({
           3,
         )}px, 0px) translate(-50%, -50%)`,
         pointerEvents: "none",
-        zIndex: 10,
+        zIndex: 10 + (playful.zIndexOffset ?? 0),
         willChange: "transform",
       }}
     >
@@ -208,7 +232,7 @@ export function AllyActor({
             </div>
           )}
 
-          {cargo && travel.activeSegmentId === cargoSegmentId && (
+          {activeCargoNode && (
             <div
               style={{
                 position: "absolute",
@@ -222,7 +246,7 @@ export function AllyActor({
                 whiteSpace: "nowrap",
               }}
             >
-              {cargo}
+              {activeCargoNode}
             </div>
           )}
 

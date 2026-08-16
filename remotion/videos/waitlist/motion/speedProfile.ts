@@ -152,3 +152,50 @@ export function getMotionDistanceProgress(options: SpeedProfileOptions): SpeedPr
     isDecelerating: rawT > (1 - decelFraction),
   };
 }
+
+// Personality-specific tuning parameters
+export const PERSONALITY_SPEED_CONFIGS = {
+  rolly: {
+    startingSpeed: 0.08,
+    cruiseSpeed: 1.05,
+    endingSpeed: 0.0,
+    accelFraction: 0.18,
+    decelFraction: 0.30,
+  },
+  ghosty: {
+    startingSpeed: 0.06,
+    cruiseSpeed: 1.08,
+    endingSpeed: 0.0,
+    accelFraction: 0.16,
+    decelFraction: 0.28,
+  },
+  rocky: {
+    startingSpeed: 0.04,
+    cruiseSpeed: 0.96,
+    endingSpeed: 0.0,
+    accelFraction: 0.26,
+    decelFraction: 0.38,
+  },
+  boxy: {
+    startingSpeed: 0.05,
+    cruiseSpeed: 1.0,
+    endingSpeed: 0.0,
+    accelFraction: 0.24,
+    decelFraction: 0.32,
+  },
+} as const;
+
+export function getPersonalitySpeedProgress(
+  identity: "rolly" | "ghosty" | "rocky" | "boxy",
+  frame: number,
+  startFrame: number,
+  durationInFrames: number,
+): SpeedProfileResult {
+  const config = PERSONALITY_SPEED_CONFIGS[identity];
+  return getMotionDistanceProgress({
+    frame,
+    startFrame,
+    durationInFrames,
+    ...config,
+  });
+}

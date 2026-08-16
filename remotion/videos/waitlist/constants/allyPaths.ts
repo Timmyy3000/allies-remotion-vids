@@ -11,10 +11,12 @@ import {
 import { MotionSegment } from "../motion/useBezierTravel";
 import {
   BRAND_GATHER_POSITIONS,
+  DEPARTURE_TARGETS,
   DOMAIN_DRAG_TARGETS,
   DOMAIN_EDGE_POSITIONS,
   DOMAIN_EXIT_POSITIONS,
-  WRITING_STAGE_POSITIONS,
+  LOGO_DELIVERY_LAYOUT,
+  WORD_CARRIAGE_LAYOUT,
 } from "./layout";
 import { TIMING } from "./timing";
 
@@ -27,6 +29,10 @@ export {
   PERSONALITY_CONFIGS,
 };
 
+export const SHOW_MOTION_PATHS = false;
+export const SHOW_TIMELINE_DEBUG = false;
+export const SHOW_CURSOR_GEOMETRY = false;
+
 export interface AllyMotionConfig {
   id: "blue" | "green" | "pink" | "yellow";
   identity: AllyIdentity;
@@ -37,14 +43,7 @@ export interface AllyMotionConfig {
   startFrame: number;
   durationFrames: number;
   segments: MotionSegment[];
-  allBeziers: {
-    entrance: CubicBezierPathData;
-    gather: CubicBezierPathData;
-    spread: CubicBezierPathData;
-    domainEdge: CubicBezierPathData;
-    domainDrag: CubicBezierPathData;
-    domainExit: CubicBezierPathData;
-  };
+  allBeziers: Record<string, CubicBezierPathData>;
   responsiveness: number; // Follower physical inertia response (alpha: 0.20 - 0.34)
   organicDeviation: number; // Subtle micro-course variation (pixels: 1.5 - 2.0)
   timingEase: (t: number) => number;
@@ -60,99 +59,20 @@ export interface AllyMotionConfig {
 // -----------------------------------------------------------------------------
 // 1. Blue (Rolly): Alert, crisp, decisive trajectories
 // -----------------------------------------------------------------------------
-const blueEntrance = generateCurvedMotionPath(
+const blueLogoEntrance = generateCurvedMotionPath(
   "rolly",
-  { x: 780, y: -300 },
-  { x: 1720, y: 620 },
+  LOGO_DELIVERY_LAYOUT.blueEntry,
+  LOGO_DELIVERY_LAYOUT.blueDockPosition,
   0,
-  "entrance",
+  "logoEntrance",
 );
 const blueGather = generateCurvedMotionPath(
   "rolly",
-  { x: 1720, y: 620 },
+  LOGO_DELIVERY_LAYOUT.blueDockPosition,
   BRAND_GATHER_POSITIONS.blue,
   1,
   "brandGather",
 );
-const blueSpread = generateCurvedMotionPath(
-  "rolly",
-  BRAND_GATHER_POSITIONS.blue,
-  WRITING_STAGE_POSITIONS.blue,
-  2,
-  "writingStageSpread",
-);
-
-// -----------------------------------------------------------------------------
-// 2. Green (Rocky): Soft, calm, relaxed, wide parabolic arcs
-// -----------------------------------------------------------------------------
-const greenEntrance = generateCurvedMotionPath(
-  "rocky",
-  { x: -320, y: 2280 },
-  { x: 600, y: 1580 },
-  0,
-  "entrance",
-);
-const greenGather = generateCurvedMotionPath(
-  "rocky",
-  { x: 600, y: 1580 },
-  BRAND_GATHER_POSITIONS.green,
-  1,
-  "brandGather",
-);
-const greenSpread = generateCurvedMotionPath(
-  "rocky",
-  BRAND_GATHER_POSITIONS.green,
-  WRITING_STAGE_POSITIONS.green,
-  2,
-  "writingStageSpread",
-);
-
-// -----------------------------------------------------------------------------
-// 3. Pink (Ghosty): Energetic, dynamic, sweeping swoops (settles poised to write)
-// -----------------------------------------------------------------------------
-const pinkEntrance = generateCurvedMotionPath(
-  "ghosty",
-  { x: 4180, y: 560 },
-  { x: 3380, y: 940 },
-  0,
-  "entrance",
-);
-const pinkGather = generateCurvedMotionPath(
-  "ghosty",
-  { x: 3380, y: 940 },
-  BRAND_GATHER_POSITIONS.pink,
-  1,
-  "brandGather",
-);
-const pinkSpread = generateCurvedMotionPath(
-  "ghosty",
-  BRAND_GATHER_POSITIONS.pink,
-  WRITING_STAGE_POSITIONS.pink,
-  2,
-  "writingStageSpread",
-);
-
-// -----------------------------------------------------------------------------
-// 4. Yellow (Boxy): Playful, leisurely, looping arcs
-// -----------------------------------------------------------------------------
-const yellowEntrance = generateCurvedMotionPath(
-  "boxy",
-  { x: 3120, y: 2480 },
-  { x: 2520, y: 1680 },
-  0,
-  "entrance",
-);
-const yellowGather = generateCurvedMotionPath(
-  "boxy",
-  { x: 2520, y: 1680 },
-  BRAND_GATHER_POSITIONS.yellow,
-  1,
-  "brandGather",
-);
-
-// -----------------------------------------------------------------------------
-// 5. Domain assembly paths: gather -> directional edge -> dragged text slot -> roam
-// -----------------------------------------------------------------------------
 const blueDomainEdge = generateCurvedMotionPath(
   "rolly",
   BRAND_GATHER_POSITIONS.blue,
@@ -174,29 +94,84 @@ const blueDomainExit = generateCurvedMotionPath(
   4,
   "domainExit",
 );
+const blueDeparture = generateCurvedMotionPath(
+  "rolly",
+  DOMAIN_EXIT_POSITIONS.blue,
+  DEPARTURE_TARGETS.blue,
+  5,
+  "departure",
+);
 
+// -----------------------------------------------------------------------------
+// 2. Green (Rocky): Soft, calm, relaxed, wide parabolic arcs
+// -----------------------------------------------------------------------------
+const greenEntrance = generateCurvedMotionPath(
+  "rocky",
+  { x: -320, y: 2200 },
+  { x: 620, y: 1540 },
+  0,
+  "entrance",
+);
+const greenMeetCarry = generateCurvedMotionPath(
+  "rocky",
+  { x: 620, y: 1540 },
+  WORD_CARRIAGE_LAYOUT.greenMeetExit,
+  1,
+  "meetCarry",
+);
+const greenReturn = generateCurvedMotionPath(
+  "rocky",
+  WORD_CARRIAGE_LAYOUT.greenMeetExit,
+  BRAND_GATHER_POSITIONS.green,
+  2,
+  "greenReturn",
+);
 const greenDomainEdge = generateCurvedMotionPath(
   "rocky",
   BRAND_GATHER_POSITIONS.green,
   DOMAIN_EDGE_POSITIONS.green,
-  2,
+  3,
   "domainEdge",
 );
 const greenDomainDrag = generateCurvedMotionPath(
   "rocky",
   DOMAIN_EDGE_POSITIONS.green,
   DOMAIN_DRAG_TARGETS.green.actor,
-  3,
+  4,
   "domainDrag",
 );
 const greenDomainExit = generateCurvedMotionPath(
   "rocky",
   DOMAIN_DRAG_TARGETS.green.actor,
   DOMAIN_EXIT_POSITIONS.green,
-  4,
+  5,
   "domainExit",
 );
+const greenDeparture = generateCurvedMotionPath(
+  "rocky",
+  DOMAIN_EXIT_POSITIONS.green,
+  DEPARTURE_TARGETS.green,
+  6,
+  "departure",
+);
 
+// -----------------------------------------------------------------------------
+// 3. Pink (Ghosty): Energetic, dynamic, sweeping swoops
+// -----------------------------------------------------------------------------
+const pinkEntrance = generateCurvedMotionPath(
+  "ghosty",
+  { x: 4180, y: 600 },
+  { x: 3380, y: 940 },
+  0,
+  "entrance",
+);
+const pinkGather = generateCurvedMotionPath(
+  "ghosty",
+  { x: 3380, y: 940 },
+  BRAND_GATHER_POSITIONS.pink,
+  1,
+  "brandGather",
+);
 const pinkDomainEdge = generateCurvedMotionPath(
   "ghosty",
   BRAND_GATHER_POSITIONS.pink,
@@ -218,55 +193,90 @@ const pinkDomainExit = generateCurvedMotionPath(
   4,
   "domainExit",
 );
+const pinkDeparture = generateCurvedMotionPath(
+  "ghosty",
+  DOMAIN_EXIT_POSITIONS.pink,
+  DEPARTURE_TARGETS.pink,
+  5,
+  "departure",
+);
 
+// -----------------------------------------------------------------------------
+// 4. Yellow (Boxy): Playful, buoyant, looping arcs
+// -----------------------------------------------------------------------------
+const yellowEntrance = generateCurvedMotionPath(
+  "boxy",
+  { x: 3120, y: 2400 },
+  { x: 2520, y: 1540 },
+  0,
+  "entrance",
+);
+const yellowYourCarry = generateCurvedMotionPath(
+  "boxy",
+  { x: 2520, y: 1540 },
+  WORD_CARRIAGE_LAYOUT.yellowYourExit,
+  1,
+  "yourCarry",
+);
+const yellowReturn = generateCurvedMotionPath(
+  "boxy",
+  WORD_CARRIAGE_LAYOUT.yellowYourExit,
+  BRAND_GATHER_POSITIONS.yellow,
+  2,
+  "yellowReturn",
+);
 const yellowDomainEdge = generateCurvedMotionPath(
   "boxy",
   BRAND_GATHER_POSITIONS.yellow,
   DOMAIN_EDGE_POSITIONS.yellow,
-  2,
+  3,
   "domainEdge",
 );
 const yellowDomainDrag = generateCurvedMotionPath(
   "boxy",
   DOMAIN_EDGE_POSITIONS.yellow,
   DOMAIN_DRAG_TARGETS.yellow.actor,
-  3,
+  4,
   "domainDrag",
 );
 const yellowDomainExit = generateCurvedMotionPath(
   "boxy",
   DOMAIN_DRAG_TARGETS.yellow.actor,
   DOMAIN_EXIT_POSITIONS.yellow,
-  4,
+  5,
   "domainExit",
 );
+const yellowDeparture = generateCurvedMotionPath(
+  "boxy",
+  DOMAIN_EXIT_POSITIONS.yellow,
+  DEPARTURE_TARGETS.yellow,
+  6,
+  "departure",
+);
 
-export const ALLY_PATHS: Record<
-  "blue" | "green" | "pink" | "yellow",
-  AllyMotionConfig
-> = {
+export const ALLIES = {
   blue: {
-    id: "blue",
-    identity: "rolly",
+    id: "blue" as const,
+    identity: "rolly" as const,
     name: "Blue Ally (Rolly)",
     color: ALLY_COLORS.blue,
-    bezier: blueEntrance,
-    svgPath: blueEntrance.svgPath,
-    startFrame: TIMING.BLUE_TRAVEL_START,
-    durationFrames: TIMING.BLUE_TRAVEL_DURATION,
+    bezier: blueLogoEntrance,
+    svgPath: blueLogoEntrance.svgPath,
+    startFrame: TIMING.BLUE_LOGO_ENTRANCE_START,
+    durationFrames: TIMING.BLUE_LOGO_ENTRANCE_DURATION,
     segments: [
       {
-        id: "entrance",
-        path: blueEntrance.svgPath,
-        startFrame: TIMING.BLUE_TRAVEL_START,
-        durationInFrames: TIMING.BLUE_TRAVEL_DURATION,
+        id: "logo-entrance",
+        path: blueLogoEntrance.svgPath,
+        startFrame: TIMING.BLUE_LOGO_ENTRANCE_START,
+        durationInFrames: TIMING.BLUE_LOGO_ENTRANCE_DURATION,
         timingEase: motionEasing.travelIn,
       },
       {
         id: "gather",
         path: blueGather.svgPath,
-        startFrame: TIMING.BLUE_GATHER_START,
-        durationInFrames: TIMING.BLUE_GATHER_DURATION,
+        startFrame: 180,
+        durationInFrames: 80,
         timingEase: motionEasing.travelIn,
         cursorEndDirectionDeg: 40,
       },
@@ -288,20 +298,28 @@ export const ALLY_PATHS: Record<
       {
         id: "domain-exit",
         path: blueDomainExit.svgPath,
-        startFrame: TIMING.BLUE_DOMAIN_EXIT_START,
-        durationInFrames: TIMING.BLUE_DOMAIN_EXIT_DURATION,
+        startFrame: 845,
+        durationInFrames: 50,
+        timingEase: motionEasing.travelIn,
+      },
+      {
+        id: "departure",
+        path: blueDeparture.svgPath,
+        startFrame: TIMING.BLUE_DEPART_START,
+        durationInFrames: 60,
         timingEase: motionEasing.travelIn,
       },
     ],
     allBeziers: {
-      entrance: blueEntrance,
+      entrance: blueLogoEntrance,
       gather: blueGather,
       domainEdge: blueDomainEdge,
       domainDrag: blueDomainDrag,
       domainExit: blueDomainExit,
+      departure: blueDeparture,
     },
-    responsiveness: PERSONALITY_CONFIGS.rolly.responsiveness, // 0.32: Crisp, alert
-    organicDeviation: PERSONALITY_CONFIGS.rolly.organicDeviation, // 2.8px
+    responsiveness: PERSONALITY_CONFIGS.rolly.responsiveness,
+    organicDeviation: PERSONALITY_CONFIGS.rolly.organicDeviation,
     timingEase: motionEasing.travelIn,
     idle: {
       yRange: [-24, 24] as const,
@@ -311,30 +329,38 @@ export const ALLY_PATHS: Record<
       phase: 0,
     },
   },
+
   green: {
-    id: "green",
-    identity: "rocky",
+    id: "green" as const,
+    identity: "rocky" as const,
     name: "Green Ally (Rocky)",
     color: ALLY_COLORS.green,
     bezier: greenEntrance,
     svgPath: greenEntrance.svgPath,
-    startFrame: TIMING.GREEN_TRAVEL_START,
-    durationFrames: TIMING.GREEN_TRAVEL_DURATION,
+    startFrame: TIMING.GREEN_ENTRANCE_START,
+    durationFrames: TIMING.GREEN_ENTRANCE_DURATION,
     segments: [
       {
         id: "entrance",
         path: greenEntrance.svgPath,
-        startFrame: TIMING.GREEN_TRAVEL_START,
-        durationInFrames: TIMING.GREEN_TRAVEL_DURATION,
+        startFrame: TIMING.GREEN_ENTRANCE_START,
+        durationInFrames: TIMING.GREEN_ENTRANCE_DURATION,
         timingEase: motionEasing.softTravelIn,
       },
       {
-        id: "gather",
-        path: greenGather.svgPath,
-        startFrame: TIMING.GREEN_GATHER_START,
-        durationInFrames: TIMING.GREEN_GATHER_DURATION,
+        id: "meet-carry",
+        path: greenMeetCarry.svgPath,
+        startFrame: TIMING.GREEN_MEET_PICKUP_START,
+        durationInFrames: TIMING.GREEN_MEET_CARRY_DURATION,
         timingEase: motionEasing.softTravelIn,
-        cursorEndDirectionDeg: -17,
+        cursorEndDirectionDeg: -180,
+      },
+      {
+        id: "green-return",
+        path: greenReturn.svgPath,
+        startFrame: TIMING.GREEN_RETURN_START,
+        durationInFrames: TIMING.GREEN_RETURN_DURATION,
+        timingEase: motionEasing.softTravelIn,
       },
       {
         id: "domain-edge",
@@ -354,20 +380,29 @@ export const ALLY_PATHS: Record<
       {
         id: "domain-exit",
         path: greenDomainExit.svgPath,
-        startFrame: TIMING.GREEN_DOMAIN_EXIT_START,
-        durationInFrames: TIMING.GREEN_DOMAIN_EXIT_DURATION,
+        startFrame: 845,
+        durationInFrames: 50,
+        timingEase: motionEasing.softTravelIn,
+      },
+      {
+        id: "departure",
+        path: greenDeparture.svgPath,
+        startFrame: TIMING.GREEN_DEPART_START,
+        durationInFrames: 65,
         timingEase: motionEasing.softTravelIn,
       },
     ],
     allBeziers: {
       entrance: greenEntrance,
-      gather: greenGather,
+      meetCarry: greenMeetCarry,
+      greenReturn: greenReturn,
       domainEdge: greenDomainEdge,
       domainDrag: greenDomainDrag,
       domainExit: greenDomainExit,
+      departure: greenDeparture,
     },
-    responsiveness: PERSONALITY_CONFIGS.rocky.responsiveness, // 0.22: Soft, calm, gentle
-    organicDeviation: PERSONALITY_CONFIGS.rocky.organicDeviation, // 3.2px
+    responsiveness: PERSONALITY_CONFIGS.rocky.responsiveness,
+    organicDeviation: PERSONALITY_CONFIGS.rocky.organicDeviation,
     timingEase: motionEasing.softTravelIn,
     idle: {
       yRange: [-22, 22] as const,
@@ -377,28 +412,29 @@ export const ALLY_PATHS: Record<
       phase: 1.5,
     },
   },
+
   pink: {
-    id: "pink",
-    identity: "ghosty",
+    id: "pink" as const,
+    identity: "ghosty" as const,
     name: "Pink Ally (Ghosty)",
     color: ALLY_COLORS.pink,
     bezier: pinkEntrance,
     svgPath: pinkEntrance.svgPath,
-    startFrame: TIMING.PINK_TRAVEL_START,
-    durationFrames: TIMING.PINK_TRAVEL_DURATION,
+    startFrame: TIMING.PINK_ENTRANCE_START,
+    durationFrames: TIMING.PINK_ENTRANCE_DURATION,
     segments: [
       {
         id: "entrance",
         path: pinkEntrance.svgPath,
-        startFrame: TIMING.PINK_TRAVEL_START,
-        durationInFrames: TIMING.PINK_TRAVEL_DURATION,
+        startFrame: TIMING.PINK_ENTRANCE_START,
+        durationInFrames: TIMING.PINK_ENTRANCE_DURATION,
         timingEase: motionEasing.travelIn,
       },
       {
         id: "gather",
         path: pinkGather.svgPath,
-        startFrame: TIMING.PINK_GATHER_START,
-        durationInFrames: TIMING.PINK_GATHER_DURATION,
+        startFrame: 260,
+        durationInFrames: 75,
         timingEase: motionEasing.travelIn,
         cursorEndDirectionDeg: 174,
       },
@@ -420,8 +456,15 @@ export const ALLY_PATHS: Record<
       {
         id: "domain-exit",
         path: pinkDomainExit.svgPath,
-        startFrame: TIMING.PINK_DOMAIN_EXIT_START,
-        durationInFrames: TIMING.PINK_DOMAIN_EXIT_DURATION,
+        startFrame: 845,
+        durationInFrames: 50,
+        timingEase: motionEasing.travelIn,
+      },
+      {
+        id: "departure",
+        path: pinkDeparture.svgPath,
+        startFrame: TIMING.PINK_DEPART_START,
+        durationInFrames: 60,
         timingEase: motionEasing.travelIn,
       },
     ],
@@ -431,9 +474,10 @@ export const ALLY_PATHS: Record<
       domainEdge: pinkDomainEdge,
       domainDrag: pinkDomainDrag,
       domainExit: pinkDomainExit,
+      departure: pinkDeparture,
     },
-    responsiveness: PERSONALITY_CONFIGS.ghosty.responsiveness, // 0.30: Energetic, dynamic
-    organicDeviation: PERSONALITY_CONFIGS.ghosty.organicDeviation, // 3.0px
+    responsiveness: PERSONALITY_CONFIGS.ghosty.responsiveness,
+    organicDeviation: PERSONALITY_CONFIGS.ghosty.organicDeviation,
     timingEase: motionEasing.travelIn,
     idle: {
       yRange: [-26, 26] as const,
@@ -443,30 +487,38 @@ export const ALLY_PATHS: Record<
       phase: 3.1,
     },
   },
+
   yellow: {
-    id: "yellow",
-    identity: "boxy",
+    id: "yellow" as const,
+    identity: "boxy" as const,
     name: "Yellow Ally (Boxy)",
     color: ALLY_COLORS.yellow,
     bezier: yellowEntrance,
     svgPath: yellowEntrance.svgPath,
-    startFrame: TIMING.YELLOW_TRAVEL_START,
-    durationFrames: TIMING.YELLOW_TRAVEL_DURATION,
+    startFrame: TIMING.YELLOW_ENTRANCE_START,
+    durationFrames: TIMING.YELLOW_ENTRANCE_DURATION,
     segments: [
       {
         id: "entrance",
         path: yellowEntrance.svgPath,
-        startFrame: TIMING.YELLOW_TRAVEL_START,
-        durationInFrames: TIMING.YELLOW_TRAVEL_DURATION,
+        startFrame: TIMING.YELLOW_ENTRANCE_START,
+        durationInFrames: TIMING.YELLOW_ENTRANCE_DURATION,
         timingEase: motionEasing.travelIn,
       },
       {
-        id: "gather",
-        path: yellowGather.svgPath,
-        startFrame: TIMING.YELLOW_GATHER_START,
-        durationInFrames: TIMING.YELLOW_GATHER_DURATION,
+        id: "your-carry",
+        path: yellowYourCarry.svgPath,
+        startFrame: TIMING.YELLOW_YOUR_PICKUP_START,
+        durationInFrames: TIMING.YELLOW_YOUR_CARRY_DURATION,
         timingEase: motionEasing.travelIn,
-        cursorEndDirectionDeg: -81,
+        cursorEndDirectionDeg: -160,
+      },
+      {
+        id: "yellow-return",
+        path: yellowReturn.svgPath,
+        startFrame: TIMING.YELLOW_RETURN_START,
+        durationInFrames: TIMING.YELLOW_RETURN_DURATION,
+        timingEase: motionEasing.travelIn,
       },
       {
         id: "domain-edge",
@@ -486,50 +538,38 @@ export const ALLY_PATHS: Record<
       {
         id: "domain-exit",
         path: yellowDomainExit.svgPath,
-        startFrame: TIMING.YELLOW_DOMAIN_EXIT_START,
-        durationInFrames: TIMING.YELLOW_DOMAIN_EXIT_DURATION,
+        startFrame: 845,
+        durationInFrames: 50,
+        timingEase: motionEasing.travelIn,
+      },
+      {
+        id: "departure",
+        path: yellowDeparture.svgPath,
+        startFrame: TIMING.YELLOW_DEPART_START,
+        durationInFrames: 60,
         timingEase: motionEasing.travelIn,
       },
     ],
     allBeziers: {
       entrance: yellowEntrance,
-      gather: yellowGather,
+      yourCarry: yellowYourCarry,
+      yellowReturn: yellowReturn,
       domainEdge: yellowDomainEdge,
       domainDrag: yellowDomainDrag,
       domainExit: yellowDomainExit,
+      departure: yellowDeparture,
     },
-    responsiveness: PERSONALITY_CONFIGS.boxy.responsiveness, // 0.26: Playful, smooth
-    organicDeviation: PERSONALITY_CONFIGS.boxy.organicDeviation, // 2.8px
+    responsiveness: PERSONALITY_CONFIGS.boxy.responsiveness,
+    organicDeviation: PERSONALITY_CONFIGS.boxy.organicDeviation,
     timingEase: motionEasing.travelIn,
     idle: {
       yRange: [-20, 20] as const,
-      xRange: [-20, 20] as const,
+      xRange: [-18, 18] as const,
       rotRange: [-3, 3] as const,
       periodFrames: 195,
-      phase: 4.8,
+      phase: 4.5,
     },
   },
 };
 
-/**
- * Single Canonical Definition of All 4 Allies
- */
-export const ALLIES = ALLY_PATHS;
-
-/**
- * Set to true during development in Remotion Studio to render debug motion guides.
- * Default is false for production renders.
- */
-export const SHOW_MOTION_PATHS = false;
-
-/**
- * Set to true during development in Remotion Studio to render cursor orbit & clearance debug geometry.
- * Default is false for production renders.
- */
-export const SHOW_CURSOR_GEOMETRY = false;
-
-/**
- * Set to true during development to render a timeline phase & time overlay.
- * Default is false for production renders.
- */
-export const SHOW_TIMELINE_DEBUG = false;
+export const ALLY_PATHS = ALLIES;

@@ -1,5 +1,5 @@
 import React from "react";
-import { Easing, interpolate } from "remotion";
+import { Easing, interpolate, interpolateColors } from "remotion";
 
 import { DOMAIN_LAYOUT, HEADLINE_LAYOUT } from "../constants/layout";
 import { TIMING } from "../constants/timing";
@@ -55,6 +55,7 @@ export function DomainPieceText({
 }
 
 export function DomainLockup({ frame }: { frame: number }) {
+  // Persistent 'allies' word shifts from brand center into domain center slot
   const alliesPositionProgress = interpolate(
     frame,
     [TIMING.LOGO_COLLAPSE_END, TIMING.DOMAIN_EDGE_START + 12],
@@ -74,6 +75,71 @@ export function DomainLockup({ frame }: { frame: number }) {
     ],
   );
 
+  // =========================================================================
+  // PUZZLE COMPLETION ENERGY WAVE & COLOR TIMING
+  // Propagation right-to-left: o -> i -> . -> allies -> your
+  // =========================================================================
+  const isCompletionStarted = frame >= TIMING.COMPLETION_WAVE_START;
+  const isFullOrangeHold =
+    frame >= TIMING.COMPLETION_ORANGE_HOLD_START &&
+    frame < TIMING.COMPLETION_BLACK_TRANSITION_START;
+  const isTransitioningToBlack =
+    frame >= TIMING.COMPLETION_BLACK_TRANSITION_START;
+
+  // Staggered propagation delays (frames after COMPLETION_WAVE_START)
+  const pieceWaveOffsets: Record<DomainPiece, number> = {
+    o: 0,
+    i: 3,
+    dot: 6,
+    allies: 9,
+    your: 13,
+  };
+
+  // Helper to compute color for a specific piece
+  const getPieceColor = (piece: DomainPiece): string => {
+    // 1. Before completion starts: 'allies' is orange, others are black
+    if (!isCompletionStarted) {
+      return piece === "allies" ? COLORS.brandOrange : COLORS.headlineText;
+    }
+
+    // 2. Transitioning to all black (final hero state)
+    if (isTransitioningToBlack) {
+      return interpolateColors(
+        frame,
+        [
+          TIMING.COMPLETION_BLACK_TRANSITION_START,
+          TIMING.COMPLETION_FULL_BLACK_FRAME,
+        ],
+        [COLORS.brandOrange, COLORS.headlineText],
+      );
+    }
+
+    // 3. Full orange celebration hold
+    if (isFullOrangeHold) {
+      return COLORS.brandOrange;
+    }
+
+    // 4. Wave propagation phase (turning each piece to orange)
+    const waveStart = TIMING.COMPLETION_WAVE_START + pieceWaveOffsets[piece];
+    if (frame < waveStart) {
+      return piece === "allies" ? COLORS.brandOrange : COLORS.headlineText;
+    }
+
+    return interpolateColors(
+      frame,
+      [waveStart, waveStart + 5],
+      [COLORS.headlineText, COLORS.brandOrange],
+    );
+  };
+
+  // Micro-scale completion pulse
+  let completionScale = 1.0;
+  if (frame >= TIMING.COMPLETION_ORANGE_HOLD_START && frame < TIMING.COMPLETION_BLACK_TRANSITION_START + 15) {
+    const pulseProgress = (frame - TIMING.COMPLETION_ORANGE_HOLD_START) / 35;
+    const pulseEnv = Math.sin(Math.min(1, pulseProgress) * Math.PI);
+    completionScale = 1.0 + pulseEnv * 0.015;
+  }
+
   return (
     <div
       aria-hidden="true"
@@ -86,10 +152,11 @@ export function DomainLockup({ frame }: { frame: number }) {
         zIndex: 2,
         pointerEvents: "none",
         opacity: 1,
-        transform: "translate(-50%, -50%)",
+        transform: `translate(-50%, -50%) scale(${completionScale.toFixed(4)})`,
         transformOrigin: "center center",
       }}
     >
+      {/* 1. Persistent 'allies' piece */}
       <div
         style={{
           position: "absolute",
@@ -103,9 +170,10 @@ export function DomainLockup({ frame }: { frame: number }) {
           justifyContent: "center",
         }}
       >
-        <DomainPieceText piece="allies" color={COLORS.brandOrange} />
+        <DomainPieceText piece="allies" color={getPieceColor("allies")} />
       </div>
 
+      {/* 2. Dragged domain pieces (your, ., i, o) */}
       {DRAGGED_PIECES.map((piece) => {
         const settleStart = PIECE_END_FRAMES[piece] + 1;
         const settleEnd = settleStart + TIMING.DOMAIN_PIECE_SETTLE_DURATION;
@@ -137,7 +205,7 @@ export function DomainLockup({ frame }: { frame: number }) {
               justifyContent: "center",
             }}
           >
-            <DomainPieceText piece={piece} />
+            <DomainPieceText piece={piece} color={getPieceColor(piece)} />
           </div>
         );
       })}

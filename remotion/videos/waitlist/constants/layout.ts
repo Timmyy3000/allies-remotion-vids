@@ -2,7 +2,7 @@ export const CANVAS = {
   width: 3840,
   height: 2160,
   fps: 60,
-  durationInFrames: 1360,
+  durationInFrames: 1560,
 } as const;
 
 export const TYPOGRAPHY = {
@@ -45,9 +45,37 @@ export const HEADLINE_LAYOUT = {
 
 export const BRAND_GATHER_PADDING = 80.0;
 
+export const LOGO_DELIVERY_LAYOUT = {
+  blueEntry: { x: 960, y: -280 },
+  logoDockTarget: { x: 1920 - HEADLINE_LAYOUT.totalContainerWidth / 2 + HEADLINE_LAYOUT.exitGroupWidth + HEADLINE_LAYOUT.wordGap + HEADLINE_LAYOUT.logoShiftDistance / 2, y: 1080 },
+  blueDockPosition: { x: 1640, y: 880 },
+  bluePostDockRoam: { x: 1600, y: 640 },
+} as const;
+
+export const WORD_CARRIAGE_LAYOUT = {
+  greenMeetPickup: { x: 1320, y: 1080 },
+  greenMeetExit: { x: -480, y: 880 },
+  yellowYourPickup: { x: 1980, y: 1080 },
+  yellowYourExit: { x: -480, y: 1680 },
+  greenReturnTarget: { x: 1220, y: 1360 },
+  yellowReturnTarget: { x: 2060, y: 1440 },
+} as const;
+
+export const BRAND_PLAY_BOUNDS = {
+  minX: 1350,
+  maxX: 2480,
+  minY: 820,
+  maxY: 1340,
+} as const;
+
+export const DEPARTURE_TARGETS = {
+  pink: { x: 4250, y: 380 },
+  yellow: { x: 2650, y: 2480 },
+  blue: { x: -380, y: 320 },
+  green: { x: -420, y: 1180 },
+} as const;
+
 export const BRAND_GATHER_POSITIONS = {
-  // Keep blue above-left of the logo so its orb and cursor have clear air
-  // while the authored heading still points into the allies word.
   blue: { x: 1600, y: 640 },
   pink: { x: 2660, y: 1020 },
   green: { x: 1220, y: 1360 },
