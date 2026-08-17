@@ -49,7 +49,7 @@ export const BRAND_GATHER_PADDING = 80.0;
 
 export const BRAND_GATHER_POSITIONS = {
   blue: { x: 1680, y: 720 },
-  pink: { x: 2660, y: 1020 },
+  pink: { x: 2820, y: 700 },
   green: { x: 1220, y: 1360 },
   yellow: { x: 2060, y: 1440 },
 } as const;
@@ -57,7 +57,7 @@ export const BRAND_GATHER_POSITIONS = {
 export const POST_ACTION_ANCHORS = {
   blue: { x: 1692, y: 712 },
   pink: { x: 2580, y: 970 },
-  green: { x: 1238, y: 1346 },
+  green: { x: 1220, y: 1360 },
   yellow: { x: 2085, y: 1425 },
 } as const;
 

@@ -77,14 +77,9 @@ export function DomainLockup({ frame }: { frame: number }) {
 
   // =========================================================================
   // SIMULTANEOUS URL COMPLETION ORANGE TRANSITION
-  // All glyphs share urlCompletionColorProgress and transition together
+  // All glyphs share urlCompletionColorProgress and remain vibrant brand orange (#FF5800) permanently
   // =========================================================================
   const isCompletionStarted = frame >= TIMING.COMPLETION_ORANGE_START;
-  const isFullOrangeHold =
-    frame >= TIMING.COMPLETION_ORANGE_HOLD_START &&
-    frame < TIMING.COMPLETION_BLACK_TRANSITION_START;
-  const isTransitioningToBlack =
-    frame >= TIMING.COMPLETION_BLACK_TRANSITION_START;
 
   // Unified color progress across the entire 'yourallies.io' lockup (0 -> 1 simultaneously)
   const urlCompletionColorProgress = interpolate(
@@ -101,9 +96,17 @@ export function DomainLockup({ frame }: { frame: number }) {
     },
   );
 
-  // Helper to compute color for a specific piece
+  const isTransitioningToBlack =
+    frame >= TIMING.COMPLETION_BLACK_TRANSITION_START;
+
+  // Helper to compute color for a specific piece:
+  // - "allies" is ALWAYS brand orange (#FF5800)
+  // - "your", "dot", "i", "o" fade to orange upon completion, then fade smoothly back to black (#121212)
   const getPieceColor = (piece: DomainPiece): string => {
-    // 1. Final Hero State: Transitioning to solid all-black #121212
+    if (piece === "allies") {
+      return COLORS.brandOrange;
+    }
+
     if (isTransitioningToBlack) {
       return interpolateColors(
         frame,
@@ -115,16 +118,7 @@ export function DomainLockup({ frame }: { frame: number }) {
       );
     }
 
-    // 2. Full Orange Celebration Hold (#FF5800)
-    if (isFullOrangeHold) {
-      return COLORS.brandOrange;
-    }
-
-    // 3. Simultaneous Orange Fade Phase (all pieces fade to #FF5800 simultaneously)
     if (isCompletionStarted) {
-      if (piece === "allies") {
-        return COLORS.brandOrange;
-      }
       return interpolateColors(
         urlCompletionColorProgress,
         [0, 1],
@@ -132,8 +126,8 @@ export function DomainLockup({ frame }: { frame: number }) {
       );
     }
 
-    // 4. Pre-completion: 'allies' is orange, incoming dragged pieces are black
-    return piece === "allies" ? COLORS.brandOrange : COLORS.headlineText;
+    // Pre-completion: 'allies' is orange, incoming dragged pieces are black
+    return COLORS.headlineText;
   };
 
   // Micro-scale completion celebration pulse (smooth half-sine over orange celebration window)

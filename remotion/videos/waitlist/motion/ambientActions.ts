@@ -17,9 +17,10 @@
  *    - Zero cursors during ambient actions.
  */
 
+import { Easing, interpolate } from "remotion";
 import { AllyIdentity } from "../constants/allyStates";
 import { TIMING } from "../constants/timing";
-import { BRAND_GATHER_POSITIONS } from "../constants/layout";
+import { BRAND_GATHER_POSITIONS, HEADLINE_LAYOUT, POST_ACTION_ANCHORS } from "../constants/layout";
 import { evaluateContactResponse } from "./contactPhysics";
 
 export type AmbientActionType =
@@ -162,24 +163,20 @@ function evaluateBlueJiggle(frame: number): {
 }
 
 /**
- * Evaluates Green's (Rocky) organic 360-degree full body turn and icon gesture.
- * Range: f519 - f569 (50 frames)
+ * Evaluates Green's (Rocky) physical logo bump and smooth recoil return.
+ * Range: f519 - f574 (55 frames, impact at f532)
  *
- * Sequence:
- * 1. Anticipation tilt (f519..f526): tilts back -8deg
- * 2. Full 360 body rotation around own center (f526..f548):
- *    Upright (0) -> Sideways (90) -> Upside down (180) -> Sideways (270) -> Upright (360)
- *    Smooth quintic angular velocity curve with peak speed at upside-down midpoint.
- *    Stays in local area with subtle natural breath (not orbiting in a circle).
- * 3. Settle upright & notice icon (f548..f553): stabilizes facing forward.
- * 4. Gesture toward visible Allies logo mark (f553..f562):
- *    "Hey, look at this" - curves gently toward the icon (dx = +28px, dy = -20px),
- *    leans body toward the icon (+7.5deg tilt), lingers.
- * 5. Smooth curve away into new resting offset (f562..f569):
- *    Decelerates smoothly into natural resting anchor (+16px X, -12px Y, 0deg)
- *    which flows continuously into subsequent idle drift without any snap.
+ * Motion Lifecycle:
+ * 1. Approach / Surge (frames 0 to 13, f519..f532):
+ *    Green accelerates up and right from (0,0) toward the lower-left corner of the Allies logo.
+ *    Reaches peak displacement (x = +185px, y = -140px) at f532 with forward flight lean (+12deg).
+ * 2. Peak Impact at f532:
+ *    Green compresses elastically on contact (squashX = 1.08, squashY = 0.92) while triggering the logo jiggle reaction.
+ * 3. Elastic Recoil & Continuous Deceleration Return (frames 13 to 55, f532..f574):
+ *    Green recoils smoothly back from the logo, decelerating exponentially back to (0, 0, 0deg)
+ *    and seamlessly resumes undisturbed ambient floating with zero jump.
  */
-function evaluateGreenTurn(frame: number): {
+function evaluateGreenLogoBump(frame: number): {
   x: number;
   y: number;
   rotDeg: number;
@@ -187,115 +184,55 @@ function evaluateGreenTurn(frame: number): {
   squashY: number;
 } {
   const START = TIMING.GREEN_SOLO_TURN_START; // f519
-  const DURATION = TIMING.GREEN_SOLO_TURN_DURATION; // 50f
+  const DURATION = TIMING.GREEN_SOLO_TURN_DURATION; // 55f
 
   if (frame < START) {
     return { x: 0, y: 0, rotDeg: 0, squashX: 1, squashY: 1 };
   }
 
-  const p = Math.min(1, (frame - START) / DURATION);
+  const age = frame - START;
 
-  // Phase 1: Anticipation back-tilt (0 -> 0.09, ~6 frames)
-  if (p < 0.09) {
-    const tau = p / 0.09;
-    const anticEase = tau * tau;
-    return {
-      x: tau * 1.5,
-      y: -tau * 1.0,
-      rotDeg: -8.0 * anticEase,
-      squashX: 1.0 + 0.025 * anticEase,
-      squashY: 1.0 - 0.025 * anticEase,
-    };
+  // 1. Approach / Surge toward logo (frames 0 to 13)
+  if (age <= 13) {
+    const inP = age / 13;
+    const easeIn = inP * inP;
+    const x = 100.0 * easeIn;
+    const y = -65.0 * easeIn;
+    const rotDeg = 8.0 * easeIn;
+
+    let squashX = 1.0 - 0.03 * Math.sin(inP * Math.PI);
+    let squashY = 1.0 + 0.03 * Math.sin(inP * Math.PI);
+    if (age === 13) {
+      // Peak impact compression
+      squashX = 1.06;
+      squashY = 0.94;
+    }
+    return { x, y, rotDeg, squashX, squashY };
   }
 
-  // Phase 2: Full 360 Body Rotation around own center (0.09 -> 0.43, ~22 frames)
-  // Literal body rotation: Upright -> Sideways -> Upside down at 180° -> Sideways -> Upright
-  if (p < 0.43) {
-    const tau = (p - 0.09) / 0.34;
-    // Quintic smoothstep for smooth acceleration & deceleration
-    const eased = tau * tau * tau * (tau * (tau * 6 - 15) + 10);
-    // Continuous rotation from -8deg to 360deg
-    const rotDeg = -8.0 * (1 - eased) + 360.0 * eased;
+  // 2. Post-collision recoil & smooth continuous return to starting position
+  const outP = Math.min(1, (age - 13) / (DURATION - 13));
+  const decay = Math.exp(-outP * 3.4);
 
-    // Body deformation during spin (maximum near midpoint)
-    const spinSquash = Math.sin(tau * Math.PI) * 0.04;
-    const localFloatX = 1.5 + Math.sin(tau * Math.PI) * 3.5;
-    const localFloatY = -1.0 - Math.sin(tau * Math.PI) * 4.0;
+  // Recoils smoothly from x=100 to x=0, and y=-65 to y=0
+  const recoilX = 100.0 * decay;
+  const recoilY = -65.0 * decay;
+  const rotDeg = 8.0 * decay;
 
-    return {
-      x: localFloatX,
-      y: localFloatY,
-      rotDeg,
-      squashX: 1.0 - spinSquash,
-      squashY: 1.0 + spinSquash,
-    };
-  }
-
-  // Phase 3: Settle Upright & Notice Logo (0.43 -> 0.51, ~5 frames)
-  if (p < 0.51) {
-    const tau = (p - 0.43) / 0.08;
-    const settleEase = tau * tau * (3 - 2 * tau);
-    return {
-      x: 1.5 + (1 - settleEase) * 3.5,
-      y: -1.0 - (1 - settleEase) * 4.0,
-      rotDeg: 360.0,
-      squashX: 1.0,
-      squashY: 1.0,
-    };
-  }
-
-  // Phase 4: First Nudge / Lean Gesture toward Allies Logo (0.51 -> 0.69, ~12 frames)
-  // "Hey, look at this" - moves +85px X, -60px Y toward logo, leans +10deg, eases back slightly
-  if (p < 0.69) {
-    const tau = (p - 0.51) / 0.18;
-    const nudgeEnv = Math.sin(tau * Math.PI);
-    const returnEnv = tau * tau;
-    const x = 1.5 + 85.0 * nudgeEnv + 35.0 * returnEnv;
-    const y = -1.0 - 60.0 * nudgeEnv - 25.0 * returnEnv;
-    const rot = 360.0 + 10.0 * nudgeEnv + 4.0 * returnEnv;
-    const gestureSquash = nudgeEnv * 0.04;
-
-    return {
-      x,
-      y,
-      rotDeg: rot,
-      squashX: 1.0 - gestureSquash,
-      squashY: 1.0 + gestureSquash,
-    };
-  }
-
-  // Phase 5: Second Nudge toward Logo (0.69 -> 0.89, ~13 frames)
-  // Noticeably closer to logo: moves +115px X, -80px Y, leans +13deg, lingers clearly
-  if (p < 0.89) {
-    const tau = (p - 0.69) / 0.20;
-    const nudgeEnv = Math.sin(tau * Math.PI);
-    const x = 36.5 + (115.0 - 36.5) * nudgeEnv;
-    const y = -26.0 + (-80.0 - (-26.0)) * nudgeEnv;
-    const rot = 364.0 + 9.0 * nudgeEnv;
-    const gestureSquash = nudgeEnv * 0.05;
-
-    return {
-      x,
-      y,
-      rotDeg: rot,
-      squashX: 1.0 - gestureSquash,
-      squashY: 1.0 + gestureSquash,
-    };
-  }
-
-  // Phase 6: Smooth ease into resting anchor (0.89 -> 1.0, ~7 frames)
-  const tau = (p - 0.89) / 0.11;
-  const recoverEase = tau * tau * (3 - 2 * tau);
-  const endX = 36.5 + (28.0 - 36.5) * recoverEase;
-  const endY = -26.0 + (-20.0 - (-26.0)) * recoverEase;
-  const endRot = 364.0 + (360.0 - 364.0) * recoverEase;
+  const contact = evaluateContactResponse(frame, {
+    startFrame: START + 13,
+    durationFrames: 25,
+    impactAngleRad: Math.PI * 0.25,
+    maxCompression: 0.07,
+    maxRecoil: 22,
+  });
 
   return {
-    x: endX,
-    y: endY,
-    rotDeg: endRot,
-    squashX: 1.0,
-    squashY: 1.0,
+    x: recoilX,
+    y: recoilY,
+    rotDeg,
+    squashX: contact.squashX,
+    squashY: contact.squashY,
   };
 }
 
@@ -380,10 +317,19 @@ export function getAllyAmbientState(
   identity: AllyIdentity,
   frame: number,
 ): AmbientActionState {
-  const origin = BRAND_GATHER_POSITIONS[IDENTITY_TO_COLOR[identity]];
+  const color = IDENTITY_TO_COLOR[identity];
+  const origin = BRAND_GATHER_POSITIONS[color];
+  const postAnchor = POST_ACTION_ANCHORS[color];
 
-  // Once domain fetch begins at frame 614, allies travel along dedicated Bézier segments
-  if (frame >= TIMING.DOMAIN_EDGE_START) {
+  // Each ally stops ambient offsets when their own domain-edge anticipation begins (startFrame - 8)
+  const DOMAIN_EDGE_START_FRAMES: Record<AllyIdentity, number> = {
+    rolly: TIMING.BLUE_DOMAIN_EDGE_START - 8,
+    ghosty: TIMING.PINK_DOMAIN_EDGE_START - 8,
+    rocky: TIMING.GREEN_DOMAIN_EDGE_START - 8,
+    boxy: TIMING.YELLOW_DOMAIN_EDGE_START - 8,
+  };
+
+  if (frame >= DOMAIN_EDGE_START_FRAMES[identity]) {
     return {
       x: 0,
       y: 0,
@@ -391,8 +337,8 @@ export function getAllyAmbientState(
       squashX: 1,
       squashY: 1,
       activeAction: "none",
-      baseAnchorX: origin.x,
-      baseAnchorY: origin.y,
+      baseAnchorX: postAnchor.x,
+      baseAnchorY: postAnchor.y,
     };
   }
 
@@ -434,38 +380,63 @@ export function getAllyAmbientState(
     }
 
     case "rocky": { // Green
-      const turn = evaluateGreenTurn(frame);
-      const isTurnActive =
+      const bump = evaluateGreenLogoBump(frame);
+      const isBumpActive =
         frame >= TIMING.GREEN_SOLO_TURN_START &&
         frame < TIMING.GREEN_SOLO_TURN_START + TIMING.GREEN_SOLO_TURN_DURATION;
 
       return {
-        x: turn.x,
-        y: turn.y,
-        rotDeg: turn.rotDeg,
-        squashX: turn.squashX,
-        squashY: turn.squashY,
-        activeAction: isTurnActive ? "green-turn" : "drift",
-        baseAnchorX: origin.x + (frame >= TIMING.GREEN_SOLO_TURN_START ? turn.x : 0),
-        baseAnchorY: origin.y + (frame >= TIMING.GREEN_SOLO_TURN_START ? turn.y : 0),
+        x: bump.x,
+        y: bump.y,
+        rotDeg: bump.rotDeg,
+        squashX: bump.squashX,
+        squashY: bump.squashY,
+        activeAction: isBumpActive ? "green-turn" : "drift",
+        baseAnchorX: origin.x + (frame >= TIMING.GREEN_SOLO_TURN_START ? bump.x : 0),
+        baseAnchorY: origin.y + (frame >= TIMING.GREEN_SOLO_TURN_START ? bump.y : 0),
       };
     }
 
     case "ghosty": { // Pink
+      // Before recenter settles (frame 406), Pink hovers above "allies" at (2820, 700)
+      // and glides down and left to (2660, 1020) alongside the centered "allies" text
+      let recenterShiftX = 0;
+      let recenterShiftY = 0;
+      if (frame < TIMING.BRAND_RECENTER_START) {
+        recenterShiftX = 0;
+        recenterShiftY = 0;
+      } else if (frame <= TIMING.BRAND_RECENTER_END) {
+        const p = interpolate(
+          frame,
+          [TIMING.BRAND_RECENTER_START, TIMING.BRAND_RECENTER_END],
+          [0, 1],
+          {
+            easing: Easing.bezier(0.22, 1, 0.36, 1),
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          },
+        );
+        recenterShiftX = (2660 - 2820) * p; // -160 * p
+        recenterShiftY = (1020 - 700) * p;  // +320 * p
+      } else {
+        recenterShiftX = 2660 - 2820; // -160
+        recenterShiftY = 1020 - 700;  // +320
+      }
+
       const boop = evaluatePinkBoop(frame);
       const isBoopActive =
         frame >= TIMING.PINK_BOOP_START &&
         frame < TIMING.PINK_BOOP_START + TIMING.PINK_BOOP_DURATION;
 
       return {
-        x: boop.x,
-        y: boop.y,
+        x: boop.x + recenterShiftX,
+        y: boop.y + recenterShiftY,
         rotDeg: boop.rotDeg,
         squashX: boop.squashX,
         squashY: boop.squashY,
         activeAction: isBoopActive ? "pink-boop" : "drift",
-        baseAnchorX: origin.x + (frame >= TIMING.PINK_BOOP_START ? boop.x : 0),
-        baseAnchorY: origin.y + (frame >= TIMING.PINK_BOOP_START ? boop.y : 0),
+        baseAnchorX: origin.x + recenterShiftX + (frame >= TIMING.PINK_BOOP_START ? boop.x : 0),
+        baseAnchorY: origin.y + recenterShiftY + (frame >= TIMING.PINK_BOOP_START ? boop.y : 0),
       };
     }
   }

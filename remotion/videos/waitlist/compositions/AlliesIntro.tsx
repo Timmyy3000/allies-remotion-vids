@@ -31,7 +31,7 @@ import { MotionPathDebug } from "../components/MotionPathDebug";
 import { TimelineDebugOverlay } from "../components/TimelineDebugOverlay";
 import { FONT_STYLE } from "../styles/font";
 import { getCameraState } from "../motion/cameraSystem";
-import { getTextBoopReaction } from "../motion/allyBehavior";
+import { getTextBoopReaction, getLogoBoopReaction } from "../motion/allyBehavior";
 
 // Exact exit curve from more-motion: [0.22, 1, 0.36, 1]
 const meetYourExitEase = Easing.bezier(0.22, 1, 0.36, 1);
@@ -189,8 +189,9 @@ export function AlliesIntro() {
   const isLogoVisible = isLogoStarted && frame < TIMING.LOGO_COLLAPSE_END;
   const isBrandGroupVisible = frame < TIMING.LOGO_COLLAPSE_END;
 
-  // --- 5. PHYSICAL 'allies' TEXT REACTION (WHEN BOOPED BY PINK) ---
+  // --- 5. PHYSICAL REACTIONS (PINK BOOPS TEXT, GREEN BUMPS LOGO) ---
   const textBoop = getTextBoopReaction(frame);
+  const logoBoop = getLogoBoopReaction(frame);
 
   return (
     <AbsoluteFill
@@ -358,9 +359,13 @@ export function AlliesIntro() {
                     <div
                       style={{
                         opacity: finalLogoOpacity,
-                        transform: `translate(0px, ${logoY.toFixed(
-                          3,
-                        )}px) scale(${finalLogoScale.toFixed(4)})`,
+                        transform: `translate(${logoBoop.x.toFixed(3)}px, ${(
+                          logoY + logoBoop.y
+                        ).toFixed(3)}px) rotate(${logoBoop.rotDeg.toFixed(
+                          2,
+                        )}deg) scale(${(finalLogoScale * logoBoop.scaleX).toFixed(
+                          4,
+                        )}, ${(finalLogoScale * logoBoop.scaleY).toFixed(4)})`,
                         transformOrigin: "center center",
                         display: "flex",
                         alignItems: "center",

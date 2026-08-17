@@ -248,8 +248,8 @@ export const ALLIES = {
       {
         id: "domain-exit",
         path: blueDomainExit.svgPath,
-        startFrame: TIMING.DOMAIN_PIECES_SETTLED,
-        durationInFrames: 50,
+        startFrame: TIMING.BLUE_DOMAIN_EXIT_START,
+        durationInFrames: TIMING.BLUE_DOMAIN_EXIT_DURATION,
         timingEase: motionEasing.travelIn,
       },
       {
@@ -314,8 +314,8 @@ export const ALLIES = {
       {
         id: "domain-exit",
         path: greenDomainExit.svgPath,
-        startFrame: TIMING.DOMAIN_PIECES_SETTLED,
-        durationInFrames: 50,
+        startFrame: TIMING.GREEN_DOMAIN_EXIT_START,
+        durationInFrames: TIMING.GREEN_DOMAIN_EXIT_DURATION,
         timingEase: motionEasing.softTravelIn,
       },
       {
@@ -380,8 +380,8 @@ export const ALLIES = {
       {
         id: "domain-exit",
         path: pinkDomainExit.svgPath,
-        startFrame: TIMING.DOMAIN_PIECES_SETTLED,
-        durationInFrames: 50,
+        startFrame: TIMING.PINK_DOMAIN_EXIT_START,
+        durationInFrames: TIMING.PINK_DOMAIN_EXIT_DURATION,
         timingEase: motionEasing.travelIn,
       },
       {
@@ -446,8 +446,8 @@ export const ALLIES = {
       {
         id: "domain-exit",
         path: yellowDomainExit.svgPath,
-        startFrame: TIMING.DOMAIN_PIECES_SETTLED,
-        durationInFrames: 50,
+        startFrame: TIMING.YELLOW_DOMAIN_EXIT_START,
+        durationInFrames: TIMING.YELLOW_DOMAIN_EXIT_DURATION,
         timingEase: motionEasing.travelIn,
       },
       {

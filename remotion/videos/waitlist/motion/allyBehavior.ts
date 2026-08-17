@@ -92,6 +92,64 @@ export function getTextBoopReaction(frame: number): TextBoopReaction {
   };
 }
 
+export interface LogoBoopReaction {
+  x: number;
+  y: number;
+  rotDeg: number;
+  scaleX: number;
+  scaleY: number;
+}
+
+/**
+ * Evaluates the physical reaction of the Allies logo when bumped by Green (Rocky).
+ * Impact frame is f532 (13 frames into GREEN_SOLO_TURN_START at f519).
+ */
+export function getLogoBoopReaction(frame: number): LogoBoopReaction {
+  const BUMP_START = TIMING.GREEN_SOLO_TURN_START; // f519
+  const BUMP_DURATION = TIMING.GREEN_SOLO_TURN_DURATION; // 55f (f519 - f574)
+
+  if (frame < BUMP_START || frame >= BUMP_START + BUMP_DURATION) {
+    return { x: 0, y: 0, rotDeg: 0, scaleX: 1, scaleY: 1 };
+  }
+
+  const age = frame - BUMP_START;
+
+  // Pre-impact surge (frames 0-12 before contact)
+  if (age < 13) {
+    return { x: 0, y: 0, rotDeg: 0, scaleX: 1, scaleY: 1 };
+  }
+
+  // Impact at age >= 13: Green hits from lower-left (+X, -Y direction)
+  // Logo reacts with sharp upward/rightward nudge and damped elastic jiggle
+  const p = (age - 13) / (BUMP_DURATION - 13);
+
+  if (p < 0.14) {
+    // Sharp impact compression & nudge (~6 frames)
+    const inP = p / 0.14;
+    const squish = Math.sin(inP * Math.PI * 0.5);
+    return {
+      x: 18 * squish,
+      y: -14 * squish,
+      rotDeg: -4.5 * squish,
+      scaleX: 1 + 0.04 * squish,
+      scaleY: 1 - 0.04 * squish,
+    };
+  }
+
+  const recoveryP = (p - 0.14) / 0.86;
+  const decay = Math.exp(-recoveryP * 4.2);
+  const oscillation = Math.cos(recoveryP * Math.PI * 3.5);
+  const currentDisplacement = decay * oscillation;
+
+  return {
+    x: 18 * currentDisplacement,
+    y: -14 * currentDisplacement,
+    rotDeg: -4.5 * currentDisplacement,
+    scaleX: 1 + 0.04 * currentDisplacement,
+    scaleY: 1 - 0.04 * currentDisplacement,
+  };
+}
+
 /**
  * Evaluates the composite playful offsets for an Ally at current frame.
  */
@@ -168,28 +226,25 @@ export function getAllyPlayfulOffset(
   // - Sustained post-interaction continuous resting anchor until departure (ZERO snap)
   // =========================================================================
   // =========================================================================
-  // 4. LAYER 3: REBUILT BLUE & PINK CONTINUOUS TWIRL, SOFT SQUISH & LIVING AMBIENT HANDOVER
-  // Rebuilt from Scratch:
+  // 4. LAYER 3: BLUE & PINK PLAYFUL MEETING, DIRECT BUMP & NATURAL RECOIL RETURN
+  // Direct Bump & Return (Zero Spin):
   // - Starts directly from exact live on-screen world coordinates P0 = ScreenPos(851) (0.00px jump)
-  // - First 12-16 frames steer gently out of floating momentum before ramping kinetic travel speed
-  // - Asymmetric approach curves feed tangent-continuously into 360° counter-clockwise swirl
-  // - Dynamic angular velocity curve with body banking
+  // - First 12-16 frames steer gently out of floating momentum before accelerating toward center
+  // - Direct meeting above 'yourallies.io' with forward flight lean
   // - Cute soft-body contact bump with 11% elastic squish (156px center-to-center distance)
-  // - Recoil drift with non-zero exit speed, smoothly blending into living ambient roam
-  // - Zero hard stops: continuous position, velocity, and rotation throughout
+  // - Recoil drift smoothly returning both allies to their upper quadrants with zero jump
   // =========================================================================
   const BLUE_PINK_START = TIMING.BLUE_PINK_SWIRL_START;
 
   if (frame >= BLUE_PINK_START) {
     const meetCenterX = DOMAIN_LAYOUT.pieces.allies.centerX; // 1948.0
     const meetCenterY = 640.0;
-    const loopRadiusX = 115.0;
-    const loopRadiusY = 85.0;
+    const blueContact = { x: meetCenterX - 77.0, y: meetCenterY }; // (1871.0, 640.0)
+    const pinkContact = { x: meetCenterX + 77.0, y: meetCenterY }; // (2025.0, 640.0)
 
-    const F_APPROACH_DUR = 38; // f851..f888 (~0.63s)
-    const F_SWIRL_DUR = 48;    // f889..f936 (~0.80s)
-    const F_BUMP_DUR = 17;     // f937..f953 (peak at f945)
-    const F_DRIFT_DUR = 46;    // f954..f999 (separation & ambient blend)
+    const F_APPROACH_DUR = 52; // f851..f902 (direct smooth flight to meet point)
+    const F_BUMP_DUR = 22;     // f903..f924 (peak contact compression at f914)
+    const F_DRIFT_DUR = 60;    // f925..f984 (recoil return to roaming quadrant)
 
     // Helper: Exact baseline ambient visible world position of an ally
     const getBaseWorldState = (id: AllyIdentity, f: number) => {
@@ -254,7 +309,6 @@ export function getAllyPlayfulOffset(
 
     if (identity === "rolly") {
       if (frame < TIMING.BLUE_DEPART_START) {
-        const blueArrive = { x: meetCenterX - loopRadiusX, y: meetCenterY }; // (1833, 640)
         const blueRoamCenter = { x: 1250.0, y: 720.0 };
 
         const baseNow = getBaseWorldState("rolly", frame);
@@ -270,8 +324,8 @@ export function getAllyPlayfulOffset(
           x: P0.x + v0_perFrame.x * 20 + 120,
           y: P0.y + v0_perFrame.y * 20 + 20,
         };
-        const P2 = { x: blueArrive.x - 90, y: blueArrive.y + 190 };
-        const P3 = blueArrive;
+        const P2 = { x: blueContact.x - 120, y: blueContact.y + 120 };
+        const P3 = blueContact;
 
         const relF = frame - BLUE_PINK_START;
         let targetWorldX = 0;
@@ -286,41 +340,29 @@ export function getAllyPlayfulOffset(
           targetWorldX = pos.x;
           targetWorldY = pos.y;
 
-          const bankRot = 15 * Math.sin(eu * Math.PI);
+          const bankRot = 12 * Math.sin(eu * Math.PI);
           targetWorldRot = init851.worldRot * (1 - eu * eu) + bankRot * eu;
 
           squashX = 1 + 0.03 * Math.sin(eu * Math.PI);
           squashY = 1 - 0.03 * Math.sin(eu * Math.PI);
-        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR) {
-          // Phase 2: Dynamic 360° Counter-Clockwise Swirl Loop
-          const v = (relF - F_APPROACH_DUR) / F_SWIRL_DUR;
-          const sv = quinticStep(v);
-          const angle = Math.PI + sv * Math.PI * 2;
-
-          targetWorldX = meetCenterX + Math.cos(angle) * loopRadiusX;
-          targetWorldY = meetCenterY + Math.sin(angle) * loopRadiusY;
-          targetWorldRot = 16 * Math.sin(sv * Math.PI * 2) * Math.sin(v * Math.PI);
-
-          squashX = 1 + 0.035 * Math.sin(v * Math.PI);
-          squashY = 1 - 0.035 * Math.sin(v * Math.PI);
-        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR) {
-          // Phase 3: Cute Soft-Body Bump & Squish Contact (Peak at f945)
-          const b = (relF - (F_APPROACH_DUR + F_SWIRL_DUR)) / F_BUMP_DUR;
+        } else if (relF < F_APPROACH_DUR + F_BUMP_DUR) {
+          // Phase 2: Cute Soft-Body Bump & Squish Contact (Zero overlap)
+          const b = (relF - F_APPROACH_DUR) / F_BUMP_DUR;
           const eb = Math.sin(b * Math.PI);
 
-          targetWorldX = blueArrive.x + 37.0 * eb;
-          targetWorldY = blueArrive.y;
-          targetWorldRot = 7.0 * eb;
+          targetWorldX = blueContact.x + 3.0 * eb;
+          targetWorldY = blueContact.y;
+          targetWorldRot = 6.0 * eb;
 
-          squashX = 1 - 0.11 * eb;
-          squashY = 1 + 0.09 * eb;
-        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR + F_DRIFT_DUR) {
-          // Phase 4: Recoil Arc & Smooth Transition into Living Ambient Roam
-          const w = (relF - (F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR)) / F_DRIFT_DUR;
+          squashX = 1 - 0.07 * eb;
+          squashY = 1 + 0.06 * eb;
+        } else if (relF < F_APPROACH_DUR + F_BUMP_DUR + F_DRIFT_DUR) {
+          // Phase 3: Recoil Arc & Smooth Transition into Living Ambient Roam
+          const w = (relF - (F_APPROACH_DUR + F_BUMP_DUR)) / F_DRIFT_DUR;
           const ew = smoothStep(w);
 
-          const arcX = blueArrive.x + (blueRoamCenter.x - blueArrive.x) * ew;
-          const arcY = blueArrive.y + (blueRoamCenter.y - blueArrive.y) * ew - 22 * (1 - w) * Math.sin(w * Math.PI);
+          const arcX = blueContact.x + (blueRoamCenter.x - blueContact.x) * ew;
+          const arcY = blueContact.y + (blueRoamCenter.y - blueContact.y) * ew - 18 * (1 - w) * Math.sin(w * Math.PI);
           const arcRot = 6 * (1 - w) * Math.sin(w * Math.PI);
 
           // Living ambient floating oscillation in roam quadrant
@@ -340,7 +382,7 @@ export function getAllyPlayfulOffset(
           targetWorldY = arcY * (1 - smoothBlend) + ambientY * smoothBlend;
           targetWorldRot = arcRot * (1 - smoothBlend) + ambientRot * smoothBlend;
         } else {
-          // Phase 5: Living Ambient Roam (stays continuously alive until departure)
+          // Phase 4: Living Ambient Roam (stays continuously alive until departure)
           const roamIdleT = (frame / 180) * 2 * Math.PI;
           const roamIdleY = Math.sin(roamIdleT) * 20 + Math.sin(roamIdleT * 2.15 + 0.4) * 4.5;
           const roamIdleX = Math.cos(roamIdleT * 1.15) * 14 + Math.sin(roamIdleT * 0.65 + 1.2) * 3.5;
@@ -357,7 +399,6 @@ export function getAllyPlayfulOffset(
       }
     } else if (identity === "ghosty") {
       if (frame < TIMING.PINK_DEPART_START) {
-        const pinkArrive = { x: meetCenterX + loopRadiusX, y: meetCenterY }; // (2063, 640)
         const pinkRoamCenter = { x: 2450.0, y: 720.0 };
 
         const baseNow = getBaseWorldState("ghosty", frame);
@@ -373,8 +414,8 @@ export function getAllyPlayfulOffset(
           x: P0.x + v0_perFrame.x * 20 - 80,
           y: P0.y + v0_perFrame.y * 20 - 40,
         };
-        const P2 = { x: pinkArrive.x + 130, y: 520.0 };
-        const P3 = pinkArrive;
+        const P2 = { x: pinkContact.x + 120, y: pinkContact.y + 120 };
+        const P3 = pinkContact;
 
         const relF = frame - BLUE_PINK_START;
         let targetWorldX = 0;
@@ -389,41 +430,29 @@ export function getAllyPlayfulOffset(
           targetWorldX = pos.x;
           targetWorldY = pos.y;
 
-          const bankRot = -15 * Math.sin(eu * Math.PI);
+          const bankRot = -12 * Math.sin(eu * Math.PI);
           targetWorldRot = init851.worldRot * (1 - eu * eu) + bankRot * eu;
 
           squashX = 1 + 0.03 * Math.sin(eu * Math.PI);
           squashY = 1 - 0.03 * Math.sin(eu * Math.PI);
-        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR) {
-          // Phase 2: Dynamic 360° Counter-Clockwise Swirl Loop
-          const v = (relF - F_APPROACH_DUR) / F_SWIRL_DUR;
-          const sv = quinticStep(v);
-          const angle = 0 + sv * Math.PI * 2;
-
-          targetWorldX = meetCenterX + Math.cos(angle) * loopRadiusX;
-          targetWorldY = meetCenterY + Math.sin(angle) * loopRadiusY;
-          targetWorldRot = -16 * Math.sin(sv * Math.PI * 2) * Math.sin(v * Math.PI);
-
-          squashX = 1 + 0.035 * Math.sin(v * Math.PI);
-          squashY = 1 - 0.035 * Math.sin(v * Math.PI);
-        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR) {
-          // Phase 3: Cute Soft-Body Bump & Squish Contact (Peak at f945)
-          const b = (relF - (F_APPROACH_DUR + F_SWIRL_DUR)) / F_BUMP_DUR;
+        } else if (relF < F_APPROACH_DUR + F_BUMP_DUR) {
+          // Phase 2: Cute Soft-Body Bump & Squish Contact (Zero overlap)
+          const b = (relF - F_APPROACH_DUR) / F_BUMP_DUR;
           const eb = Math.sin(b * Math.PI);
 
-          targetWorldX = pinkArrive.x - 37.0 * eb;
-          targetWorldY = pinkArrive.y;
-          targetWorldRot = -7.0 * eb;
+          targetWorldX = pinkContact.x - 3.0 * eb;
+          targetWorldY = pinkContact.y;
+          targetWorldRot = -6.0 * eb;
 
-          squashX = 1 - 0.11 * eb;
-          squashY = 1 + 0.09 * eb;
-        } else if (relF < F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR + F_DRIFT_DUR) {
-          // Phase 4: Recoil Arc & Smooth Transition into Living Ambient Roam
-          const w = (relF - (F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR)) / F_DRIFT_DUR;
+          squashX = 1 - 0.07 * eb;
+          squashY = 1 + 0.06 * eb;
+        } else if (relF < F_APPROACH_DUR + F_BUMP_DUR + F_DRIFT_DUR) {
+          // Phase 3: Recoil Arc & Smooth Transition into Living Ambient Roam
+          const w = (relF - (F_APPROACH_DUR + F_BUMP_DUR)) / F_DRIFT_DUR;
           const ew = smoothStep(w);
 
-          const arcX = pinkArrive.x + (pinkRoamCenter.x - pinkArrive.x) * ew;
-          const arcY = pinkArrive.y + (pinkRoamCenter.y - pinkArrive.y) * ew - 20 * (1 - w) * Math.sin(w * Math.PI);
+          const arcX = pinkContact.x + (pinkRoamCenter.x - pinkContact.x) * ew;
+          const arcY = pinkContact.y + (pinkRoamCenter.y - pinkContact.y) * ew - 18 * (1 - w) * Math.sin(w * Math.PI);
           const arcRot = -6 * (1 - w) * Math.sin(w * Math.PI);
 
           // Living ambient floating oscillation in roam quadrant
@@ -443,7 +472,7 @@ export function getAllyPlayfulOffset(
           targetWorldY = arcY * (1 - smoothBlend) + ambientY * smoothBlend;
           targetWorldRot = arcRot * (1 - smoothBlend) + ambientRot * smoothBlend;
         } else {
-          // Phase 5: Living Ambient Roam (stays continuously alive until departure)
+          // Phase 4: Living Ambient Roam (stays continuously alive until departure)
           const roamIdleT = (frame / 170) * 2 * Math.PI + 3.1;
           const roamIdleY = Math.sin(roamIdleT) * 22 + Math.sin(roamIdleT * 2.15 + 0.4) * 4.5;
           const roamIdleX = Math.cos(roamIdleT * 1.15) * 14 + Math.sin(roamIdleT * 0.65 + 1.2) * 3.5;
@@ -459,18 +488,18 @@ export function getAllyPlayfulOffset(
         offsetRot = targetWorldRot - baseNow.rawFloatRot;
       }
     } else if (identity === "rocky") {
-      // Green (Rocky): Observes the playful swirl & boop with gentle tilt
-      if (frame < BLUE_PINK_START + F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR) {
-        const p = (frame - BLUE_PINK_START) / (F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR);
+      // Green (Rocky): Observes the playful bump with gentle tilt
+      if (frame < BLUE_PINK_START + F_APPROACH_DUR + F_BUMP_DUR) {
+        const p = (frame - BLUE_PINK_START) / (F_APPROACH_DUR + F_BUMP_DUR);
         if (p >= 0.28 && p < 0.85) {
           const k = (p - 0.28) / 0.57;
           offsetRot -= 5 * Math.sin(k * Math.PI);
         }
       }
     } else if (identity === "boxy") {
-      // Yellow (Boxy): Cheerful bob watching the swirl & boop
-      if (frame < BLUE_PINK_START + F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR) {
-        const p = (frame - BLUE_PINK_START) / (F_APPROACH_DUR + F_SWIRL_DUR + F_BUMP_DUR);
+      // Yellow (Boxy): Cheerful bob watching the bump
+      if (frame < BLUE_PINK_START + F_APPROACH_DUR + F_BUMP_DUR) {
+        const p = (frame - BLUE_PINK_START) / (F_APPROACH_DUR + F_BUMP_DUR);
         if (p >= 0.28 && p < 0.85) {
           const k = (p - 0.28) / 0.57;
           offsetY -= 14 * Math.sin(k * Math.PI);

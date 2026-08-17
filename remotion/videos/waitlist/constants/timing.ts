@@ -5,7 +5,7 @@
  */
 
 export const FPS = 60;
-export const TOTAL_DURATION_FRAMES = 1325; // 22.08 seconds at 60fps
+export const TOTAL_DURATION_FRAMES = 1360; // 22.67 seconds at 60fps
 
 // ============================================================================
 // PHASE 1: CLEAN OPENING BLANK CANVAS
@@ -99,9 +99,9 @@ export const PINK_BOOP_DURATION = 40; // f444 - f484 (impact at f454)
 export const BLUE_SOLO_JIGGLE_START = 484;
 export const BLUE_SOLO_JIGGLE_DURATION = 32; // f484 - f516
 
-// 3. Green organic 360-degree full body turn & double icon gesture
+// 3. Green physical logo bump & elastic jiggle reaction
 export const GREEN_SOLO_TURN_START = 519;
-export const GREEN_SOLO_TURN_DURATION = 65; // f519 - f584
+export const GREEN_SOLO_TURN_DURATION = 55; // f519 - f574 (impact at f532)
 
 // ============================================================================
 // PHASE 8: LOGO COLLAPSE & DOMAIN FETCH LAUNCHES
@@ -137,43 +137,66 @@ export const YELLOW_DOMAIN_DRAG_DURATION = 92;
 export const NEAR_MISS_START = 689;
 export const NEAR_MISS_DURATION = 45;
 
+// ============================================================================
+// PHASE 8: DOMAIN EDGE & DRAG ASSEMBLY
+// ============================================================================
 export const DOMAIN_PIECES_SETTLED = 778; // Final 'o' docks
 export const DOMAIN_PIECE_SETTLE_DURATION = 12;
 
 // ============================================================================
-// PHASE 9: CELEBRATORY URL COMPLETION BEAT WITH EXTENDED ORANGE HOLD (+0.5s / 30f)
+// PHASE 9: CELEBRATORY URL COMPLETION BEAT WITH EXTENDED ORANGE HOLD
 // ============================================================================
 // Prompt simultaneous celebration fade to orange upon docking
 export const COMPLETION_ORANGE_START = 781;
-export const COMPLETION_ORANGE_DURATION = 12; // Smooth fade to #FF5800
+export const COMPLETION_ORANGE_DURATION = 14; // Smooth fade to #FF5800
 
-// Full orange lockup celebration hold (#FF5800) - Extended by 30 frames (40f total)
-export const COMPLETION_ORANGE_HOLD_START = 793;
+// Full orange lockup celebration hold (#FF5800)
+export const COMPLETION_ORANGE_HOLD_START = 795;
 export const COMPLETION_ORANGE_HOLD_DURATION = 40; // 40 frames hold (~0.67s)
 
-// Smooth transition to solid #121212 black URL
-export const COMPLETION_BLACK_TRANSITION_START = 833;
-export const COMPLETION_BLACK_TRANSITION_DURATION = 14;
-export const COMPLETION_FULL_BLACK_FRAME = 847; // Frame 847 (URL is crisp black)
+// Smooth transition for 'your' and '.io' to solid #121212 black (keeping 'allies' orange)
+export const COMPLETION_BLACK_TRANSITION_START = 835;
+export const COMPLETION_BLACK_TRANSITION_DURATION = 18;
+export const COMPLETION_FULL_BLACK_FRAME = 853; // Frame 853 (your & .io are crisp black, allies is orange)
 
 // ============================================================================
-// PHASE 10: BLUE & PINK PLAYFUL MEETING, SWIRL, CLEAN BUMP & NATURAL DRIFT
+// PHASE 10: ALLIES HOLD AT DELIVERY SPOTS & STAGGERED RETREAT TO CORNERS
 // ============================================================================
-// Starts right after URL completes at frame 851!
-export const BLUE_PINK_SWIRL_START = 851;
-export const BLUE_PINK_SWIRL_DURATION = 138; // f851 - f989 (includes broad natural outward drift)
+// The allies stay hovering right beside the dropped letters through the completion
+// celebrations, taking a generous beat before retreating outward at f868!
+export const DOMAIN_LOCKUP_HOLD_DURATION = 90;
+export const DOMAIN_EXIT_START = 868;
+
+export const BLUE_DOMAIN_EXIT_START = DOMAIN_EXIT_START;
+export const PINK_DOMAIN_EXIT_START = DOMAIN_EXIT_START + 4;
+export const GREEN_DOMAIN_EXIT_START = DOMAIN_EXIT_START + 8;
+export const YELLOW_DOMAIN_EXIT_START = DOMAIN_EXIT_START + 12;
+
+export const BLUE_DOMAIN_EXIT_DURATION = 46;
+export const PINK_DOMAIN_EXIT_DURATION = 46;
+export const GREEN_DOMAIN_EXIT_DURATION = 48;
+export const YELLOW_DOMAIN_EXIT_DURATION = 48;
+
+export const DOMAIN_EXIT_SETTLED = 928; // All 4 allies settled in outer quadrants
+
+// ============================================================================
+// PHASE 11: BLUE & PINK PLAYFUL MEETING, DIRECT BUMP & NATURAL DRIFT
+// ============================================================================
+// Starts once allies reach their outer staging anchors at f930!
+export const BLUE_PINK_SWIRL_START = 930;
+export const BLUE_PINK_SWIRL_DURATION = 138; // f930 - f1068
 
 // Backwards-compatibility aliases
 export const RACE_START = BLUE_PINK_SWIRL_START;
 export const RACE_DURATION = BLUE_PINK_SWIRL_DURATION;
-export const SWIRL_START = 883;
+export const SWIRL_START = 962;
 export const SWIRL_DURATION = 42;
 
 // ============================================================================
-// PHASE 11: YELLOW & GREEN COZY SNUGGLE (UNDER RIGHT SIDE OF URL)
+// PHASE 12: YELLOW & GREEN COZY SNUGGLE (UNDER RIGHT SIDE OF URL)
 // ============================================================================
-export const SQUEEZE_START = 989;
-export const SQUEEZE_DURATION = 50; // f989 - f1039
+export const SQUEEZE_START = 1070;
+export const SQUEEZE_DURATION = 50; // f1070 - f1120
 
 // Backwards-compatibility aliases
 export const GAP_THREAD_START = SQUEEZE_START;
@@ -184,27 +207,27 @@ export const PINK_SOLO_SWOOP_START = SQUEEZE_START;
 export const PINK_SOLO_SWOOP_DURATION = SQUEEZE_DURATION;
 
 // ============================================================================
-// PHASE 12: OVERLAPPING, ORGANIC ALLIES DEPARTURE & CAMERA FOCUS TRANSFER
+// PHASE 13: OVERLAPPING, ORGANIC ALLIES DEPARTURE & CAMERA FOCUS TRANSFER
 // ============================================================================
-// Departures launch smoothly at f1045!
-export const DEPARTURE_START = 1045;
-export const PINK_DEPART_START = 1045;   // Pink peels offscreen top-right
-export const YELLOW_DEPART_START = 1057; // Yellow peels offscreen bottom-right (12f stagger)
-export const BLUE_DEPART_START = 1069;   // Blue sweeps offscreen top-left (12f stagger)
-export const GREEN_DEPART_START = 1085;  // Green finishes lingering look-back and exits (16f stagger)
+// Departures launch smoothly at f1125!
+export const DEPARTURE_START = 1125;
+export const PINK_DEPART_START = 1125;   // Pink peels offscreen top-right
+export const YELLOW_DEPART_START = 1137; // Yellow peels offscreen bottom-right (12f stagger)
+export const BLUE_DEPART_START = 1149;   // Blue sweeps offscreen top-left (12f stagger)
+export const GREEN_DEPART_START = 1165;  // Green finishes lingering look-back and exits (16f stagger)
 
-export const ALL_ALLIES_DEPARTED = 1160;
+export const ALL_ALLIES_DEPARTED = 1225;
 
 // ============================================================================
-// PHASE 13: FINAL CAMERA PUSH, SHINY TEXT SHEEN & PRISTINE URL HERO HOLD
+// PHASE 14: FINAL CAMERA PUSH, SHINY TEXT SHEEN & PRISTINE URL HERO HOLD
 // ============================================================================
-export const FINAL_CAMERA_PUSH_START = 1045; // Camera begins pushing in as allies peel away
-export const FINAL_CAMERA_PUSH_DURATION = 120; // Smooth push to ~1.294x apparent scale (S0 * 1.25)
-export const SHEEN_START = 1160; // Elegant single diagonal sheen pass across black yourallies.io
-export const SHEEN_DURATION = 55; // f1160 - f1215
-export const SHEEN_END = SHEEN_START + SHEEN_DURATION; // Frame 1215
-export const FINAL_HOLD_START = 1215;
-export const FINAL_HOLD_END = TOTAL_DURATION_FRAMES; // 1325 (110 frames / 1.83s pure hold)
+export const FINAL_CAMERA_PUSH_START = 1125;
+export const FINAL_CAMERA_PUSH_DURATION = 105;
+export const SHEEN_START = 1225; // Elegant single diagonal sheen pass across yourallies.io
+export const SHEEN_DURATION = 55; // f1225 - f1280
+export const SHEEN_END = SHEEN_START + SHEEN_DURATION; // Frame 1280
+export const FINAL_HOLD_START = 1280;
+export const FINAL_HOLD_END = TOTAL_DURATION_FRAMES; // 1360 (80 frames / 1.33s pure hold)
 
 export const TIMING = {
   FPS,
@@ -283,6 +306,17 @@ export const TIMING = {
   COMPLETION_BLACK_TRANSITION_START,
   COMPLETION_BLACK_TRANSITION_DURATION,
   COMPLETION_FULL_BLACK_FRAME,
+  DOMAIN_LOCKUP_HOLD_DURATION,
+  DOMAIN_EXIT_START,
+  BLUE_DOMAIN_EXIT_START,
+  PINK_DOMAIN_EXIT_START,
+  GREEN_DOMAIN_EXIT_START,
+  YELLOW_DOMAIN_EXIT_START,
+  BLUE_DOMAIN_EXIT_DURATION,
+  PINK_DOMAIN_EXIT_DURATION,
+  GREEN_DOMAIN_EXIT_DURATION,
+  YELLOW_DOMAIN_EXIT_DURATION,
+  DOMAIN_EXIT_SETTLED,
   BLUE_PINK_SWIRL_START,
   BLUE_PINK_SWIRL_DURATION,
   RACE_START,
